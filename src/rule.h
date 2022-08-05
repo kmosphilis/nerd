@@ -1,7 +1,7 @@
 #include "literal.h"
 
-#ifndef __RULE__
-#define __RULE__
+#ifndef __RULE_H__
+#define __RULE_H__
 
 typedef struct Rule {
     unsigned int body_size;

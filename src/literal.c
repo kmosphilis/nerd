@@ -25,7 +25,7 @@ void literal_construct(Literal * const literal, const char * const atom, const i
  * 
  * @param literal The Literal to be destructed.
  */
-void literal_destruct(Literal * literal) {
+void literal_destruct(Literal * const literal) {
     if (literal->atom != NULL) {
         free(literal->atom);
         literal->atom = NULL;
