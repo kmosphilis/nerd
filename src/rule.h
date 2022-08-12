@@ -10,7 +10,7 @@ typedef struct Rule {
     float weight;
 } Rule;
 
-void rule_construct(Rule * const rule, const int body_size, Literal ** const body,
+void rule_construct(Rule * const rule, const unsigned int body_size, Literal ** const body,
     const Literal * const head, const float weight);
 void rule_destruct(Rule * const rule);
 void rule_copy(Rule * const destination, const Rule * const source);

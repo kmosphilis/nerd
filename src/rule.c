@@ -14,14 +14,14 @@
  * @param head The head when the rule gets activated.
  * @param weight The weight of the rule.
  */
-void rule_construct(Rule * const rule, const int body_size, Literal ** const body,
+void rule_construct(Rule * const rule, const unsigned int body_size, Literal ** const body,
     const Literal * const head, const float weight) {
     rule->body_size = body_size;
     if (head != NULL) {
         literal_copy(&(rule->head), head);
     }
-    rule->body = (Literal *) malloc(sizeof(Literal) * body_size);
-    int i;
+    rule->body = (Literal *) malloc(body_size * sizeof(Literal));
+    unsigned int i;
     if (body != NULL) {
         for (i = 0; i < body_size; ++i) {
             literal_copy(&(rule->body[i]), &(*body)[i]);
@@ -38,7 +38,7 @@ void rule_construct(Rule * const rule, const int body_size, Literal ** const bod
 void rule_destruct(Rule * const rule) {
     literal_destruct(&(rule->head));
     if (rule->body != NULL) {
-        int i;
+        unsigned int i;
         for (i = 0; i < rule->body_size; ++i) {
             literal_destruct(&(rule->body[i]));
         }
@@ -59,8 +59,8 @@ void rule_copy(Rule * const destination, const Rule * const source) {
     destination->body_size = source->body_size;
     literal_copy(&destination->head, &source->head);
 
-    destination->body = (Literal *) malloc(sizeof(Literal) * source->body_size);
-    int i;
+    destination->body = (Literal *) malloc(source->body_size * sizeof(Literal));
+    unsigned int i;
     for (i = 0; i < source->body_size; ++i) {
         literal_copy(&(destination->body[i]), &(source->body[i]));
     }
@@ -74,34 +74,38 @@ void rule_copy(Rule * const destination, const Rule * const source) {
  * @return The string format of the given Rule. Use free() to deallocate this string.
  */
 char *rule_to_string(const Rule * const rule) {
-    int i;
+    unsigned int i;
     char *literal_string, *result = strdup("(");
-    size_t result_size = strlen(result);
+    size_t result_size = strlen(result) + 1;
 
-    Literal current_literal = rule->body[0];
-    size_t literal_length = strlen(current_literal.atom);
-    result_size += literal_length;
+    literal_string = literal_to_string(&(rule->body[0]));
+    result_size += strlen(literal_string);
+    char *temp = strdup(result);
     result = (char *) realloc(result, result_size);
-    sprintf(result, "%s%s", result, current_literal.atom);
+    sprintf(result, "%s%s", temp, literal_string);
+    free(temp);
+    free(literal_string);
 
     for (i = 1; i < rule->body_size; ++i) {
-        Literal current_literal = rule->body[i];
-        literal_string = literal_to_string(&current_literal);
-        size_t literal_length = strlen(literal_string);
-        result_size += literal_length + 2;
+        literal_string = literal_to_string(&(rule->body[i]));
+        result_size += strlen(literal_string) + 2;
+        temp = strdup(result);
         result = (char *) realloc(result, result_size);
-        sprintf(result, "%s, %s", result, literal_string);
+        sprintf(result, "%s, %s", temp, literal_string);
         free(literal_string);
+        free(temp);
     }
 
     char weight_length[50];
     int weight_size = sprintf(weight_length, "%.4f", rule->weight);
 
     literal_string = literal_to_string(&rule->head);
-    result_size += (strlen(literal_string) + weight_size + 8);
+    result_size += strlen(literal_string) + weight_size + 8;
+    temp = strdup(result);
     result = (char *) realloc(result, result_size);
-    sprintf(result, "%s) => %s (%.4f)", result, literal_string, rule->weight);
+    sprintf(result, "%s) => %s (%.4f)", temp, literal_string, rule->weight);
     free(literal_string);
+    free(temp);
     return result;
 }
 

@@ -2,29 +2,8 @@
 #include <check.h>
 
 #include "../src/rule.h"
-
-void ck_assert_literal_eq(const Literal * const literal1, const Literal * const literal2) {
-    ck_assert_int_eq(literal1->sign, literal2->sign);
-    ck_assert_str_eq(literal1->atom, literal2->atom);
-}
-
-void ck_assert_literal_ne(const Literal * const literal1, const Literal * const literal2) {
-    ck_assert_int_ne(literal1->sign, literal2->sign);
-    if ((literal1->atom != NULL) && (literal2->atom != NULL)) {
-        ck_assert_str_ne(literal1->atom, literal2->atom);
-    }
-}
-
-
-void ck_assert_literal_empty(const Literal * const literal1) {
-    ck_assert_int_eq(literal1->sign, -1);
-    ck_assert_ptr_null(literal1->atom);
-}
-
-void ck_assert_literal_notempty(const Literal * const literal1) {
-    ck_assert_int_ne(literal1->sign, -1);
-    ck_assert_ptr_nonnull(literal1->atom);
-}
+#include "helper/rule.h"
+#include "helper/literal.h"
 
 START_TEST(construct_destruct_test) {
     Rule rule;
@@ -35,7 +14,7 @@ START_TEST(construct_destruct_test) {
     int body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
 
-    int i;
+    unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
         literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
@@ -46,6 +25,7 @@ START_TEST(construct_destruct_test) {
 
     rule_construct(&rule, body_size, &body, &head, starting_weight);
 
+    ck_assert_rule_notempty(&rule);
     ck_assert_int_eq(rule.body_size, body_size);
     ck_assert_literal_eq(&rule.head, &head);
     for(i = 0; i < body_size; ++i) {
@@ -55,10 +35,7 @@ START_TEST(construct_destruct_test) {
     
     rule_destruct(&rule);
 
-    ck_assert_int_eq(rule.body_size, 0);
-    ck_assert_ptr_null(rule.body);
-    ck_assert_literal_empty(&rule.head);
-    ck_assert_float_eq(rule.weight, INFINITY);
+    ck_assert_rule_empty(&rule);
 
     literal_destruct(&head);
 
@@ -79,7 +56,7 @@ START_TEST(copy_test) {
     int body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
 
-    int i;
+    unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
         literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
@@ -93,22 +70,16 @@ START_TEST(copy_test) {
     rule_copy(&rule2, &rule1);
 
     ck_assert_ptr_ne(&rule1, &rule2);
-    ck_assert_int_eq(rule1.body_size, rule2.body_size);
-    ck_assert_literal_eq(&rule1.head, &rule2.head);
     ck_assert_ptr_ne(rule1.body, rule2.body);
-    for (i = 0; i < body_size; ++i) {
-        ck_assert_literal_eq(&rule1.body[i], &rule2.body[i]);
-    }
-    ck_assert_float_eq(rule1.weight, rule2.weight);
+    ck_assert_rule_eq(&rule1, &rule2);
     
     rule_destruct(&rule1);
 
-    ck_assert_int_ne(rule1.body_size, rule2.body_size);
-    ck_assert_ptr_nonnull(rule2.body);
+    ck_assert_rule_empty(&rule1);
+    ck_assert_rule_notempty(&rule2);
     ck_assert_literal_ne(&rule1.head, &rule2.head);
     ck_assert_literal_empty(&rule1.head);
     ck_assert_literal_notempty(&rule2.head);
-    ck_assert_float_ne(rule1.weight, rule2.weight);
 
 
     rule_destruct(&rule2);
@@ -132,7 +103,7 @@ START_TEST(to_string_test) {
     int body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
 
-    int i;
+    unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
         literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
@@ -184,7 +155,7 @@ START_TEST(promote_test) {
     int body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
 
-    int i;
+    unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
         literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
@@ -225,7 +196,7 @@ START_TEST(demote_test) {
     int body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 5;
 
-    int i;
+    unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
         literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
@@ -286,6 +257,7 @@ int main() {
     SRunner* s_runner;
 
     s_runner = srunner_create(suite);
+    srunner_set_fork_status(s_runner, CK_NOFORK);
 
     srunner_run_all(s_runner, CK_ENV);
     int number_failed = srunner_ntests_failed(s_runner);
