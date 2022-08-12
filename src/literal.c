@@ -39,7 +39,7 @@ void literal_destruct(Literal * const literal) {
  * @param destination The Literal to save the copy.
  * @param source The Literal to be copied.
  */
-void literal_copy(Literal * const destination, const Literal const *source) {
+void literal_copy(Literal * const destination, const Literal * const source) {
     destination->atom = strdup(source->atom);
     destination->sign = source->sign;
 }

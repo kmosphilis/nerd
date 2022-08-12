@@ -2,6 +2,7 @@
 #include <check.h>
 
 #include "../src/literal.h"
+#include "helper/literal.h"
 
 START_TEST(construct_destruct_test) {
     Literal literal;
@@ -12,16 +13,14 @@ START_TEST(construct_destruct_test) {
     ck_assert_int_eq(literal.sign, 1);
 
     literal_destruct(&literal);
-    ck_assert_ptr_null(literal.atom);
-    ck_assert_int_eq(literal.sign, -1);
+    ck_assert_literal_empty(&literal);
 
     literal_construct(&literal, "Penguin", 0);
     ck_assert_str_eq(literal.atom, "Penguin");
     ck_assert_int_eq(literal.sign, 0);
 
     literal_destruct(&literal);
-    ck_assert_ptr_null(literal.atom);
-    ck_assert_int_eq(literal.sign, -1);
+    ck_assert_literal_empty(&literal);
 }
 END_TEST
 
@@ -32,16 +31,16 @@ START_TEST(copy_test) {
 
     literal_copy(&literal2, &literal1);
 
-    ck_assert_str_eq(literal1.atom, literal2.atom);
-    ck_assert_int_eq(literal1.sign, literal2.sign);
     ck_assert_ptr_ne(&literal1, &literal2);
+    ck_assert_literal_eq(&literal1, &literal2);
 
     literal_destruct(&literal1);
     ck_assert_ptr_null(literal1.atom);
-    ck_assert_ptr_nonnull(literal2.atom);
+    ck_assert_literal_empty(&literal1);
+    ck_assert_literal_notempty(&literal2);
 
     literal_destruct(&literal2);
-    
+    ck_assert_literal_empty(&literal2);    
 }
 END_TEST
 
@@ -120,6 +119,7 @@ int main() {
     SRunner* s_runner;
 
     s_runner = srunner_create(suite);
+    srunner_set_fork_status(s_runner, CK_NOFORK);
 
     srunner_run_all(s_runner, CK_ENV);
     int number_failed = srunner_ntests_failed(s_runner);
