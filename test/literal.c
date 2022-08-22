@@ -5,7 +5,7 @@
 #include "helper/literal.h"
 
 START_TEST(construct_destruct_test) {
-    Literal literal;
+    Literal literal, *literal_pointer = NULL;
     
     literal_construct(&literal, "Penguin", 1);
 
@@ -21,11 +21,41 @@ START_TEST(construct_destruct_test) {
 
     literal_destruct(&literal);
     ck_assert_literal_empty(&literal);
+
+    literal_construct(&literal, "Penguin", 9);
+
+    ck_assert_literal_notempty(&literal);
+
+    ck_assert_str_eq(literal.atom, "Penguin");
+    ck_assert_int_eq(literal.sign, 1);
+
+    literal_destruct(&literal);
+
+    literal_construct(&literal, "Penguin", -9);
+
+    ck_assert_str_eq(literal.atom, "Penguin");
+    ck_assert_int_eq(literal.sign, 0);
+
+    literal_destruct(&literal);
+
+    literal_construct(literal_pointer, "Penguin", 0);
+
+    ck_assert_ptr_null(literal_pointer);
+
+    literal_destruct(literal_pointer);
+
+    literal_pointer = &literal;
+
+    literal_construct(literal_pointer, NULL, 1);
+
+    ck_assert_literal_empty(literal_pointer);
+
+    literal_destruct(literal_pointer);
 }
 END_TEST
 
 START_TEST(copy_test) {
-    Literal literal1, literal2;
+    Literal literal1, literal2, *literal_pointer1 = NULL, *literal_pointer2 = NULL;
 
     literal_construct(&literal1, "Penguin", 1);
 
@@ -35,17 +65,39 @@ START_TEST(copy_test) {
     ck_assert_literal_eq(&literal1, &literal2);
 
     literal_destruct(&literal1);
+
     ck_assert_ptr_null(literal1.atom);
     ck_assert_literal_empty(&literal1);
     ck_assert_literal_notempty(&literal2);
 
     literal_destruct(&literal2);
-    ck_assert_literal_empty(&literal2);    
+
+    ck_assert_literal_empty(&literal2);
+
+    literal_copy(literal_pointer2, literal_pointer1);
+
+    ck_assert_ptr_null(literal_pointer1);
+    ck_assert_ptr_null(literal_pointer2);
+
+    literal_pointer1 = &literal1;
+
+    literal_construct(literal_pointer1, "Penguin", 1);
+
+    literal_copy(literal_pointer2, literal_pointer1);
+
+    ck_assert_ptr_null(literal_pointer2);
+    ck_assert_literal_notempty(literal_pointer1);
+
+    literal_copy(literal_pointer1, literal_pointer2);
+
+    ck_assert_literal_notempty(literal_pointer1);
+    
+    literal_destruct(literal_pointer1);
 }
 END_TEST
 
 START_TEST(to_string_test) {
-    Literal literal;
+    Literal literal, *literal_pointer = NULL;
     literal_construct(&literal, "Penguin", 1);
 
     char *literal_string = literal_to_string(&literal);
@@ -60,7 +112,15 @@ START_TEST(to_string_test) {
     ck_assert_str_eq(literal_string, "-Penguin");
     free(literal_string);
 
+    literal_string = literal_to_string(literal_pointer);
+    ck_assert_pstr_eq(literal_string, NULL);
+
+    literal_pointer = &literal;
+
     literal_destruct(&literal);
+
+    literal_string = literal_to_string(literal_pointer);
+    ck_assert_pstr_eq(literal_string, NULL);
 }
 END_TEST
 

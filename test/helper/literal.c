@@ -10,7 +10,7 @@
  */
 void ck_assert_literal_eq(const Literal * const literal1, const Literal * const literal2) {
     ck_assert_int_eq(literal1->sign, literal2->sign);
-    ck_assert_str_eq(literal1->atom, literal2->atom);
+    ck_assert_pstr_eq(literal1->atom, literal2->atom);
 }
 
 /**
