@@ -125,7 +125,7 @@ START_TEST(to_string_test) {
 END_TEST
 
 START_TEST(negate_test) {
-    Literal literal;
+    Literal literal, *literal_pointer = NULL;
     literal_construct(&literal, "Penguin", 1);
 
     ck_assert_int_eq(literal.sign, 1);
@@ -145,7 +145,11 @@ START_TEST(negate_test) {
     ck_assert_int_eq(literal.sign, 1);
     literal_string = literal_to_string(&literal);
     ck_assert_str_eq(literal_string, "Penguin");
-    free(literal_string);    
+    free(literal_string);
+
+    literal_negate(literal_pointer);
+
+    ck_assert_ptr_null(literal_pointer);
 
     literal_destruct(&literal);
 }

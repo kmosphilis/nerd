@@ -81,12 +81,14 @@ char *literal_to_string(const Literal * const literal) {
 /**
  * @brief Negates the given Literal. If it is positive it will become negative, and vice versa.
  * 
- * @param literal The Literal to negate.
+ * @param literal The Literal to negate. If NULL, nothing will happen.
  */
 void literal_negate(Literal * const literal) {
-    if (literal->sign) {
-        literal->sign = 0;
-    } else {
-        literal->sign = 1;
+    if (literal != NULL) {
+        if (literal->sign) {
+            literal->sign = 0;
+        } else {
+            literal->sign = 1;
+        }
     }
 }

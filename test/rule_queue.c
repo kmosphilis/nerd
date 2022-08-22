@@ -6,7 +6,7 @@
 #include "helper/rule.h"
 
 START_TEST(construct_destruct_test) {
-    RuleQueue rule_queue;
+    RuleQueue rule_queue, *rule_queue_pointer = NULL;
 
     rule_queue_construct(&rule_queue);
 
@@ -15,20 +15,34 @@ START_TEST(construct_destruct_test) {
     rule_queue_destruct(&rule_queue);
 
     ck_assert_rule_queue_empty(&rule_queue);
+
+    rule_queue_construct(rule_queue_pointer);
+
+    ck_assert_ptr_null(rule_queue_pointer);
 }
 END_TEST
 
 START_TEST(enqueue_test) {
-    RuleQueue rule_queue;
+    RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
     rule_queue_construct(&rule_queue);
 
-    Rule *rules = create_rules();
+    Rule *rule_pointer = NULL, *rules = create_rules();
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
         rule_queue_enqueue(&rule_queue, &(rules[i]));
     }
+
+    ck_assert_int_eq(rule_queue.length, RULES_TO_CREATE);
+
+    rule_queue_enqueue(rule_queue_pointer, &(rules[0]));
+
+    rule_queue_enqueue(&rule_queue, rule_pointer);
+
+    ck_assert_int_eq(rule_queue.length, RULES_TO_CREATE);
+
+    ck_assert_ptr_null(rule_queue_pointer);
 
     ck_assert_rule_queue_notempty(&rule_queue);
 
@@ -43,7 +57,7 @@ START_TEST(enqueue_test) {
 END_TEST
 
 START_TEST(dequeue_test) {
-    RuleQueue rule_queue;
+    RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
     rule_queue_construct(&rule_queue);
 
@@ -58,7 +72,7 @@ START_TEST(dequeue_test) {
         ck_assert_rule_eq(&(rules[i]), &(rule_queue.rules[i]));
     }
 
-    Rule dequeued_rule;
+    Rule dequeued_rule, *rule_pointer = NULL;
 
     rule_queue_dequeue(&rule_queue, &dequeued_rule);
     
@@ -75,6 +89,10 @@ START_TEST(dequeue_test) {
     }
 
     rule_queue_dequeue(&rule_queue, NULL);
+
+    rule_queue_dequeue(rule_queue_pointer, NULL);
+
+    ck_assert_ptr_null(rule_queue_pointer);
 
     ck_assert_rule_queue_notempty(&rule_queue);
 
@@ -95,7 +113,9 @@ START_TEST(dequeue_test) {
 
     ck_assert_rule_eq(&(rules[1]), &(rule_queue.rules[0]));
 
-    rule_queue_dequeue(&rule_queue, NULL);
+    rule_queue_dequeue(&rule_queue, rule_pointer);
+
+    ck_assert_ptr_null(rule_pointer);
 
     ck_assert_rule_queue_empty(&rule_queue);
 
@@ -106,7 +126,7 @@ START_TEST(dequeue_test) {
 END_TEST
 
 START_TEST(copy_test) {
-    RuleQueue rule_queue1, rule_queue2;
+    RuleQueue rule_queue1, rule_queue2, *rule_queue_pointer1 = NULL, *rule_queue_pointer2 = NULL;
 
     rule_queue_construct(&rule_queue1);
 
@@ -134,6 +154,32 @@ START_TEST(copy_test) {
         ck_assert_rule_eq(&(rules[i]), &(rule_queue2.rules[i]));
     }
 
+    rule_queue_copy(rule_queue_pointer1, rule_queue_pointer2);
+
+    ck_assert_ptr_null(rule_queue_pointer1);
+    ck_assert_ptr_null(rule_queue_pointer2);
+
+    rule_queue_pointer2 = &rule_queue2;
+    
+    ck_assert_rule_queue_notempty(rule_queue_pointer2);
+    
+    rule_queue_copy(rule_queue_pointer2, rule_queue_pointer1);
+
+    ck_assert_ptr_null(rule_queue_pointer1);
+    ck_assert_rule_queue_notempty(rule_queue_pointer2);
+
+    rule_queue_copy(rule_queue_pointer1, rule_queue_pointer2);
+
+    ck_assert_ptr_null(rule_queue_pointer1);
+    ck_assert_rule_queue_notempty(rule_queue_pointer2);
+
+    rule_queue_pointer1 = &rule_queue1;
+
+    rule_queue_copy(rule_queue_pointer1, rule_queue_pointer2);
+
+    ck_assert_rule_queue_eq(rule_queue_pointer1, rule_queue_pointer2);
+
+    rule_queue_destruct(rule_queue_pointer1);
     rule_queue_destruct(&rule_queue2);
 
     destruct_rules(rules);
@@ -141,7 +187,7 @@ START_TEST(copy_test) {
 END_TEST
 
 START_TEST(to_string_test) {
-    RuleQueue rule_queue;
+    RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
     rule_queue_construct(&rule_queue);
 
@@ -171,7 +217,27 @@ START_TEST(to_string_test) {
 
     free(rule_queue_string);
 
+    rule_queue_string = rule_queue_to_string(rule_queue_pointer);
+
+    ck_assert_pstr_eq(rule_queue_string, NULL);
+    
+    do {
+        rule_queue_dequeue(&rule_queue, NULL);
+    } while (rule_queue.length != 0);
+
+    rule_queue_string = rule_queue_to_string(&rule_queue);
+
+    ck_assert_str_eq(rule_queue_string, "[\n]");
+
+    free(rule_queue_string);
+
     rule_queue_destruct(&rule_queue);
+
+    rule_queue_string = rule_queue_to_string(&rule_queue);
+
+    ck_assert_str_eq(rule_queue_string, "[\n]");
+
+    free(rule_queue_string);
 
     destruct_rules(rules);
 }
