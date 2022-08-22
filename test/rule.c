@@ -6,7 +6,7 @@
 #include "helper/literal.h"
 
 START_TEST(construct_destruct_test) {
-    Rule rule;
+    Rule rule, *rule_pointer = NULL;
     const size_t body_size = 3;
     Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
     Literal head;
@@ -37,6 +37,30 @@ START_TEST(construct_destruct_test) {
 
     ck_assert_rule_empty(&rule);
 
+    rule_construct(rule_pointer, body_size, &body, &head, starting_weight);
+
+    ck_assert_ptr_null(rule_pointer);
+
+    rule_pointer = &rule;
+
+    rule_construct(rule_pointer, 0, &body, &head, starting_weight);
+
+    ck_assert_rule_empty(rule_pointer);
+
+    rule_destruct(rule_pointer);
+
+    rule_construct(rule_pointer, body_size, NULL, &head, starting_weight);
+
+    ck_assert_rule_empty(rule_pointer);
+
+    rule_destruct(rule_pointer);
+
+    rule_construct(rule_pointer, body_size, &body, NULL, starting_weight);
+
+    ck_assert_rule_empty(rule_pointer);
+    
+    rule_destruct(rule_pointer);
+
     literal_destruct(&head);
 
     for (i = 0; i < body_size; ++i) {
@@ -48,7 +72,7 @@ START_TEST(construct_destruct_test) {
 END_TEST
 
 START_TEST(copy_test) {
-    Rule rule1, rule2;
+    Rule rule1, rule2, *rule_pointer1 = NULL, *rule_pointer2 = NULL;
     const size_t body_size = 3;
     Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
     Literal head;
@@ -81,7 +105,34 @@ START_TEST(copy_test) {
     ck_assert_literal_empty(&rule1.head);
     ck_assert_literal_notempty(&rule2.head);
 
+    rule_copy(rule_pointer1, rule_pointer2);
 
+    ck_assert_ptr_null(rule_pointer1);
+    ck_assert_ptr_null(rule_pointer2);
+
+    rule_pointer2 = &rule2;
+
+    rule_copy(rule_pointer1, rule_pointer2);
+
+    ck_assert_ptr_null(rule_pointer1);
+    ck_assert_rule_notempty(rule_pointer2);
+
+    rule_copy(rule_pointer2, rule_pointer1);
+
+    ck_assert_rule_notempty(rule_pointer2);
+
+    rule_pointer1 = &rule1;
+
+    rule_copy(rule_pointer2, rule_pointer1);
+
+    ck_assert_rule_empty(rule_pointer1);
+    ck_assert_rule_notempty(rule_pointer2);
+
+    rule_copy(rule_pointer1, rule_pointer2);
+
+    ck_assert_rule_eq(rule_pointer1, rule_pointer2);
+
+    rule_destruct(rule_pointer1);
     rule_destruct(&rule2);
 
     literal_destruct(&head);
@@ -95,7 +146,7 @@ START_TEST(copy_test) {
 END_TEST
 
 START_TEST(to_string_test) {
-    Rule rule;
+    Rule rule, copy, *rule_pointer = NULL;
     const size_t body_size = 3;
     Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
     Literal head;
@@ -120,9 +171,18 @@ START_TEST(to_string_test) {
     
     free(rule_string);
 
+    rule_string = rule_to_string(rule_pointer);
+
+    ck_assert_pstr_eq(rule_string, NULL);
+
     Literal head2;
     literal_construct(&head2, "Wings", 1);
     literal_destruct(&rule.head);
+
+    rule_string = rule_to_string(&rule);
+    
+    ck_assert_pstr_eq(rule_string, NULL);
+
     literal_copy(&rule.head, &head2);
     literal_destruct(&head2);
     rule.weight = 3.1415;
@@ -133,8 +193,20 @@ START_TEST(to_string_test) {
 
     free(rule_string);
 
+    rule_copy(&copy, &rule);
+
+    for (i = 0; i < copy.body_size; ++i) {
+        literal_destruct(&(copy.body[i]));
+    }
+    free(copy.body);
+    copy.body = NULL;
+
+    rule_string = rule_to_string(&copy);
+
+    ck_assert_pstr_eq(rule_string, NULL);
+
+    rule_destruct(&copy);
     rule_destruct(&rule);
-    
 
     literal_destruct(&head);
 
@@ -147,7 +219,7 @@ START_TEST(to_string_test) {
 END_TEST
 
 START_TEST(promote_test) {
-    Rule rule;
+    Rule rule, *rule_pointer = NULL;
     const size_t body_size = 3;
     Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
     Literal head;
@@ -175,6 +247,10 @@ START_TEST(promote_test) {
     rule_promote(&rule, -1.89);
     ck_assert_float_eq_tol(rule.weight, starting_weight, 0.000001);
 
+    rule_promote(rule_pointer, 1.89);
+
+    ck_assert_ptr_null(rule_pointer);
+
     rule_destruct(&rule);
 
     literal_destruct(&head);
@@ -188,7 +264,7 @@ START_TEST(promote_test) {
 END_TEST
 
 START_TEST(demote_test) {
-    Rule rule;
+    Rule rule, *rule_pointer = NULL;
     const size_t body_size = 3;
     Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
     Literal head;
@@ -215,6 +291,10 @@ START_TEST(demote_test) {
     ck_assert_float_eq_tol(rule.weight, starting_weight - 1.89, 0.000001);
     rule_demote(&rule, -1.89);
     ck_assert_float_eq_tol(rule.weight, starting_weight, 0.000001);
+
+    rule_demote(rule_pointer, 1.89);
+
+    ck_assert_ptr_null(rule_pointer);
 
     rule_destruct(&rule);
 
