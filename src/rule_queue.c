@@ -81,7 +81,7 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule) {
         if (rule_queue->rules != NULL) {
             --rule_queue->length;
             if (dequeued_rule != NULL) {
-                Rule *rule = &(rule_queue->rules[0]);
+                const Rule * const rule = &(rule_queue->rules[0]);
                 dequeued_rule->body = rule->body;
                 dequeued_rule->body_size = rule->body_size;
                 dequeued_rule->head = rule->head;
@@ -101,6 +101,69 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule) {
 
                 free(rules);
             }
+        }
+    }
+}
+
+/**
+ * @brief Finds the index of the given Rule in the RuleQueue.
+ * 
+ * @param rule_queue The RuleQueue to find the Rule in.
+ * @param rule The Rule to be found.
+ * @return index where the Rule is or -1 if it does not exist or either the Rule or the RuleQueue 
+ * are NULL.
+ */
+int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule) {
+    if ((rule_queue != NULL) && (rule != NULL)) {
+        unsigned int i;
+        for (i = 0; i < rule_queue->length; ++i) {
+            if (rule_equals(&(rule_queue->rules[i]), rule)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Removes a Rule in the given position.
+ * 
+ * @param rule_queue The RuleQueue to remove the Rule.
+ * @param rule_index The position of the Rule to be removed.
+ * @param removed_rule The Rule that was removed to be saved. If NULL is given, the rule will be 
+ * destroyed.
+ */
+void rule_queue_remove_rule(RuleQueue * const rule_queue, const int rule_index,
+Rule * removed_rule) {
+    if ((rule_queue != NULL) && (rule_index >= 0)) {
+        const unsigned int u_rule_index = rule_index;
+        if ((rule_queue->rules != NULL) && (u_rule_index < rule_queue->length)) {
+            --rule_queue->length;
+            if (removed_rule != NULL) {
+                const Rule * const rule = &(rule_queue->rules[u_rule_index]);
+                removed_rule->body = rule->body;
+                removed_rule->body_size = rule->body_size;
+                removed_rule->head = rule->head;
+                removed_rule->weight = rule->weight;
+            } else {
+                rule_destruct(&(rule_queue->rules[u_rule_index]));
+            }
+
+            Rule *rules = rule_queue->rules;
+
+            rule_queue->rules = (Rule *) malloc(rule_queue->length * sizeof(Rule));
+
+            if (u_rule_index == 0) {
+                memcpy(rule_queue->rules, rules + 1, rule_queue->length * sizeof(Rule));
+            } else if (u_rule_index == (rule_queue->length + 1)) {
+                memcpy(rule_queue->rules, rules, rule_queue->length * sizeof(Rule));
+            } else {
+                memcpy(rule_queue->rules, rules, (u_rule_index) * sizeof(Rule));
+                memcpy(rule_queue->rules + 1, rules + u_rule_index + 1, (rule_queue->length - u_rule_index) 
+                * sizeof(Rule));
+            }
+
+            free(rules);
         }
     }
 }

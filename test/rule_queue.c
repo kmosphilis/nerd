@@ -243,10 +243,59 @@ START_TEST(to_string_test) {
 }
 END_TEST
 
-Suite *literal_suite() {
+START_TEST(remove_indexed_rule_test) {
+    RuleQueue rule_queue, *rule_queue_pointer = NULL;
+    
+    rule_queue_construct(&rule_queue);
+
+    Rule rule, *rules = create_rules();
+
+    unsigned int i;
+    for (i = 0; i < RULES_TO_CREATE; ++i) {
+        rule_queue_enqueue(&rule_queue, &(rules[i]));
+    }
+
+    int rule_index = rule_queue_find(&rule_queue, &(rules[1]));
+
+    ck_assert_int_eq(rule_index, 1);
+
+    rule_queue_remove_rule(&rule_queue, rule_index, NULL);
+    ck_assert_rule_eq(&(rule_queue.rules[0]), &(rules[0]));
+    ck_assert_rule_eq(&(rule_queue.rules[1]), &(rules[2]));
+
+    rule_queue_enqueue(&rule_queue, &(rules[0]));
+    rule_queue_remove_rule(&rule_queue, 0, NULL);
+    ck_assert_rule_eq(&(rule_queue.rules[0]), &(rules[2]));
+    ck_assert_rule_eq(&(rule_queue.rules[1]), &(rules[0]));
+
+    rule_queue_enqueue(&rule_queue, &(rules[1]));
+    rule_queue_remove_rule(&rule_queue, 2, &rule);
+    ck_assert_rule_eq(&(rule_queue.rules[0]), &(rules[2]));
+    ck_assert_rule_eq(&(rule_queue.rules[1]), &(rules[0]));
+    ck_assert_rule_eq(&rule, &(rules[1]));
+    rule_destruct(&rule);
+
+    rule_queue_remove_rule(&rule_queue, 8, NULL);
+    ck_assert_rule_eq(&(rule_queue.rules[0]), &(rules[2]));
+    ck_assert_rule_eq(&(rule_queue.rules[1]), &(rules[0]));
+
+    rule_queue_remove_rule(&rule_queue, -1, NULL);
+    ck_assert_rule_eq(&(rule_queue.rules[0]), &(rules[2]));
+    ck_assert_rule_eq(&(rule_queue.rules[1]), &(rules[0]));
+
+    rule_queue_remove_rule(rule_queue_pointer, 9, NULL);
+    ck_assert_ptr_null(rule_queue_pointer);
+
+    rule_queue_destruct(&rule_queue);
+
+    destruct_rules(rules);
+}
+END_TEST
+
+Suite *rule_queue_suite() {
     Suite *suite;
     TCase *create_case, *operations_case, *copy_case, *string_case;
-    suite = suite_create("Literal");
+    suite = suite_create("Rule Queue");
 
     create_case = tcase_create("Create");
     tcase_add_test(create_case, construct_destruct_test);
@@ -255,6 +304,7 @@ Suite *literal_suite() {
     operations_case = tcase_create("Operations");
     tcase_add_test(operations_case, enqueue_test);
     tcase_add_test(operations_case, dequeue_test);
+    tcase_add_test(operations_case, remove_indexed_rule_test);
     suite_add_tcase(suite, operations_case);
 
     copy_case = tcase_create("Copy");
@@ -269,7 +319,7 @@ Suite *literal_suite() {
 }
 
 int main() {
-    Suite* suite = literal_suite();
+    Suite* suite = rule_queue_suite();
     SRunner* s_runner;
 
     s_runner = srunner_create(suite);

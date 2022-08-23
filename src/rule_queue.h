@@ -13,6 +13,9 @@ void rule_queue_destruct(RuleQueue * const rule_queue);
 void rule_queue_copy(RuleQueue * const destination, const RuleQueue * const source);
 void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule);
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule);
+int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule);
+void rule_queue_remove_rule(RuleQueue * const rule_queue, const int rule_index,
+Rule * removed_rule);
 char *rule_queue_to_string(const RuleQueue * const rule_queue);
 
 #endif
