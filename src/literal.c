@@ -92,3 +92,20 @@ void literal_negate(Literal * const literal) {
         }
     }
 }
+
+/**
+ * @brief Check two Literals to see if they are equal (literal1 == literal2).
+ * 
+ * @param literal1 The first literal to be checked.
+ * @param literal2 The second literal to be checked.
+ * @return 1 if they are equal, 0 if they are not and -1 if one the Literals is NULL.
+ */
+int literal_equals(const Literal * const literal1, const Literal * const literal2) {
+    if ((literal1 != NULL) && (literal2 != NULL)) {
+        if (literal1->sign == literal2->sign) {
+            return (strcmp(literal1->atom, literal2->atom) == 0);
+        }
+        return 0;
+    }
+    return -1;
+}

@@ -308,9 +308,89 @@ START_TEST(demote_test) {
 }
 END_TEST
 
-Suite *literal_suite() {
+START_TEST(equality_checK_test) {
+    Rule rule1, rule2, rule3, rule4, rule5, rule6, rule7;
+    const size_t body_size = 3, body_size2 = 2;
+    Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
+    Literal head;
+    char *body_literal_atoms[3] = {"Penguin", "Bird", "North_Pole"};
+    char *body_literal_atoms2[3] = {"Albatross", "Bird", "Antartica"};
+    int body_literal_signs[3] = {1, 1, 1};
+    float starting_weight = 5;
+
+    unsigned int i;
+    for (i = 0; i < body_size; ++i) {
+        literal_construct(&body[i], body_literal_atoms[i], body_literal_signs[i]);
+    }
+
+    literal_construct(&head, "Fly", 0);
+
+    rule_construct(&rule1, body_size, &body, &head, starting_weight);
+    rule_copy(&rule6, &rule1);
+    rule_construct(&rule2, body_size, &body, &head, starting_weight - 0.00001);
+
+    for (i = 0; i < body_size; ++i) {
+        literal_destruct(&body[i]);
+        literal_construct(&body[i], body_literal_atoms[body_size - i - 1],
+        body_literal_signs[body_size - i - 1]);
+    }
+
+    rule_construct(&rule3, body_size, &body, &head, starting_weight);
+
+    literal_destruct(&head);
+
+    literal_construct(&head, "Fly", 1);
+
+    rule_construct(&rule4, body_size, &body, &head, starting_weight);
+    rule_construct(&rule5, body_size2, &body, &head, starting_weight);
+
+    literal_destruct(&head);
+
+    for (i = 0; i < body_size; ++i) {
+        literal_destruct(&body[i]);
+        literal_construct(&body[i], body_literal_atoms2[i], body_literal_signs[i]);
+    }
+
+    rule_construct(&rule7, body_size, &body, &(rule1.head), starting_weight);
+
+    for (i = 0; i < body_size; ++i) {
+        literal_destruct(&body[i]);
+    }
+
+    free(body);
+
+    ck_assert_int_eq(rule_equals(&rule1, &rule6), 1);
+    ck_assert_int_eq(rule_equals(&rule1, &rule2), 1);
+    ck_assert_int_eq(rule_equals(&rule1, &rule3), 1);
+    ck_assert_int_ne(rule_equals(&rule1, &rule4), 1);
+    ck_assert_int_eq(rule_equals(&rule1, &rule4), 0);
+    ck_assert_int_ne(rule_equals(&rule1, &rule5), 1);
+    ck_assert_int_eq(rule_equals(&rule1, &rule5), 0);
+    ck_assert_int_ne(rule_equals(&rule1, &rule7), 1);
+    ck_assert_int_eq(rule_equals(&rule1, &rule7), 0);
+    ck_assert_int_ne(rule_equals(&rule3, &rule4), 1);
+    ck_assert_int_eq(rule_equals(&rule3, &rule4), 0);
+    ck_assert_int_ne(rule_equals(&rule3, &rule5), 1);
+    ck_assert_int_eq(rule_equals(&rule3, &rule5), 0);
+    ck_assert_int_ne(rule_equals(&rule4, &rule5), 1);
+    ck_assert_int_eq(rule_equals(&rule4, &rule5), 0);
+    ck_assert_int_eq(rule_equals(&rule1, NULL), -1);
+    ck_assert_int_eq(rule_equals(NULL, &rule1), -1);
+    ck_assert_int_eq(rule_equals(NULL, NULL), -1);
+
+    rule_destruct(&rule1);
+    rule_destruct(&rule2);
+    rule_destruct(&rule3);
+    rule_destruct(&rule4);
+    rule_destruct(&rule5);
+    rule_destruct(&rule6);
+    rule_destruct(&rule7);
+}
+END_TEST
+
+Suite *rule_suite() {
     Suite *suite;
-    TCase *create_case, *copy_case, *string_case, *weight_adjustment_case;
+    TCase *create_case, *copy_case, *string_case, *weight_adjustment_case, *equality_check_case;
     suite = suite_create("Rule");
     create_case = tcase_create("Create");
     tcase_add_test(create_case, construct_destruct_test);
@@ -329,11 +409,15 @@ Suite *literal_suite() {
     tcase_add_test(weight_adjustment_case, demote_test);
     suite_add_tcase(suite, weight_adjustment_case);
 
+    equality_check_case = tcase_create("Equality Check");
+    tcase_add_test(equality_check_case, equality_checK_test);
+    suite_add_tcase(suite, equality_check_case);
+
     return suite;
 }
 
 int main() {
-    Suite* suite = literal_suite();
+    Suite* suite = rule_suite();
     SRunner* s_runner;
 
     s_runner = srunner_create(suite);

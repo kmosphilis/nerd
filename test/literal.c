@@ -155,9 +155,34 @@ START_TEST(negate_test) {
 }
 END_TEST
 
+START_TEST(equality_check_test) {
+    Literal literal1, literal2, literal3, literal4;
+    
+    literal_construct(&literal1, "Penguin", 1);
+    literal_copy(&literal2, &literal1);
+    literal_construct(&literal3, "Penguin", 0);
+    literal_construct(&literal4, "Fly", 0);
+
+    ck_assert_int_eq(literal_equals(&literal1, &literal2), 1);
+    ck_assert_int_ne(literal_equals(&literal1, &literal3), 1);
+    ck_assert_int_eq(literal_equals(&literal1, &literal3), 0);
+    ck_assert_int_ne(literal_equals(&literal1, &literal4), 1);
+    ck_assert_int_eq(literal_equals(&literal1, &literal4), 0);
+    ck_assert_int_ne(literal_equals(&literal3, &literal4), 1);
+    ck_assert_int_eq(literal_equals(&literal3, &literal4), 0);
+    ck_assert_int_eq(literal_equals(&literal1, NULL), -1);
+    ck_assert_int_eq(literal_equals(NULL, &literal1), -1);
+    ck_assert_int_eq(literal_equals(NULL, NULL), -1);
+
+    literal_destruct(&literal1);
+    literal_destruct(&literal2);
+    literal_destruct(&literal3);
+    literal_destruct(&literal4);
+}
+END_TEST
 Suite *literal_suite() {
     Suite *suite;
-    TCase *create_case, *copy_case, *string_case, *negate_case;
+    TCase *create_case, *copy_case, *string_case, *negate_case, *equality_check_case;
     suite = suite_create("Literal");
     create_case = tcase_create("Create");
     tcase_add_test(create_case, construct_destruct_test);
@@ -174,6 +199,10 @@ Suite *literal_suite() {
     negate_case = tcase_create("Negate");
     tcase_add_test(negate_case, negate_test);
     suite_add_tcase(suite, negate_case);
+
+    equality_check_case = tcase_create("Equality Check");
+    tcase_add_test(equality_check_case, equality_check_test);
+    suite_add_tcase(suite, equality_check_case);
 
     return suite;
 }

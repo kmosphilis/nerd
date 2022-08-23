@@ -11,5 +11,6 @@ void literal_destruct(Literal * const literal);
 void literal_copy(Literal * const destination, const Literal  * const source);
 char *literal_to_string(const Literal * const literal);
 void literal_negate(Literal * const literal);
+int literal_equals(const Literal * const literal1, const Literal * const literal2);
 
 #endif

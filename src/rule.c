@@ -1,6 +1,5 @@
 #include <malloc.h>
 #include <math.h>
-#include <float.h>
 #include <string.h>
 
 #include "rule.h"
@@ -148,11 +147,46 @@ void rule_promote(Rule * const rule, const float amount) {
  * @brief Demote the rule by subtracting the given amount. If the amount is negative, it will be 
  * considered a promotion.
  * 
- * @param rule The RUle to be demoted. If NULL, nothing will happen.
+ * @param rule The Rule to be demoted. If NULL, nothing will happen.
  * @param amount The amount to be subtracted from the weight of the rule.
  */
 void rule_demote(Rule * const rule, const float amount) {
     if (rule != NULL) {
         rule->weight -= amount;
     }
+}
+
+/**
+ * @brief Check two Rules to see if they are equal. It check their body, and their head. Their body 
+ * Literals can be in different order.
+ * 
+ * @param rule1 The first rule to be checked.
+ * @param rule2 The second rule to be checked.
+ * @return 1 if they are equal, 0 if they are not and -1 of one of the Rules is NULL.
+ */
+int rule_equals(const Rule * const rule1, const Rule * const rule2) {
+    if ((rule1 != NULL) && (rule2 != NULL)) {
+        if (rule1->body_size == rule2->body_size) {
+            if (literal_equals(&(rule1->head), &(rule2->head))) {
+                unsigned int i, j;
+                unsigned short failed = 0;
+                for (i = 0; i < rule1->body_size; ++i) {
+                    for (j = 0; j < rule2->body_size; ++j) {
+                        if (!literal_equals(&(rule1->body[i]), &(rule2->body[j]))) {
+                            ++failed;
+                        }
+                    }
+
+                    if (failed == rule1->body_size) {
+                        return 0;
+                    } else {
+                        failed = 0;
+                    }
+                }
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return -1;
 }
