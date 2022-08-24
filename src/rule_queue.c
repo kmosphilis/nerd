@@ -149,21 +149,26 @@ Rule * removed_rule) {
                 rule_destruct(&(rule_queue->rules[u_rule_index]));
             }
 
-            Rule *rules = rule_queue->rules;
-
-            rule_queue->rules = (Rule *) malloc(rule_queue->length * sizeof(Rule));
-
-            if (u_rule_index == 0) {
-                memcpy(rule_queue->rules, rules + 1, rule_queue->length * sizeof(Rule));
-            } else if (u_rule_index == (rule_queue->length + 1)) {
-                memcpy(rule_queue->rules, rules, rule_queue->length * sizeof(Rule));
+            if (rule_queue->length == 0) {
+                free(rule_queue->rules);
+                rule_queue->rules = NULL;
             } else {
-                memcpy(rule_queue->rules, rules, (u_rule_index) * sizeof(Rule));
-                memcpy(rule_queue->rules + 1, rules + u_rule_index + 1, (rule_queue->length - u_rule_index) 
-                * sizeof(Rule));
-            }
+                Rule *rules = rule_queue->rules;
 
-            free(rules);
+                rule_queue->rules = (Rule *) malloc(rule_queue->length * sizeof(Rule));
+
+                if (u_rule_index == 0) {
+                    memcpy(rule_queue->rules, rules + 1, rule_queue->length * sizeof(Rule));
+                } else if (u_rule_index == (rule_queue->length + 1)) {
+                    memcpy(rule_queue->rules, rules, rule_queue->length * sizeof(Rule));
+                } else {
+                    memcpy(rule_queue->rules, rules, (u_rule_index) * sizeof(Rule));
+                    memcpy(rule_queue->rules + 1, rules + u_rule_index + 1, 
+                    (rule_queue->length - u_rule_index) * sizeof(Rule));
+                }
+
+                free(rules);
+            }
         }
     }
 }
