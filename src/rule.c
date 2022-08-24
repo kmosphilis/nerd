@@ -139,20 +139,20 @@ char *rule_to_string(const Rule * const rule) {
  */
 void rule_promote(Rule * const rule, const float amount) {
     if (rule != NULL) {
-        rule->weight += amount;
+        rule->weight = fmaxf(rule->weight + amount, 0);
     }
 }
 
 /**
  * @brief Demote the rule by subtracting the given amount. If the amount is negative, it will be 
- * considered a promotion.
+ * considered a promotion. The weight will never be negative.
  * 
  * @param rule The Rule to be demoted. If NULL, nothing will happen.
  * @param amount The amount to be subtracted from the weight of the rule.
  */
 void rule_demote(Rule * const rule, const float amount) {
     if (rule != NULL) {
-        rule->weight -= amount;
+        rule->weight = fmaxf(rule->weight - amount, 0);
     }
 }
 
