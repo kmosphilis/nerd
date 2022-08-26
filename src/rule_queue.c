@@ -183,9 +183,9 @@ Rule * removed_rule) {
 char *rule_queue_to_string(const RuleQueue * const rule_queue) {
     if (rule_queue != NULL) {
         if (rule_queue->length == 0) {
-            return strdup("RuleQueue: [\n]");
+            return strdup("[\n]");
         }
-        char *result, *temp, *beginning = "RuleQueue: [\n";
+        char *result, *temp, *beginning = "[\n";
 
         size_t result_size = strlen(beginning) + 1;
         result = strdup(beginning);
