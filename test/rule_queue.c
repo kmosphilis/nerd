@@ -200,7 +200,7 @@ START_TEST(to_string_test) {
 
     char *rule_queue_string = rule_queue_to_string(&rule_queue);
 
-    ck_assert_str_eq(rule_queue_string, "[\n"
+    ck_assert_str_eq(rule_queue_string, "RuleQueue: [\n"
         "\t(Penguin, Bird, Antarctica) => -Fly (0.0000),\n"
         "\t(Albatross, Bird) => Fly (1.0000),\n"
         "\t(Seagull, Bird, Harbor, Ocean) => Fly (2.0000)\n]");
@@ -211,7 +211,7 @@ START_TEST(to_string_test) {
 
     rule_queue_string = rule_queue_to_string(&rule_queue);
 
-    ck_assert_str_eq(rule_queue_string, "[\n"
+    ck_assert_str_eq(rule_queue_string, "RuleQueue: [\n"
         "\t(Albatross, Bird) => Fly (1.0000),\n"
         "\t(Seagull, Bird, Harbor, Ocean) => Fly (2.0000)\n]");
 
@@ -227,7 +227,7 @@ START_TEST(to_string_test) {
 
     rule_queue_string = rule_queue_to_string(&rule_queue);
 
-    ck_assert_str_eq(rule_queue_string, "[\n]");
+    ck_assert_str_eq(rule_queue_string, "RuleQueue: [\n]");
 
     free(rule_queue_string);
 
@@ -235,7 +235,7 @@ START_TEST(to_string_test) {
 
     rule_queue_string = rule_queue_to_string(&rule_queue);
 
-    ck_assert_str_eq(rule_queue_string, "[\n]");
+    ck_assert_str_eq(rule_queue_string, "RuleQueue: [\n]");
 
     free(rule_queue_string);
 

@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <check.h>
 
 #include "helper/knowledge_base.h"
@@ -389,7 +388,7 @@ START_TEST(demote_rules_test) {
     ck_assert_int_eq(rule_equals(&(knowledge_base.inactive.rules[2]), &copy.rules[0]), 1);
     ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 2.0, 0.00001);
     ck_assert_float_eq_tol(knowledge_base.inactive.rules[1].weight, 0.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base.inactive.rules[3].weight, 0.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[2].weight, 0.0, 0.00001);
 
 
     knowledge_base_demote_rules(knowledge_base_ptr, &rule_queue, 3.0);
