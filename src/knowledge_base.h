@@ -8,10 +8,10 @@ typedef struct KnowledgeBase {
     float activation_threshold;
 } KnowledgeBase;
 
-void knowledge_base_construct(KnowledgeBase * const knolwedge_base,
+void knowledge_base_constructor(KnowledgeBase * const knolwedge_base,
 const float activation_threshold);
 
-void knowledge_base_destruct(KnowledgeBase * const knowledge_base);
+void knowledge_base_destructor(KnowledgeBase * const knowledge_base);
 void knowledge_base_copy(KnowledgeBase * const destination, const KnowledgeBase * const source);
 void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * const rule);
 void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,

@@ -11,12 +11,12 @@
  * @param activation_threshold The threshold which determines whether a rule should get activated or 
  * deactivated.
  */
-void knowledge_base_construct(KnowledgeBase * const knowledge_base,
+void knowledge_base_constructor(KnowledgeBase * const knowledge_base,
 const float activation_threshold) {
     if (knowledge_base != NULL) {
         knowledge_base->activation_threshold = activation_threshold;
-        rule_queue_construct(&(knowledge_base->active));
-        rule_queue_construct(&(knowledge_base->inactive));
+        rule_queue_constructor(&(knowledge_base->active));
+        rule_queue_constructor(&(knowledge_base->inactive));
     }
 }
 
@@ -25,10 +25,10 @@ const float activation_threshold) {
  * 
  * @param knowledge_base The KnowledgeBase to be destructed. If NULL the process will fail.
  */
-void knowledge_base_destruct(KnowledgeBase * const knowledge_base) {
+void knowledge_base_destructor(KnowledgeBase * const knowledge_base) {
     if (knowledge_base != NULL) {
-        rule_queue_destruct(&(knowledge_base->active));
-        rule_queue_destruct(&(knowledge_base->inactive));
+        rule_queue_destructor(&(knowledge_base->active));
+        rule_queue_destructor(&(knowledge_base->inactive));
         knowledge_base->activation_threshold = INFINITY;
     }
 }
@@ -148,7 +148,7 @@ const RuleQueue * const rules_to_promote, const float promotion_rate) {
                         &rule_to_move);
                         rule_queue_enqueue(&(knowledge_base->active), &rule_to_move);
 
-                        rule_destruct(&rule_to_move);
+                        rule_destructor(&rule_to_move);
                     }
                 }
             }
@@ -190,7 +190,7 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
                         rule_index, &rule_to_move);
                         rule_queue_enqueue(&(knowledge_base->inactive), &rule_to_move);
 
-                        rule_destruct(&rule_to_move);
+                        rule_destructor(&rule_to_move);
                     }
                 }
             }

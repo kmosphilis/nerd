@@ -6,36 +6,36 @@
 START_TEST(construct_destruct_test) {
     Sensor sensor, *sensor_ptr = NULL;
 
-    sensor_construct_from_file(&sensor, "./data/test.txt", 0);
+    sensor_constructor_from_file(&sensor, "./data/test.txt", 0);
     ck_assert_ptr_nonnull(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, 0);
-    sensor_destruct(&sensor);
+    sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, -1);
 
-    sensor_construct_from_file(&sensor, "./data/test.txt", 1);
+    sensor_constructor_from_file(&sensor, "./data/test.txt", 1);
     ck_assert_ptr_nonnull(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, 1);
-    sensor_destruct(&sensor);
+    sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, -1);
 
-    sensor_construct_from_file(&sensor, "./data/filethatdoesntexist.txt", 0);
+    sensor_constructor_from_file(&sensor, "./data/filethatdoesntexist.txt", 0);
     ck_assert_ptr_null(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, -1);
-    sensor_destruct(&sensor);
+    sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, -1);
 
-    sensor_construct_from_file(&sensor, NULL, 0);
+    sensor_constructor_from_file(&sensor, NULL, 0);
     ck_assert_ptr_null(sensor.enviroment);
-    sensor_destruct(&sensor);
+    sensor_destructor(&sensor);
 
-    sensor_construct_from_file(sensor_ptr, "./data/test.txt", 0);
+    sensor_constructor_from_file(sensor_ptr, "./data/test.txt", 0);
     ck_assert_ptr_null(sensor_ptr);
     ck_assert_ptr_null(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, -1);
-    sensor_destruct(sensor_ptr);
+    sensor_destructor(sensor_ptr);
 }
 END_TEST
 
@@ -43,8 +43,8 @@ START_TEST(get_scene_test) {
     Sensor sensor, *sensor_ptr = NULL;
     Scene scene;
 
-    scene_construct(&scene);
-    sensor_construct_from_file(&sensor, "./data/test.txt", 0);
+    scene_constructor(&scene);
+    sensor_constructor_from_file(&sensor, "./data/test.txt", 0);
 
     sensor_get_next_scene(&sensor, &scene);
 
@@ -72,7 +72,7 @@ START_TEST(get_scene_test) {
     ck_assert_str_eq(string, "-Fly");
     free(string);
 
-    scene_destruct(&scene);
+    scene_destructor(&scene);
     sensor_get_next_scene(&sensor, &scene);
     ck_assert_int_eq(scene.size, 5);
     string = literal_to_string(&(scene.observations[0]));
@@ -83,23 +83,23 @@ START_TEST(get_scene_test) {
     ck_assert_str_eq(string, "Wings");
     free(string);
 
-    scene_destruct(&scene);
+    scene_destructor(&scene);
     sensor_get_next_scene(&sensor, &scene);
     ck_assert_int_eq(scene.size, 5);
     string = literal_to_string(&(scene.observations[1]));
     ck_assert_str_eq(string, "Ocean");
     free(string);
 
-    scene_destruct(&scene);
+    scene_destructor(&scene);
     sensor_get_next_scene(&sensor, &scene);
     ck_assert_int_eq(scene.size, 2);
 
-    scene_destruct(&scene);
+    scene_destructor(&scene);
     sensor_get_next_scene(&sensor, &scene);
     ck_assert_int_eq(scene.size, 0);
     ck_assert_ptr_null(scene.observations);
 
-    scene_destruct(&scene);
+    scene_destructor(&scene);
     sensor_get_next_scene(&sensor, NULL);
 
     sensor.reuse = 1;
@@ -109,8 +109,8 @@ START_TEST(get_scene_test) {
     ck_assert_str_eq(string, "Penguin");
     free(string);
 
-    scene_destruct(&scene);
-    sensor_destruct(&sensor);
+    scene_destructor(&scene);
+    sensor_destructor(&sensor);
     sensor_get_next_scene(sensor_ptr, &scene);
     ck_assert_ptr_null(sensor_ptr);
     ck_assert_ptr_null(scene.observations);

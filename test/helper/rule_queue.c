@@ -37,18 +37,18 @@ Rule *create_rules() {
         unsigned int i;
         for (i = 0; i < body_size[j]; ++i) {
             Literal l;
-            literal_construct(&l, body_literal_atoms[j][i], body_literal_signs[j][i]);
+            literal_constructor(&l, body_literal_atoms[j][i], body_literal_signs[j][i]);
             body[i] = l;
         }
         
-        literal_construct(&head, "Fly", head_sign[j]);
+        literal_constructor(&head, "Fly", head_sign[j]);
 
-        rule_construct(&rule, body_size[j], &body, &head, starting_weight);
+        rule_constructor(&rule, body_size[j], &body, &head, starting_weight);
 
-        literal_destruct(&head);
+        literal_destructor(&head);
 
         for (i = 0; i < body_size[j]; ++i) {
-            literal_destruct(&body[i]);
+            literal_destructor(&body[i]);
         }
 
         free(body);
@@ -67,7 +67,7 @@ Rule *create_rules() {
 void destruct_rules(Rule * const rules) {
     unsigned int i;
     for(i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_destruct(&(rules[i]));
+        rule_destructor(&(rules[i]));
     }
     free(rules);
 }
@@ -79,7 +79,7 @@ void destruct_rules(Rule * const rules) {
  */
 void create_rule_queue(RuleQueue * const rule_queue) {
     
-    rule_queue_construct(rule_queue);
+    rule_queue_constructor(rule_queue);
 
     Rule *rules = create_rules();
 

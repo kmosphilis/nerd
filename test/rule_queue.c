@@ -8,15 +8,15 @@
 START_TEST(construct_destruct_test) {
     RuleQueue rule_queue, *rule_queue_pointer = NULL;
 
-    rule_queue_construct(&rule_queue);
+    rule_queue_constructor(&rule_queue);
 
     ck_assert_rule_queue_empty(&rule_queue);
 
-    rule_queue_destruct(&rule_queue);
+    rule_queue_destructor(&rule_queue);
 
     ck_assert_rule_queue_empty(&rule_queue);
 
-    rule_queue_construct(rule_queue_pointer);
+    rule_queue_constructor(rule_queue_pointer);
 
     ck_assert_ptr_null(rule_queue_pointer);
 }
@@ -25,7 +25,7 @@ END_TEST
 START_TEST(enqueue_test) {
     RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
-    rule_queue_construct(&rule_queue);
+    rule_queue_constructor(&rule_queue);
 
     Rule *rule_pointer = NULL, *rules = create_rules();
 
@@ -50,7 +50,7 @@ START_TEST(enqueue_test) {
         ck_assert_rule_eq(&(rules[i]), &(rule_queue.rules[i]));
     }
 
-    rule_queue_destruct(&rule_queue);
+    rule_queue_destructor(&rule_queue);
 
     destruct_rules(rules);
 }
@@ -59,7 +59,7 @@ END_TEST
 START_TEST(dequeue_test) {
     RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
-    rule_queue_construct(&rule_queue);
+    rule_queue_constructor(&rule_queue);
 
     Rule *rules = create_rules();
 
@@ -82,7 +82,7 @@ START_TEST(dequeue_test) {
     
     ck_assert_rule_eq(&dequeued_rule, &(rules[0]));
 
-    rule_destruct(&dequeued_rule);
+    rule_destructor(&dequeued_rule);
 
     for (i = 0; i <rule_queue.length; ++i) {
         ck_assert_rule_eq(&(rules[i + 1]), &(rule_queue.rules[i]));
@@ -109,7 +109,7 @@ START_TEST(dequeue_test) {
 
     ck_assert_rule_eq(&dequeued_rule, &(rules[2]));
 
-    rule_destruct(&dequeued_rule);
+    rule_destructor(&dequeued_rule);
 
     ck_assert_rule_eq(&(rules[1]), &(rule_queue.rules[0]));
 
@@ -119,7 +119,7 @@ START_TEST(dequeue_test) {
 
     ck_assert_rule_queue_empty(&rule_queue);
 
-    rule_queue_destruct(&rule_queue);
+    rule_queue_destructor(&rule_queue);
 
     destruct_rules(rules);
 }
@@ -128,7 +128,7 @@ END_TEST
 START_TEST(copy_test) {
     RuleQueue rule_queue1, rule_queue2, *rule_queue_pointer1 = NULL, *rule_queue_pointer2 = NULL;
 
-    rule_queue_construct(&rule_queue1);
+    rule_queue_constructor(&rule_queue1);
 
     Rule *rules = create_rules();
 
@@ -148,7 +148,7 @@ START_TEST(copy_test) {
         ck_assert_ptr_ne(&(rule_queue1.rules[i]), &(rule_queue2.rules[i]));
     }
 
-    rule_queue_destruct(&rule_queue1);
+    rule_queue_destructor(&rule_queue1);
 
     for (i = 0; i < rule_queue1.length; ++i) {
         ck_assert_rule_eq(&(rules[i]), &(rule_queue2.rules[i]));
@@ -179,8 +179,8 @@ START_TEST(copy_test) {
 
     ck_assert_rule_queue_eq(rule_queue_pointer1, rule_queue_pointer2);
 
-    rule_queue_destruct(rule_queue_pointer1);
-    rule_queue_destruct(&rule_queue2);
+    rule_queue_destructor(rule_queue_pointer1);
+    rule_queue_destructor(&rule_queue2);
 
     destruct_rules(rules);
 }
@@ -189,7 +189,7 @@ END_TEST
 START_TEST(to_string_test) {
     RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
-    rule_queue_construct(&rule_queue);
+    rule_queue_constructor(&rule_queue);
 
     Rule *rules = create_rules();
 
@@ -231,7 +231,7 @@ START_TEST(to_string_test) {
 
     free(rule_queue_string);
 
-    rule_queue_destruct(&rule_queue);
+    rule_queue_destructor(&rule_queue);
 
     rule_queue_string = rule_queue_to_string(&rule_queue);
 
@@ -246,7 +246,7 @@ END_TEST
 START_TEST(remove_indexed_rule_test) {
     RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
-    rule_queue_construct(&rule_queue);
+    rule_queue_constructor(&rule_queue);
 
     Rule rule, *rules = create_rules();
 
@@ -273,7 +273,7 @@ START_TEST(remove_indexed_rule_test) {
     ck_assert_rule_eq(&(rule_queue.rules[0]), &(rules[2]));
     ck_assert_rule_eq(&(rule_queue.rules[1]), &(rules[0]));
     ck_assert_rule_eq(&rule, &(rules[1]));
-    rule_destruct(&rule);
+    rule_destructor(&rule);
 
     rule_queue_remove_rule(&rule_queue, 8, NULL);
     ck_assert_rule_eq(&(rule_queue.rules[0]), &(rules[2]));
@@ -286,7 +286,7 @@ START_TEST(remove_indexed_rule_test) {
     rule_queue_remove_rule(rule_queue_pointer, 9, NULL);
     ck_assert_ptr_null(rule_queue_pointer);
 
-    rule_queue_destruct(&rule_queue);
+    rule_queue_destructor(&rule_queue);
 
     destruct_rules(rules);
 }

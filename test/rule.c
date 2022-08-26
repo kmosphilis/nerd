@@ -17,13 +17,13 @@ START_TEST(construct_destruct_test) {
     unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
-        literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
         body[i] = l;
     }
     
-    literal_construct(&head, "Fly", 0);
+    literal_constructor(&head, "Fly", 0);
 
-    rule_construct(&rule, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule, body_size, &body, &head, starting_weight);
 
     ck_assert_rule_notempty(&rule);
     ck_assert_int_eq(rule.body_size, body_size);
@@ -33,38 +33,38 @@ START_TEST(construct_destruct_test) {
     }
     ck_assert_float_eq(rule.weight, starting_weight);
     
-    rule_destruct(&rule);
+    rule_destructor(&rule);
 
     ck_assert_rule_empty(&rule);
 
-    rule_construct(rule_pointer, body_size, &body, &head, starting_weight);
+    rule_constructor(rule_pointer, body_size, &body, &head, starting_weight);
 
     ck_assert_ptr_null(rule_pointer);
 
     rule_pointer = &rule;
 
-    rule_construct(rule_pointer, 0, &body, &head, starting_weight);
+    rule_constructor(rule_pointer, 0, &body, &head, starting_weight);
 
     ck_assert_rule_empty(rule_pointer);
 
-    rule_destruct(rule_pointer);
+    rule_destructor(rule_pointer);
 
-    rule_construct(rule_pointer, body_size, NULL, &head, starting_weight);
+    rule_constructor(rule_pointer, body_size, NULL, &head, starting_weight);
 
     ck_assert_rule_empty(rule_pointer);
 
-    rule_destruct(rule_pointer);
+    rule_destructor(rule_pointer);
 
-    rule_construct(rule_pointer, body_size, &body, NULL, starting_weight);
+    rule_constructor(rule_pointer, body_size, &body, NULL, starting_weight);
 
     ck_assert_rule_empty(rule_pointer);
     
-    rule_destruct(rule_pointer);
+    rule_destructor(rule_pointer);
 
-    literal_destruct(&head);
+    literal_destructor(&head);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
+        literal_destructor(&body[i]);
     }
     
     free(body);
@@ -83,13 +83,13 @@ START_TEST(copy_test) {
     unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
-        literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
         body[i] = l;
     }
     
-    literal_construct(&head, "Fly", 0);
+    literal_constructor(&head, "Fly", 0);
 
-    rule_construct(&rule1, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule1, body_size, &body, &head, starting_weight);
 
     rule_copy(&rule2, &rule1);
 
@@ -97,7 +97,7 @@ START_TEST(copy_test) {
     ck_assert_ptr_ne(rule1.body, rule2.body);
     ck_assert_rule_eq(&rule1, &rule2);
     
-    rule_destruct(&rule1);
+    rule_destructor(&rule1);
 
     ck_assert_rule_empty(&rule1);
     ck_assert_rule_notempty(&rule2);
@@ -132,13 +132,13 @@ START_TEST(copy_test) {
 
     ck_assert_rule_eq(rule_pointer1, rule_pointer2);
 
-    rule_destruct(rule_pointer1);
-    rule_destruct(&rule2);
+    rule_destructor(rule_pointer1);
+    rule_destructor(&rule2);
 
-    literal_destruct(&head);
+    literal_destructor(&head);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
+        literal_destructor(&body[i]);
     }
     
     free(body);
@@ -157,13 +157,13 @@ START_TEST(to_string_test) {
     unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
-        literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
         body[i] = l;
     }
     
-    literal_construct(&head, "Fly", 0);
+    literal_constructor(&head, "Fly", 0);
 
-    rule_construct(&rule, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule, body_size, &body, &head, starting_weight);
     
     char *rule_string = rule_to_string(&rule);
 
@@ -176,15 +176,15 @@ START_TEST(to_string_test) {
     ck_assert_pstr_eq(rule_string, NULL);
 
     Literal head2;
-    literal_construct(&head2, "Wings", 1);
-    literal_destruct(&rule.head);
+    literal_constructor(&head2, "Wings", 1);
+    literal_destructor(&rule.head);
 
     rule_string = rule_to_string(&rule);
     
     ck_assert_pstr_eq(rule_string, NULL);
 
     literal_copy(&rule.head, &head2);
-    literal_destruct(&head2);
+    literal_destructor(&head2);
     rule.weight = 3.1415;
 
     rule_string = rule_to_string(&rule);
@@ -196,7 +196,7 @@ START_TEST(to_string_test) {
     rule_copy(&copy, &rule);
 
     for (i = 0; i < copy.body_size; ++i) {
-        literal_destruct(&(copy.body[i]));
+        literal_destructor(&(copy.body[i]));
     }
     free(copy.body);
     copy.body = NULL;
@@ -205,13 +205,13 @@ START_TEST(to_string_test) {
 
     ck_assert_pstr_eq(rule_string, NULL);
 
-    rule_destruct(&copy);
-    rule_destruct(&rule);
+    rule_destructor(&copy);
+    rule_destructor(&rule);
 
-    literal_destruct(&head);
+    literal_destructor(&head);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
+        literal_destructor(&body[i]);
     }
     
     free(body);
@@ -230,13 +230,13 @@ START_TEST(promote_test) {
     unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
-        literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
         body[i] = l;
     }
     
-    literal_construct(&head, "Fly", 0);
+    literal_constructor(&head, "Fly", 0);
 
-    rule_construct(&rule, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule, body_size, &body, &head, starting_weight);
 
     rule_promote(&rule, 1.89);
     ck_assert_float_eq_tol(rule.weight, starting_weight + 1.89, 0.000001);
@@ -251,12 +251,12 @@ START_TEST(promote_test) {
 
     ck_assert_ptr_null(rule_pointer);
 
-    rule_destruct(&rule);
+    rule_destructor(&rule);
 
-    literal_destruct(&head);
+    literal_destructor(&head);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
+        literal_destructor(&body[i]);
     }
     
     free(body);
@@ -275,13 +275,13 @@ START_TEST(demote_test) {
     unsigned int i;
     for (i = 0; i < body_size; ++i) {
         Literal l;
-        literal_construct(&l, body_literal_atoms[i], body_literal_signs[i]);
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
         body[i] = l;
     }
     
-    literal_construct(&head, "Fly", 0);
+    literal_constructor(&head, "Fly", 0);
 
-    rule_construct(&rule, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule, body_size, &body, &head, starting_weight);
 
     rule_demote(&rule, 1.89);
     ck_assert_float_eq_tol(rule.weight, starting_weight - 1.89, 0.000001);
@@ -296,12 +296,12 @@ START_TEST(demote_test) {
 
     ck_assert_ptr_null(rule_pointer);
 
-    rule_destruct(&rule);
+    rule_destructor(&rule);
 
-    literal_destruct(&head);
+    literal_destructor(&head);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
+        literal_destructor(&body[i]);
     }
     
     free(body);
@@ -320,41 +320,41 @@ START_TEST(equality_checK_test) {
 
     unsigned int i;
     for (i = 0; i < body_size; ++i) {
-        literal_construct(&body[i], body_literal_atoms[i], body_literal_signs[i]);
+        literal_constructor(&body[i], body_literal_atoms[i], body_literal_signs[i]);
     }
 
-    literal_construct(&head, "Fly", 0);
+    literal_constructor(&head, "Fly", 0);
 
-    rule_construct(&rule1, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule1, body_size, &body, &head, starting_weight);
     rule_copy(&rule6, &rule1);
-    rule_construct(&rule2, body_size, &body, &head, starting_weight - 0.00001);
+    rule_constructor(&rule2, body_size, &body, &head, starting_weight - 0.00001);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
-        literal_construct(&body[i], body_literal_atoms[body_size - i - 1],
+        literal_destructor(&body[i]);
+        literal_constructor(&body[i], body_literal_atoms[body_size - i - 1],
         body_literal_signs[body_size - i - 1]);
     }
 
-    rule_construct(&rule3, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule3, body_size, &body, &head, starting_weight);
 
-    literal_destruct(&head);
+    literal_destructor(&head);
 
-    literal_construct(&head, "Fly", 1);
+    literal_constructor(&head, "Fly", 1);
 
-    rule_construct(&rule4, body_size, &body, &head, starting_weight);
-    rule_construct(&rule5, body_size2, &body, &head, starting_weight);
+    rule_constructor(&rule4, body_size, &body, &head, starting_weight);
+    rule_constructor(&rule5, body_size2, &body, &head, starting_weight);
 
-    literal_destruct(&head);
+    literal_destructor(&head);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
-        literal_construct(&body[i], body_literal_atoms2[i], body_literal_signs[i]);
+        literal_destructor(&body[i]);
+        literal_constructor(&body[i], body_literal_atoms2[i], body_literal_signs[i]);
     }
 
-    rule_construct(&rule7, body_size, &body, &(rule1.head), starting_weight);
+    rule_constructor(&rule7, body_size, &body, &(rule1.head), starting_weight);
 
     for (i = 0; i < body_size; ++i) {
-        literal_destruct(&body[i]);
+        literal_destructor(&body[i]);
     }
 
     free(body);
@@ -378,13 +378,13 @@ START_TEST(equality_checK_test) {
     ck_assert_int_eq(rule_equals(NULL, &rule1), -1);
     ck_assert_int_eq(rule_equals(NULL, NULL), -1);
 
-    rule_destruct(&rule1);
-    rule_destruct(&rule2);
-    rule_destruct(&rule3);
-    rule_destruct(&rule4);
-    rule_destruct(&rule5);
-    rule_destruct(&rule6);
-    rule_destruct(&rule7);
+    rule_destructor(&rule1);
+    rule_destructor(&rule2);
+    rule_destructor(&rule3);
+    rule_destructor(&rule4);
+    rule_destructor(&rule5);
+    rule_destructor(&rule6);
+    rule_destructor(&rule7);
 }
 END_TEST
 

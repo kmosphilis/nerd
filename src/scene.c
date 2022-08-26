@@ -9,7 +9,7 @@
  * 
  * @param scene The Scene to be constructed.
  */
-void scene_construct(Scene * const scene) {
+void scene_constructor(Scene * const scene) {
     if (scene != NULL) {
         scene->observations = NULL;
         scene->size = 0;
@@ -21,12 +21,12 @@ void scene_construct(Scene * const scene) {
  * 
  * @param scene The Scene to be destructed.
  */
-void scene_destruct(Scene * const scene) {
+void scene_destructor(Scene * const scene) {
     if (scene != NULL) {
         if (scene->observations != NULL) {
             unsigned int i = 0;
             for (i = 0; i < scene->size; ++i) {
-                literal_destruct(&(scene->observations[i]));
+                literal_destructor(&(scene->observations[i]));
             }
 
             free(scene->observations);

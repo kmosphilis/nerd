@@ -8,8 +8,8 @@ typedef struct Scene {
     unsigned int size;
 } Scene;
 
-void scene_construct(Scene * const scene);
-void scene_destruct(Scene * const scene);
+void scene_constructor(Scene * const scene);
+void scene_destructor(Scene * const scene);
 void scene_copy(Scene * const destination, const Scene * const source);
 void scene_add_literal(Scene * const scene, const Literal * const literal_to_add);
 char *scene_to_string(const Scene * const scene);

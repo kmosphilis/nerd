@@ -10,9 +10,9 @@ typedef struct Sensor {
     short reuse;
 } Sensor;
 
-void sensor_construct_from_file(Sensor * const sensor, const char * const filepath,
+void sensor_constructor_from_file(Sensor * const sensor, const char * const filepath,
 const short reuse);
+void sensor_destructor(Sensor * const sensor);
 void sensor_get_next_scene(const Sensor * const sensor, Scene * const scene_to_save);
-void sensor_destruct(Sensor * const sensor);
 
 #endif

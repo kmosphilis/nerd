@@ -14,7 +14,7 @@
  * @param head The head when the rule gets activated.
  * @param weight The weight of the rule.
  */
-void rule_construct(Rule * const rule, const unsigned int body_size, Literal ** const body,
+void rule_constructor(Rule * const rule, const unsigned int body_size, Literal ** const body,
 const Literal * const head, const float weight) {
     if (rule != NULL) {
         if ((head != NULL) && (body != NULL) && (body_size > 0)) {
@@ -31,7 +31,7 @@ const Literal * const head, const float weight) {
             rule->weight = weight;
         } else {
             rule->body_size = 0;
-            literal_destruct(&(rule->head));
+            literal_destructor(&(rule->head));
             rule->body = NULL;
             rule->weight = INFINITY;
         }
@@ -43,13 +43,13 @@ const Literal * const head, const float weight) {
  * 
  * @param rule The Rule to be destructed.
  */
-void rule_destruct(Rule * const rule) {
+void rule_destructor(Rule * const rule) {
     if (rule != NULL) {
-        literal_destruct(&(rule->head));
+        literal_destructor(&(rule->head));
         if (rule->body != NULL) {
             unsigned int i;
             for (i = 0; i < rule->body_size; ++i) {
-                literal_destruct(&(rule->body[i]));
+                literal_destructor(&(rule->body[i]));
             }
             free(rule->body);
             rule->body = NULL;

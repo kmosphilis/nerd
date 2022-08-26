@@ -9,7 +9,7 @@
  * @param rule_queue The RuleQueue to be constructed. If NULL is given, a queue will not be 
  * constructed.
  */
-void rule_queue_construct(RuleQueue * const rule_queue) {
+void rule_queue_constructor(RuleQueue * const rule_queue) {
     if (rule_queue != NULL) {
         rule_queue->length = 0;
         rule_queue->rules = NULL;
@@ -21,12 +21,12 @@ void rule_queue_construct(RuleQueue * const rule_queue) {
  * 
  * @param rule_queue The RuleQueue to be destructed.
  */
-void rule_queue_destruct(RuleQueue * const rule_queue) {
+void rule_queue_destructor(RuleQueue * const rule_queue) {
     if (rule_queue != NULL) {
         if (rule_queue->rules != NULL) {
             unsigned int i;
             for (i = 0; i < rule_queue->length; ++i) {
-                rule_destruct(&(rule_queue->rules[i]));
+                rule_destructor(&(rule_queue->rules[i]));
             }
 
             free(rule_queue->rules);
@@ -87,7 +87,7 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule) {
                 dequeued_rule->head = rule->head;
                 dequeued_rule->weight = rule->weight;
             } else {
-                rule_destruct(&(rule_queue->rules[0]));
+                rule_destructor(&(rule_queue->rules[0]));
             }
 
             if (rule_queue->length == 0) {
@@ -146,7 +146,7 @@ Rule * removed_rule) {
                 removed_rule->head = rule->head;
                 removed_rule->weight = rule->weight;
             } else {
-                rule_destruct(&(rule_queue->rules[u_rule_index]));
+                rule_destructor(&(rule_queue->rules[u_rule_index]));
             }
 
             if (rule_queue->length == 0) {

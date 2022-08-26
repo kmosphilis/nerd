@@ -14,7 +14,7 @@
  * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF. 
  * Use > 0 to indicate yes, and <= 0 to indicate no.
  */
-void sensor_construct_from_file(Sensor * const sensor, const char * const filepath,
+void sensor_constructor_from_file(Sensor * const sensor, const char * const filepath,
 const short reuse) {
     if (sensor != NULL) {
         if (filepath != NULL) {
@@ -36,7 +36,7 @@ const short reuse) {
  * 
  * @param sensor The Sensor to be destructed.
  */
-void sensor_destruct(Sensor * const sensor) {
+void sensor_destructor(Sensor * const sensor) {
     if (sensor != NULL) {
         if (sensor->enviroment != NULL) {
             fclose(sensor->enviroment);
@@ -77,12 +77,12 @@ void sensor_get_next_scene(const Sensor * const sensor, Scene * const scene) {
                 } else {
                     Literal literal;
                     if (buffer[0] == '-') {
-                        literal_construct(&literal, buffer + 1, 0);
+                        literal_constructor(&literal, buffer + 1, 0);
                     } else {
-                        literal_construct(&literal, buffer, 1);
+                        literal_constructor(&literal, buffer, 1);
                     }
                     scene_add_literal(scene, &literal);
-                    literal_destruct(&literal);
+                    literal_destructor(&literal);
                     memset(buffer, 0, BUFFER_SIZE);
                     i = 0;
                 }
@@ -92,13 +92,13 @@ void sensor_get_next_scene(const Sensor * const sensor, Scene * const scene) {
 
             Literal literal;
             if (buffer[0] == '-') {
-                literal_construct(&literal, buffer + 1, 0);
+                literal_constructor(&literal, buffer + 1, 0);
             } else {
-                literal_construct(&literal, buffer, 1);
+                literal_constructor(&literal, buffer, 1);
             }
             scene_add_literal(scene, &literal);
 
-            literal_destruct(&literal);
+            literal_destructor(&literal);
             free(buffer);
         }
     }

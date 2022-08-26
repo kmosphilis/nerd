@@ -12,7 +12,7 @@
  * @param atom The name of the atom to be used.
  * @param sign Indicates whether the atom is negated or not. > 0 is positive, 0 is negative.
  */
-void literal_construct(Literal * const literal, const char * const atom, const int sign) {
+void literal_constructor(Literal * const literal, const char * const atom, const int sign) {
     if (literal != NULL) {
         if (atom != NULL) {
             literal->atom = strdup(atom);
@@ -29,7 +29,7 @@ void literal_construct(Literal * const literal, const char * const atom, const i
  * 
  * @param literal The Literal to be destructed.
  */
-void literal_destruct(Literal * const literal) {
+void literal_destructor(Literal * const literal) {
     if (literal != NULL) {
         if (literal->atom != NULL) {
             free(literal->atom);

@@ -8,8 +8,8 @@ typedef struct RuleQueue {
     unsigned int length;
 } RuleQueue;
 
-void rule_queue_construct(RuleQueue * const rule_queue);
-void rule_queue_destruct(RuleQueue * const rule_queue);
+void rule_queue_constructor(RuleQueue * const rule_queue);
+void rule_queue_destructor(RuleQueue * const rule_queue);
 void rule_queue_copy(RuleQueue * const destination, const RuleQueue * const source);
 void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule);
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule);

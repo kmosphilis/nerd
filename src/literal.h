@@ -6,8 +6,8 @@ typedef struct Literal {
     int sign;
 } Literal;
 
-void literal_construct(Literal *literal, const char * const atom, const int sign);
-void literal_destruct(Literal * const literal);
+void literal_constructor(Literal *literal, const char * const atom, const int sign);
+void literal_destructor(Literal * const literal);
 void literal_copy(Literal * const destination, const Literal  * const source);
 char *literal_to_string(const Literal * const literal);
 void literal_negate(Literal * const literal);
