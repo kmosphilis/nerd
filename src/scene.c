@@ -59,7 +59,7 @@ void scene_copy(Scene * const destination, const Scene * const source) {
  * @brief Adds a Literal to the Scene.
  * 
  * @param scene The Scene to be expanded.
- * @param literal_to_add The Literal to added in the Scene.
+ * @param literal_to_add The Literal to add in the Scene.
  */
 void scene_add_literal(Scene * const scene, const Literal * const literal_to_add) {
     if ((scene != NULL) && (literal_to_add != NULL)) {
@@ -67,6 +67,73 @@ void scene_add_literal(Scene * const scene, const Literal * const literal_to_add
         scene->observations = (Literal *) realloc(scene->observations,
         scene->size * sizeof(Literal));
         literal_copy(&(scene->observations[scene->size - 1]), literal_to_add);
+    }
+}
+
+/**
+ * @brief Performs a set union operation on two Scenes (scene1 ∪ scene2).
+ * 
+ * @param scene1 The first Scene to be combined.
+ * @param scene2 The second Scene to be combined.
+ * @param result The output of the operation to be returned. If NULL, the operation will not be 
+ * performed.
+ */
+void scene_combine(const Scene * const scene1, const Scene * const scene2, Scene * const result) {
+    if (result != NULL) {
+        if (scene1 != NULL) {
+            scene_copy(result, scene1);
+            if (scene2 != NULL) {
+                unsigned int i, j;
+                for (i = 0; i < scene2->size; ++i) {
+                    for (j = 0; j < scene1->size;++j) {
+                        if (literal_equals(&(scene2->observations[i]),
+                        &(scene1->observations[j]))) {
+                            break;
+                        }
+                    }
+                    
+                    if (j == scene1->size) {
+                        scene_add_literal(result, &(scene2->observations[i]));
+                    }
+                }
+            }
+        } else if (scene2 != NULL) {
+            scene_copy(result, scene2);
+        }
+    }
+}
+
+/**
+ * @brief Performs a set difference operation on two Scenes (scene1 ∖ scene2).
+ * 
+ * @param scene1 The Scene to remove elements from.
+ * @param scene2 The Scene to compare with.
+ * @param result The output of the operation to be returned. If NULL, the operation will not be 
+ * performed.
+ */
+void scene_difference(const Scene * const scene1, const Scene * const scene2, Scene * const result) {
+    if (result != NULL) {
+        if (scene1 != NULL) {
+            if (scene2 != NULL) {
+                unsigned int i, j;
+                for (i = 0; i < scene1->size; ++i) {
+                    for (j = 0; j < scene2->size; ++j) {
+                        if (literal_equals(&(scene2->observations[i]),
+                        &(scene1->observations[j]))) {
+                            break;
+                        }
+                    }
+
+                    if (j == scene2->size) {
+                        scene_add_literal(result, &(scene1->observations[i]));
+                    }
+                }
+            } else {
+                scene_copy(result, scene1);
+            }
+        } else if (scene2 != NULL) {
+            scene_copy(result, scene2);
+        }
     }
 }
 

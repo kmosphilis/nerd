@@ -3,16 +3,15 @@
 
 #include "../src/scene.h"
 #include "helper/literal.h"
+#include "helper/scene.h"
 
 START_TEST(construct_destruct_test) {
     Scene scene, *scene_ptr = NULL;
 
     scene_constructor(&scene);
-    ck_assert_ptr_null(scene.observations);
-    ck_assert_int_eq(scene.size, 0);
+    ck_assert_scene_empty(&scene);
     scene_destructor(&scene);
-    ck_assert_ptr_null(scene.observations);
-    ck_assert_int_eq(scene.size, 0);
+    ck_assert_scene_empty(&scene);
 
     scene_constructor(scene_ptr);
     ck_assert_ptr_null(scene_ptr);
@@ -85,19 +84,13 @@ START_TEST(copy_test) {
     scene_copy(&scene2, &scene1);
 
     ck_assert_ptr_ne(scene1.observations, scene2.observations);
-    ck_assert_int_eq(scene1.size, scene2.size);
-
-    unsigned int i;
-    for (i = 0; i < scene1.size; ++i) {
-        ck_assert_ptr_ne(&(scene1.observations[i]), &(scene2.observations[i]));
-        ck_assert_literal_eq(&(scene1.observations[i]), &(scene2.observations[i]));
-    }
+    ck_assert_scene_eq(&scene1, &scene2);
 
     scene_destructor(&scene1);
 
     ck_assert_int_ne(scene1.size, scene2.size);
-    ck_assert_ptr_null(scene1.observations);
-    ck_assert_ptr_nonnull(scene2.observations);
+    ck_assert_scene_empty(&scene1);
+    ck_assert_scene_notempty(&scene2);
 
     scene_copy(scene_ptr1, scene_ptr2);
     ck_assert_ptr_null(scene_ptr1);
@@ -107,11 +100,11 @@ START_TEST(copy_test) {
 
     scene_copy(scene_ptr1, scene_ptr2);
     ck_assert_ptr_null(scene_ptr1);
-    ck_assert_ptr_nonnull(scene_ptr2);
+    ck_assert_scene_notempty(scene_ptr2);
 
     scene_copy(scene_ptr2, scene_ptr1);
     ck_assert_ptr_null(scene_ptr1);
-    ck_assert_ptr_nonnull(scene_ptr2);
+    ck_assert_scene_notempty(scene_ptr2);
 
     scene_destructor(&scene2);
 }
@@ -154,6 +147,131 @@ START_TEST(to_string_test) {
 }
 END_TEST
 
+START_TEST(combine_test) {
+    Scene scene1, scene2, expected, result, *scene_ptr = NULL;
+    Literal literal;
+
+    scene_constructor(&scene1);
+    scene_constructor(&scene2);
+    scene_constructor(&expected);
+    scene_constructor(&result);
+
+    literal_constructor(&literal, "Penguin", 1);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&expected, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Antarctica", 1);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    scene_add_literal(&expected, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Bird", 1);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    scene_add_literal(&expected, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Fly", 0);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    scene_add_literal(&expected, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Albatross", 1);
+    scene_add_literal(&scene2, &literal);
+    scene_add_literal(&expected, &literal);
+    literal_destructor(&literal);
+
+    scene_combine(&scene1, &scene2, &result);
+
+    ck_assert_int_eq(scene1.size, 4);
+    ck_assert_int_eq(scene2.size, 4);
+    ck_assert_scene_eq(&result, &expected);
+    scene_destructor(&result);
+
+    scene_combine(NULL, &scene2, &result);
+    ck_assert_scene_eq(&result, &scene2);
+    scene_destructor(&result);
+
+    scene_combine(&scene1, NULL, &result);
+    ck_assert_scene_eq(&result, &scene1);
+    scene_destructor(&result);
+
+    scene_combine(NULL, NULL, &result);
+    ck_assert_scene_empty(&result);
+    
+    scene_combine(&scene1, &scene2, scene_ptr);
+    ck_assert_ptr_null(scene_ptr);
+
+    scene_destructor(&scene1);
+    scene_destructor(&scene2);
+    scene_destructor(&expected);
+}
+END_TEST
+
+START_TEST(difference_test) {
+    Scene scene1, scene2, expected, result, *scene_ptr = NULL;
+    Literal literal;
+
+    scene_constructor(&scene1);
+    scene_constructor(&scene2);
+    scene_constructor(&expected);
+    scene_constructor(&result);
+
+    literal_constructor(&literal, "Penguin", 1);
+    scene_add_literal(&scene1, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Albatross", 1);
+    scene_add_literal(&scene2, &literal);
+    scene_add_literal(&expected, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Antarctica", 1);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Bird", 1);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Fly", 0);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    literal_destructor(&literal);
+
+    scene_difference(&scene2, &scene1, &result);
+
+    ck_assert_int_eq(scene1.size, 4);
+    ck_assert_int_eq(scene2.size, 4);
+    ck_assert_scene_eq(&result, &expected);
+    scene_destructor(&result);
+
+    scene_difference(NULL, &scene2, &result);
+    ck_assert_scene_eq(&result, &scene2);
+    scene_destructor(&result);
+
+    scene_difference(&scene1, NULL, &result);
+    ck_assert_scene_eq(&result, &scene1);
+    scene_destructor(&result);
+
+    scene_difference(NULL, NULL, &result);
+    ck_assert_scene_empty(&result);
+    
+    scene_difference(&scene1, &scene2, scene_ptr);
+    ck_assert_ptr_null(scene_ptr);
+
+    scene_destructor(&scene1);
+    scene_destructor(&scene2);
+    scene_destructor(&expected);
+    scene_destructor(&result);
+}
+END_TEST
+
 Suite *scene_suite() {
     Suite *suite;
     TCase *create_case, *manipulation_case, *copy_case, *to_string_case;
@@ -164,6 +282,8 @@ Suite *scene_suite() {
 
     manipulation_case = tcase_create("Manipulation");
     tcase_add_test(manipulation_case, add_test);
+    tcase_add_test(manipulation_case, combine_test);
+    tcase_add_test(manipulation_case, difference_test);
     suite_add_tcase(suite, manipulation_case);
 
     copy_case = tcase_create("Copy");
