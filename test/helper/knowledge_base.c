@@ -4,10 +4,11 @@
 #include "rule_queue.h"
 
 /**
- * @brief Check two RuleQueues to determine if they are equal (rule_queue1 == rule_queue2).
+ * @brief Check two KnowledgeBases to determine if they are equal 
+ * (knowledge_base1 == knowledge_base2).
  * 
- * @param rule_queue1 The first RuleQueue to compare.
- * @param rule_queue2 The second RuleQueue to compare.
+ * @param knowledge_base1 The first KnowledgeBase to compare.
+ * @param knowledge_base2 The second KnowledgeBase to compare.
  */
 void ck_assert_knowledge_base_eq(const KnowledgeBase * const knowledge_base1,
 const KnowledgeBase * const knowledge_base2) {
@@ -18,9 +19,9 @@ const KnowledgeBase * const knowledge_base2) {
 }
 
 /**
- * @brief Check if a RuleQueue is not empty.
+ * @brief Check if a KnowledgeBase is not empty.
  * 
- * @param rule_queue1 The RuleQueue to check.
+ * @param knowledge_base The KnowledgeBase to check.
  */
 void ck_assert_knowledge_base_notempty(const KnowledgeBase * const knowledge_base) {
     ck_assert_float_ne(knowledge_base->activation_threshold, INFINITY);
@@ -29,9 +30,9 @@ void ck_assert_knowledge_base_notempty(const KnowledgeBase * const knowledge_bas
 }
 
 /**
- * @brief Check if a RuleQueue is empty.
+ * @brief Check if a KnowledgeBase is empty.
  * 
- * @param rule_queue1 The RuleQueue to check.
+ * @param knowledge_base The KnowledgeBase to check.
  */
 void ck_assert_knowledge_base_empty(const KnowledgeBase * const knowledge_base) {
     ck_assert_float_eq(knowledge_base->activation_threshold, INFINITY);

@@ -29,7 +29,7 @@ void ck_assert_literal_ne(const Literal * const literal1, const Literal * const 
 /**
  * @brief Check if a Literal is not empty.
  * 
- * @param literal1 The Literal to check.
+ * @param literal The Literal to check.
  */
 void ck_assert_literal_notempty(const Literal * const literal1) {
     ck_assert_int_ne(literal1->sign, -1);
@@ -39,7 +39,7 @@ void ck_assert_literal_notempty(const Literal * const literal1) {
 /**
  * @brief Check if a Literal is empty.
  * 
- * @param literal1 The Literal to check.
+ * @param literal The Literal to check.
  */
 void ck_assert_literal_empty(const Literal * const literal1) {
     ck_assert_int_eq(literal1->sign, -1);

@@ -111,7 +111,7 @@ const RuleQueue * const rule_queue2) {
 /**
  * @brief Check if a RuleQueue is not empty.
  * 
- * @param rule_queue1 The RuleQueue to check.
+ * @param rule_queue The RuleQueue to check.
  */
 void ck_assert_rule_queue_notempty(const RuleQueue * const rule_queue) {
     ck_assert_int_ne(rule_queue->length, 0);
@@ -121,7 +121,7 @@ void ck_assert_rule_queue_notempty(const RuleQueue * const rule_queue) {
 /**
  * @brief Check if a RuleQueue is empty.
  * 
- * @param rule_queue1 The RuleQueue to check.
+ * @param rule_queue The RuleQueue to check.
  */
 void ck_assert_rule_queue_empty(const RuleQueue * const rule_queue) {
     ck_assert_int_eq(rule_queue->length, 0);
