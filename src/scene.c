@@ -56,18 +56,68 @@ void scene_copy(Scene * const destination, const Scene * const source) {
 }
 
 /**
- * @brief Adds a Literal to the Scene.
+ * @brief Adds a Literal to a Scene.
  * 
  * @param scene The Scene to be expanded.
  * @param literal_to_add The Literal to add in the Scene.
  */
 void scene_add_literal(Scene * const scene, const Literal * const literal_to_add) {
     if ((scene != NULL) && (literal_to_add != NULL)) {
-        ++scene->size;
-        scene->observations = (Literal *) realloc(scene->observations,
-        scene->size * sizeof(Literal));
-        literal_copy(&(scene->observations[scene->size - 1]), literal_to_add);
+        if (scene_literal_index(scene, literal_to_add) == -1) {
+            ++scene->size;
+            scene->observations = (Literal *) realloc(scene->observations,
+            scene->size * sizeof(Literal));
+            literal_copy(&(scene->observations[scene->size - 1]), literal_to_add);
+        }
     }
+}
+
+/**
+ * @brief Removes a Literal from a Scene.
+ * 
+ * @param scene The Scene to be reduced.
+ * @param literal_index The index of the Literal to be removed.
+ */
+void scene_remove_literal(Scene * const scene, const unsigned int literal_index) {
+    if ((scene != NULL)) {
+        if (literal_index < scene->size) {
+            literal_destructor(&(scene->observations[literal_index]));
+            --scene->size;
+            Literal *literals = scene->observations;
+            scene->observations = (Literal *) malloc(scene->size * sizeof(Literal));
+            if (literal_index == 0) {
+                memcpy(scene->observations, literals + 1, scene->size * sizeof(Literal));
+            } else if (literal_index == (scene->size + 1)) {
+                memcpy(scene->observations, literals, scene->size * sizeof(Literal));
+            } else {
+                memcpy(scene->observations, literals, literal_index * sizeof(Literal));
+                memcpy(scene->observations + literal_index, literals + literal_index + 1,
+                (scene->size - literal_index) * sizeof(Literal));
+            }
+            free(literals);
+        }
+    }
+}
+
+/**
+ * @brief Finds the index of the given Literal in the Scene.
+ * 
+ * @param scene The Scene to find the Literal.
+ * @param literal The Literal to be found.
+ * @return the index of the Literal in the Scene, -1 if it doesn't exist or -2 if the Literal, the 
+ * Scene or both are NULL.
+ */
+int scene_literal_index(const Scene * const scene, const Literal * const literal) {
+    if ((scene != NULL) && (literal != NULL)) {
+        unsigned int i;
+        for (i = 0; i < scene->size; ++i) {
+            if (literal_equals(literal, &(scene->observations[i]))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    return -2;
 }
 
 /**
@@ -82,7 +132,7 @@ void scene_combine(const Scene * const scene1, const Scene * const scene2, Scene
     if (result != NULL) {
         if (scene1 != NULL) {
             scene_copy(result, scene1);
-            if (scene2 != NULL) {
+            if ((scene2 != NULL) && (scene2->size != 0)) {
                 unsigned int i, j;
                 for (i = 0; i < scene2->size; ++i) {
                     for (j = 0; j < scene1->size;++j) {
@@ -114,7 +164,7 @@ void scene_combine(const Scene * const scene1, const Scene * const scene2, Scene
 void scene_difference(const Scene * const scene1, const Scene * const scene2, Scene * const result) {
     if (result != NULL) {
         if (scene1 != NULL) {
-            if (scene2 != NULL) {
+            if ((scene2 != NULL) && (scene2->size != 0)) {
                 unsigned int i, j;
                 for (i = 0; i < scene1->size; ++i) {
                     for (j = 0; j < scene2->size; ++j) {
