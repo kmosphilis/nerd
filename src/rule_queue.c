@@ -163,7 +163,7 @@ Rule * removed_rule) {
                     memcpy(rule_queue->rules, rules, rule_queue->length * sizeof(Rule));
                 } else {
                     memcpy(rule_queue->rules, rules, (u_rule_index) * sizeof(Rule));
-                    memcpy(rule_queue->rules + 1, rules + u_rule_index + 1, 
+                    memcpy(rule_queue->rules + u_rule_index, rules + u_rule_index + 1, 
                     (rule_queue->length - u_rule_index) * sizeof(Rule));
                 }
 
