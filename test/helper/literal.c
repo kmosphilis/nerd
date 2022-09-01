@@ -20,9 +20,12 @@ void ck_assert_literal_eq(const Literal * const literal1, const Literal * const 
  * @param literal2 The second Literal to compare.
  */
 void ck_assert_literal_ne(const Literal * const literal1, const Literal * const literal2) {
-    ck_assert_int_ne(literal1->sign, literal2->sign);
     if ((literal1->atom != NULL) && (literal2->atom != NULL)) {
-        ck_assert_str_ne(literal1->atom, literal2->atom);
+        if (strcmp(literal1->atom, literal2->atom) == 0) {
+            ck_assert_int_ne(literal1->sign, literal2->sign);
+        } else {
+            ck_assert_str_ne(literal1->atom, literal2->atom);
+        }
     }
 }
 
