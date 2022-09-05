@@ -243,6 +243,38 @@ START_TEST(to_string_test) {
 }
 END_TEST
 
+START_TEST(retrieve_index_text) {
+    RuleQueue rule_queue, *rule_queue_pointer = NULL;
+    
+    rule_queue_constructor(&rule_queue);
+
+    Rule rule, *rules = create_rules();
+
+    unsigned int i;
+    for (i = 0; i < RULES_TO_CREATE; ++i) {
+        rule_queue_enqueue(&rule_queue, &(rules[i]));
+    }
+
+    ck_assert_int_eq(rule_queue_find(&rule_queue, &(rules[1])), 1);
+    ck_assert_int_eq(rule_queue_find(&rule_queue, &(rules[2])), 2);
+
+    rule_queue_dequeue(&rule_queue, &rule);
+    ck_assert_int_ne(rule_queue_find(&rule_queue, &rule), 2);
+    ck_assert_int_eq(rule_queue_find(&rule_queue, &rule), -1);
+
+    rule_queue_dequeue(&rule_queue, NULL);
+    rule_queue_enqueue(&rule_queue, &rule);
+    ck_assert_int_eq(rule_queue_find(&rule_queue, &rule), 1);
+
+    ck_assert_int_eq(rule_queue_find(rule_queue_pointer, &rule), -2);
+
+    rule_queue_destructor(&rule_queue);
+    rule_destructor(&rule);
+
+    destruct_rules(rules);
+}
+END_TEST
+
 START_TEST(remove_indexed_rule_test) {
     RuleQueue rule_queue, *rule_queue_pointer = NULL;
     
@@ -304,6 +336,7 @@ Suite *rule_queue_suite() {
     operations_case = tcase_create("Operations");
     tcase_add_test(operations_case, enqueue_test);
     tcase_add_test(operations_case, dequeue_test);
+    tcase_add_test(operations_case, retrieve_index_text);
     tcase_add_test(operations_case, remove_indexed_rule_test);
     suite_add_tcase(suite, operations_case);
 

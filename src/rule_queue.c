@@ -121,8 +121,9 @@ int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule)
                 return i;
             }
         }
+        return -1;
     }
-    return -1;
+    return -2;
 }
 
 /**
