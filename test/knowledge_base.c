@@ -407,6 +407,64 @@ START_TEST(demote_rules_test) {
 }
 END_TEST
 
+START_TEST(create_new_rules_test) {
+    KnowledgeBase knowledge_base;
+    RuleQueue rule_queue;
+    Scene observed, inferred;
+    Literal literal;
+
+    scene_constructor(&observed);
+    scene_constructor(&inferred);
+
+    literal_constructor(&literal, "Penguin", 1);
+    scene_add_literal(&observed, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Antarctica", 1);
+    scene_add_literal(&observed, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Bird", 1);
+    scene_add_literal(&observed, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Fly", 0);
+    scene_add_literal(&observed, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Albatross", 1);
+    scene_add_literal(&observed, &literal);
+    literal_destructor(&literal);
+
+    create_rule_queue(&rule_queue);
+
+    unsigned int i, rule_queue_length = rule_queue.length;
+    for (i = 0; i < rule_queue_length; ++i) {
+        Rule rule;
+        rule_copy(&rule, &(rule_queue.rules[i]));
+        rule_promote(&rule, 3.0);
+        rule_queue_enqueue(&rule_queue, &rule);
+        rule_destructor(&rule);
+    }
+
+    knowledge_base_constructor(&knowledge_base, 3.0);
+
+    for (i = 0; i < rule_queue.length; ++i) {
+        knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
+    }
+
+    const unsigned int old_size = knowledge_base.active.length + knowledge_base.inactive.length;
+    knowledge_base_create_new_rules(&knowledge_base, &observed, &inferred, 3, 5);
+    knowledge_base_create_new_rules(&knowledge_base, &observed, &inferred, 3, 5);
+    ck_assert_int_ne(old_size, knowledge_base.active.length + knowledge_base.inactive.length);
+
+    knowledge_base_destructor(&knowledge_base);
+    rule_queue_destructor(&rule_queue);
+    scene_destructor(&inferred);
+    scene_destructor(&observed);
+}
+END_TEST
+
 START_TEST(to_string_test) {
     KnowledgeBase knowledge_base;
     RuleQueue rule_queue;
@@ -452,7 +510,7 @@ END_TEST
 Suite *knowledge_base_suite() {
     Suite *suite;
     TCase *create_case, *add_rule_case, *applicable_rule_case, *copy_case, *to_string_case,
-    *rule_weight_manipulation_case;
+    *rule_weight_manipulation_case, *create_new_rules_case;
     suite = suite_create("Knowledge Base");
 
     create_case = tcase_create("Create");
@@ -471,6 +529,10 @@ Suite *knowledge_base_suite() {
     tcase_add_test(rule_weight_manipulation_case, promote_rules_test);
     tcase_add_test(rule_weight_manipulation_case, demote_rules_test);
     suite_add_tcase(suite, rule_weight_manipulation_case);
+
+    create_new_rules_case = tcase_create("Create New Rules");
+    tcase_add_test(create_new_rules_case, create_new_rules_test);
+    suite_add_tcase(suite, create_new_rules_case);
 
     copy_case = tcase_create("Copy");
     tcase_add_test(copy_case, copy_test);

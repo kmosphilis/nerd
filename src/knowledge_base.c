@@ -1,8 +1,11 @@
-#include <malloc.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include "knowledge_base.h"
+#include "context.h"
 
 /**
  * @brief Constructs a KnowledgeBase.
@@ -66,6 +69,87 @@ void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * 
     }
 }
 
+/**
+ * @brief Creates new Rules by finding uncovered Literals. Uncovered Literals, are Literals that 
+ * have been observed, but have not been inferred.
+ * 
+ * @param knowledge_base The KnowledgeBase to be expanded.
+ * @param observed The observed Scene.
+ * @param inferred The inferred Scene.
+ * @param max_body_size The maximum number of Literals to be included in the body of a Rule.
+ * @param max_number_of_rules The maximum number of Rules to be created.
+ */
+void knowledge_base_create_new_rules(KnowledgeBase * const knowledge_base,
+const Scene * const observed, const Scene * const inferred, const unsigned int max_body_size,
+const unsigned int max_number_of_rules) {
+    if ((knowledge_base != NULL) && (observed != NULL)) {
+        Context uncovered;
+
+        scene_constructor(&uncovered);
+        scene_difference(observed, inferred, &uncovered);
+
+        srand(time(NULL));
+
+        Scene combined;
+        unsigned int i, j, body_size, rules_to_create = (rand() % max_number_of_rules) + 1;
+
+        scene_constructor(&combined);
+        scene_combine(observed, inferred, &combined);
+
+        for (i = 0; i < rules_to_create; ++i) {
+            if (uncovered.size != 0) {
+                Literal head;
+                Context body;
+                Rule new_rule;
+
+                srand(time(NULL) + i);
+                context_constructor(&body);
+                int chosen_head_index = rand() % uncovered.size;
+                literal_copy(&head, &(uncovered.observations[chosen_head_index]));
+
+                int head_index = scene_literal_index(&combined, &head);
+                if (head_index >= 0) {
+                    scene_remove_literal(&combined, head_index);
+                }
+
+                body_size = (rand() % max_body_size) + 1;
+                int remaining_randoms = combined.size, random_chosen, chosen_index;
+
+                int *random_indices = (int *) calloc(combined.size, sizeof(int));
+
+                for (j = 0; j < combined.size; ++j) {
+                    random_indices[j] = j;
+                }
+
+                for (j = 0; j < body_size; ++j) {
+                    random_chosen = rand() % remaining_randoms;
+                    chosen_index = random_indices[random_chosen];
+                    random_indices[random_chosen] = random_indices[remaining_randoms - 1];
+                    remaining_randoms--;
+                    context_add_literal(&body, &(combined.observations[chosen_index]));
+                }
+
+                rule_constructor(&new_rule, body.size, &(body.observations), &head, 0);
+
+                if (rule_queue_find(&(knowledge_base->active), &new_rule) == -1) {
+                    if (rule_queue_find(&(knowledge_base->inactive), &new_rule) == -1) {
+                        knowledge_base_add_rule(knowledge_base, &new_rule);
+                    }
+                }
+
+                scene_add_literal(&combined, &head);
+                free(random_indices);
+                rule_destructor(&new_rule);
+                context_destructor(&body);
+                literal_destructor(&head);
+            }
+        }
+
+        scene_destructor(&combined);
+        scene_destructor(&uncovered);
+    }
+}
+
 //TODO Create a Context struct.
 /**
  * @brief Finds the applicaple rules from the given context (Literals).
@@ -86,7 +170,7 @@ Literal ** const literals, const unsigned int literals_size, RuleQueue * const a
                 for (k = 0; k < literals_size; ++k) {
                     if (literal_equals(&(current_rule->body[j]), &((*literals)[k]))) {
                         ++literals_in_found_in_body;
-                        k = literals_size;
+                        break;
                     }
                 }
             }
@@ -102,7 +186,7 @@ Literal ** const literals, const unsigned int literals_size, RuleQueue * const a
                 for (k = 0; k < literals_size; ++k) {
                     if (literal_equals(&(current_rule->body[j]), &((*literals)[k]))) {
                         ++literals_in_found_in_body;
-                        k = literals_size;
+                        break;
                     }
                 }
             }
@@ -202,8 +286,8 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
  * @brief Converts the KnowledgeBase to a string.
  * 
  * @param knowledge_base The KnowledgeBase to be converted.
- * @return The string format of the given KnowledgeBase. Use free() to deallocate this string. Returns 
- * NULL if the KnowledgeBase is NULL.
+ * @return The string format of the given KnowledgeBase. Use free() to deallocate this string. 
+ * Returns NULL if the KnowledgeBase is NULL.
  */
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
     char *result, *temp, *rule_queue_string;

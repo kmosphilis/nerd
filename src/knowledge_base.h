@@ -1,4 +1,5 @@
 #include "rule_queue.h"
+#include "scene.h"
 
 #ifndef __KNOWLEDGE_BASE_H__
 #define __KNOWLEDGE_BASE_H__
@@ -14,6 +15,9 @@ const float activation_threshold);
 void knowledge_base_destructor(KnowledgeBase * const knowledge_base);
 void knowledge_base_copy(KnowledgeBase * const destination, const KnowledgeBase * const source);
 void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * const rule);
+void knowledge_base_create_new_rules(KnowledgeBase * const KnowledgeBase,
+const Scene * const observed, const Scene * const inferred, const unsigned int max_body_size,
+const unsigned int max_number_of_rules);
 void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,
 Literal ** const literals, const unsigned int literals_size, RuleQueue * const applicaple_rules);
 void knowledge_base_promote_rules(KnowledgeBase * const knowledge_base,
