@@ -145,79 +145,6 @@ START_TEST(copy_test) {
 }
 END_TEST
 
-START_TEST(to_string_test) {
-    Rule rule, copy, *rule_pointer = NULL;
-    const size_t body_size = 3;
-    Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
-    Literal head;
-    char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
-    int body_literal_signs[3] = {1, 1, 1};
-    float starting_weight = 0;
-
-    unsigned int i;
-    for (i = 0; i < body_size; ++i) {
-        Literal l;
-        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
-        body[i] = l;
-    }
-    
-    literal_constructor(&head, "Fly", 0);
-
-    rule_constructor(&rule, body_size, &body, &head, starting_weight);
-    
-    char *rule_string = rule_to_string(&rule);
-
-    ck_assert_str_eq(rule_string, "(Penguin, Bird, Antarctica) => -Fly (0.0000)");
-    
-    free(rule_string);
-
-    rule_string = rule_to_string(rule_pointer);
-
-    ck_assert_pstr_eq(rule_string, NULL);
-
-    Literal head2;
-    literal_constructor(&head2, "Wings", 1);
-    literal_destructor(&rule.head);
-
-    rule_string = rule_to_string(&rule);
-    
-    ck_assert_pstr_eq(rule_string, NULL);
-
-    literal_copy(&rule.head, &head2);
-    literal_destructor(&head2);
-    rule.weight = 3.1415;
-
-    rule_string = rule_to_string(&rule);
-
-    ck_assert_str_eq(rule_string, "(Penguin, Bird, Antarctica) => Wings (3.1415)");
-
-    free(rule_string);
-
-    rule_copy(&copy, &rule);
-
-    for (i = 0; i < copy.body_size; ++i) {
-        literal_destructor(&(copy.body[i]));
-    }
-    free(copy.body);
-    copy.body = NULL;
-
-    rule_string = rule_to_string(&copy);
-
-    ck_assert_pstr_eq(rule_string, NULL);
-
-    rule_destructor(&copy);
-    rule_destructor(&rule);
-
-    literal_destructor(&head);
-
-    for (i = 0; i < body_size; ++i) {
-        literal_destructor(&body[i]);
-    }
-    
-    free(body);
-}
-END_TEST
-
 START_TEST(promote_test) {
     Rule rule, *rule_pointer = NULL;
     const size_t body_size = 3;
@@ -388,9 +315,171 @@ START_TEST(equality_checK_test) {
 }
 END_TEST
 
+START_TEST(to_string_test) {
+    Rule rule, copy, *rule_pointer = NULL;
+    const size_t body_size = 3;
+    Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
+    Literal head;
+    char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
+    int body_literal_signs[3] = {1, 1, 1};
+    float starting_weight = 0;
+
+    unsigned int i;
+    for (i = 0; i < body_size; ++i) {
+        Literal l;
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
+        body[i] = l;
+    }
+    
+    literal_constructor(&head, "Fly", 0);
+
+    rule_constructor(&rule, body_size, &body, &head, starting_weight);
+    
+    char *rule_string = rule_to_string(&rule);
+
+    ck_assert_str_eq(rule_string, "(Penguin, Bird, Antarctica) => -Fly (0.0000)");
+    
+    free(rule_string);
+
+    rule_string = rule_to_string(rule_pointer);
+
+    ck_assert_pstr_eq(rule_string, NULL);
+
+    Literal head2;
+    literal_constructor(&head2, "Wings", 1);
+    literal_destructor(&rule.head);
+
+    rule_string = rule_to_string(&rule);
+    
+    ck_assert_pstr_eq(rule_string, NULL);
+
+    literal_copy(&rule.head, &head2);
+    literal_destructor(&head2);
+    rule.weight = 3.1415;
+
+    rule_string = rule_to_string(&rule);
+
+    ck_assert_str_eq(rule_string, "(Penguin, Bird, Antarctica) => Wings (3.1415)");
+
+    free(rule_string);
+
+    rule_copy(&copy, &rule);
+
+    for (i = 0; i < copy.body_size; ++i) {
+        literal_destructor(&(copy.body[i]));
+    }
+    free(copy.body);
+    copy.body = NULL;
+
+    rule_string = rule_to_string(&copy);
+
+    ck_assert_pstr_eq(rule_string, NULL);
+
+    rule_destructor(&copy);
+    rule_destructor(&rule);
+
+    literal_destructor(&head);
+
+    for (i = 0; i < body_size; ++i) {
+        literal_destructor(&body[i]);
+    }
+    
+    free(body);
+}
+END_TEST
+
+START_TEST(to_prudensjs_test) {
+    Rule rule, copy, *rule_pointer = NULL;
+    const size_t body_size = 3;
+    Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
+    Literal head;
+    char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
+    int body_literal_signs[3] = {1, 1, 1};
+    float starting_weight = 0;
+
+    unsigned int i;
+    for (i = 0; i < body_size; ++i) {
+        Literal l;
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
+        body[i] = l;
+    }
+    
+    literal_constructor(&head, "Fly", 0);
+
+    rule_constructor(&rule, body_size, &body, &head, starting_weight);
+    
+    char *rule_prudensjs_string = rule_to_prudensjs(&rule, 1);
+
+    ck_assert_str_eq(rule_prudensjs_string, "{\\\"name\\\": \\\"Rule1\\\", \\\"body\\\": ["
+    "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
+    "{\\\"name\\\": \\\"Bird\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
+    "{\\\"name\\\": \\\"Antarctica\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}], "
+    "\\\"head\\\": {\\\"name\\\": \\\"Fly\\\", \\\"sign\\\": false, \\\"isJS\\\": false, \\\"isEquality\\\": "
+    "false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}");
+    
+    free(rule_prudensjs_string);
+
+    rule_prudensjs_string = rule_to_prudensjs(rule_pointer, 1);
+
+    ck_assert_pstr_eq(rule_prudensjs_string, NULL);
+
+    Literal head2;
+    literal_constructor(&head2, "Wings", 1);
+    literal_destructor(&rule.head);
+
+    rule_prudensjs_string = rule_to_prudensjs(&rule, 2);
+    
+    ck_assert_pstr_eq(rule_prudensjs_string, NULL);
+
+    literal_copy(&rule.head, &head2);
+    literal_destructor(&head2);
+    rule.weight = 3.1415;
+
+    rule_prudensjs_string = rule_to_prudensjs(&rule, 22);
+
+    ck_assert_str_eq(rule_prudensjs_string, "{\\\"name\\\": \\\"Rule22\\\", \\\"body\\\": ["
+    "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
+    "{\\\"name\\\": \\\"Bird\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
+    "{\\\"name\\\": \\\"Antarctica\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}], "
+    "\\\"head\\\": {\\\"name\\\": \\\"Wings\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": "
+    "false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}");
+
+    free(rule_prudensjs_string);
+
+    rule_copy(&copy, &rule);
+
+    for (i = 0; i < copy.body_size; ++i) {
+        literal_destructor(&(copy.body[i]));
+    }
+    free(copy.body);
+    copy.body = NULL;
+
+    rule_prudensjs_string = rule_to_prudensjs(&copy, 2);
+
+    ck_assert_pstr_eq(rule_prudensjs_string, NULL);
+
+    rule_destructor(&copy);
+    rule_destructor(&rule);
+
+    literal_destructor(&head);
+
+    for (i = 0; i < body_size; ++i) {
+        literal_destructor(&body[i]);
+    }
+    
+    free(body);
+}
+END_TEST
+
 Suite *rule_suite() {
     Suite *suite;
-    TCase *create_case, *copy_case, *string_case, *weight_adjustment_case, *equality_check_case;
+    TCase *create_case, *copy_case, *weight_adjustment_case, *equality_check_case, *convert_case;
     suite = suite_create("Rule");
     create_case = tcase_create("Create");
     tcase_add_test(create_case, construct_destruct_test);
@@ -400,10 +489,6 @@ Suite *rule_suite() {
     tcase_add_test(copy_case, copy_test);
     suite_add_tcase(suite, copy_case);
 
-    string_case = tcase_create("To string");
-    tcase_add_test(string_case, to_string_test);
-    suite_add_tcase(suite, string_case);
-
     weight_adjustment_case = tcase_create("Weight adjustment");
     tcase_add_test(weight_adjustment_case, promote_test);
     tcase_add_test(weight_adjustment_case, demote_test);
@@ -412,6 +497,11 @@ Suite *rule_suite() {
     equality_check_case = tcase_create("Equality Check");
     tcase_add_test(equality_check_case, equality_checK_test);
     suite_add_tcase(suite, equality_check_case);
+
+    convert_case = tcase_create("Conversion");
+    tcase_add_test(convert_case, to_string_test);
+    tcase_add_test(convert_case, to_prudensjs_test);
+    suite_add_tcase(suite, convert_case);
 
     return suite;
 }

@@ -83,54 +83,6 @@ void rule_copy(Rule * const destination, const Rule * const source) {
 }
 
 /**
- * @brief Converts the Rule into a string format.
- * 
- * @param rule The Rule to be converted.
- * @return The string format of the given Rule. Use free() to deallocate this string. Returns NULL 
- * if the Rule, its body or the head's atom are empty (NULL).
- */
-char *rule_to_string(const Rule * const rule) {
-    if (rule != NULL) {
-        if ((rule->body != NULL) && (rule->head.atom != NULL)) {
-            unsigned int i;
-            char *literal_string, *result = strdup("(");
-            size_t result_size = strlen(result) + 1;
-
-            literal_string = literal_to_string(&(rule->body[0]));
-            result_size += strlen(literal_string);
-            char *temp = strdup(result);
-            result = (char *) realloc(result, result_size);
-            sprintf(result, "%s%s", temp, literal_string);
-            free(temp);
-            free(literal_string);
-
-            for (i = 1; i < rule->body_size; ++i) {
-                literal_string = literal_to_string(&(rule->body[i]));
-                result_size += strlen(literal_string) + 2;
-                temp = strdup(result);
-                result = (char *) realloc(result, result_size);
-                sprintf(result, "%s, %s", temp, literal_string);
-                free(literal_string);
-                free(temp);
-            }
-
-            char weight_length[50];
-            int weight_size = sprintf(weight_length, "%.4f", rule->weight);
-
-            literal_string = literal_to_string(&rule->head);
-            result_size += strlen(literal_string) + weight_size + 8;
-            temp = strdup(result);
-            result = (char *) realloc(result, result_size);
-            sprintf(result, "%s) => %s (%.4f)", temp, literal_string, rule->weight);
-            free(literal_string);
-            free(temp);
-            return result;
-        }
-    }
-    return NULL;
-}
-
-/**
  * @brief Promote the rule by adding the given amount. If the amount given is negative, it will be 
  * considered a demotion.
  * 
@@ -189,4 +141,105 @@ int rule_equals(const Rule * const rule1, const Rule * const rule2) {
         return 0;
     }
     return -1;
+}
+
+/**
+ * @brief Converts the Rule into a string format.
+ * 
+ * @param rule The Rule to be converted.
+ * @return The string format of the given Rule. Use free() to deallocate this string. Returns NULL 
+ * if the Rule, its body or the head's atom are NULL.
+ */
+char *rule_to_string(const Rule * const rule) {
+    if (rule != NULL) {
+        if ((rule->body != NULL) && (rule->head.atom != NULL)) {
+            unsigned int i;
+            char *literal_string, *result = strdup("(");
+            size_t result_size = strlen(result) + 1;
+
+            literal_string = literal_to_string(&(rule->body[0]));
+            result_size += strlen(literal_string);
+            char *temp = strdup(result);
+            result = (char *) realloc(result, result_size);
+            sprintf(result, "%s%s", temp, literal_string);
+            free(temp);
+            free(literal_string);
+
+            for (i = 1; i < rule->body_size; ++i) {
+                literal_string = literal_to_string(&(rule->body[i]));
+                result_size += strlen(literal_string) + 2;
+                temp = strdup(result);
+                result = (char *) realloc(result, result_size);
+                sprintf(result, "%s, %s", temp, literal_string);
+                free(literal_string);
+                free(temp);
+            }
+
+            char weight_length[50];
+            int weight_size = sprintf(weight_length, "%.4f", rule->weight);
+
+            literal_string = literal_to_string(&rule->head);
+            result_size += strlen(literal_string) + weight_size + 8;
+            temp = strdup(result);
+            result = (char *) realloc(result, result_size);
+            sprintf(result, "%s) => %s (%.4f)", temp, literal_string, rule->weight);
+            free(literal_string);
+            free(temp);
+            return result;
+        }
+    }
+    return NULL;
+}
+/**
+ * @brief Converts a Rule to a Prudens JS Rule format.
+ * 
+ * @param rule The Rule to be converted.
+ * @param rule_number A number to be appended at the name of the rule.
+ * @return The Prudens JS Rule format (as a string) of the given Rule. Use free() to deallocate the result. 
+ * Returns NULL if the Rule, its body or the head's atom are NULL.
+ */
+char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number) {
+    if (rule != NULL) {
+        if ((rule->body != NULL) && (rule->head.atom != NULL)) {
+            char temp_buffer[50];
+            int rule_number_size = sprintf(temp_buffer, "%d", rule_number);
+
+            const char * const start = "{\\\"name\\\": \\\"Rule";
+            char *result, *body = strdup("\\\", \\\"body\\\": ["), *temp, *literal_prudensjs_string;
+            size_t body_size = strlen(body) + 1, result_size;
+
+            unsigned int i;
+            for (i = 0; i < rule->body_size - 1; ++i) {
+                literal_prudensjs_string = literal_to_prudensjs(&(rule->body[i]));
+                body_size += strlen(literal_prudensjs_string) + 2;
+                temp = strdup(body);
+                body = (char *) realloc(body, body_size);
+                sprintf(body, "%s%s, ", temp, literal_prudensjs_string);
+                free(temp);
+                free(literal_prudensjs_string);
+            }
+
+            literal_prudensjs_string = literal_to_prudensjs(&(rule->body[i]));
+            body_size += strlen(literal_prudensjs_string) + 13;
+            temp = strdup(body);
+            body = (char *) realloc(body, body_size);
+            sprintf(body, "%s%s], \\\"head\\\": ", temp, literal_prudensjs_string);
+            free(temp);
+            free(literal_prudensjs_string);
+
+            literal_prudensjs_string = literal_to_prudensjs(&(rule->head));
+
+            result_size = strlen(start) + rule_number_size + body_size +
+            strlen(literal_prudensjs_string) + 1;
+
+            result = (char *) malloc(result_size);
+
+            sprintf(result, "%s%d%s%s}", start, rule_number, body, literal_prudensjs_string);
+            free(literal_prudensjs_string);
+            free(body);
+
+            return result;
+        }
+    }
+    return NULL;
 }
