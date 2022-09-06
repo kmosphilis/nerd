@@ -411,14 +411,16 @@ START_TEST(to_prudensjs_test) {
     char *rule_prudensjs_string = rule_to_prudensjs(&rule, 1);
 
     ck_assert_str_eq(rule_prudensjs_string, "{\\\"name\\\": \\\"Rule1\\\", \\\"body\\\": ["
-    "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
-    "{\\\"name\\\": \\\"Bird\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
-    "{\\\"name\\\": \\\"Antarctica\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}], "
-    "\\\"head\\\": {\\\"name\\\": \\\"Fly\\\", \\\"sign\\\": false, \\\"isJS\\\": false, \\\"isEquality\\\": "
-    "false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}");
+    "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true, \\\"isJS\\\": false, "
+    "\\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
+    "\\\"args\\\": null, \\\"arity\\\": 0}, {\\\"name\\\": \\\"Bird\\\", \\\"sign\\\": true, "
+    "\\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, "
+    "\\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
+    "{\\\"name\\\": \\\"Antarctica\\\", \\\"sign\\\": true, \\\"isJS\\\": false, "
+    "\\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
+    "\\\"args\\\": null, \\\"arity\\\": 0}], \\\"head\\\": {\\\"name\\\": \\\"Fly\\\", "
+    "\\\"sign\\\": false, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}");
     
     free(rule_prudensjs_string);
 
@@ -441,14 +443,16 @@ START_TEST(to_prudensjs_test) {
     rule_prudensjs_string = rule_to_prudensjs(&rule, 22);
 
     ck_assert_str_eq(rule_prudensjs_string, "{\\\"name\\\": \\\"Rule22\\\", \\\"body\\\": ["
-    "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
-    "{\\\"name\\\": \\\"Bird\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
-    "{\\\"name\\\": \\\"Antarctica\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}], "
-    "\\\"head\\\": {\\\"name\\\": \\\"Wings\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": "
-    "false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}");
+    "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true, \\\"isJS\\\": false, "
+    "\\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
+    "\\\"args\\\": null, \\\"arity\\\": 0}, {\\\"name\\\": \\\"Bird\\\", \\\"sign\\\": true, "
+    "\\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, "
+    "\\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
+    "{\\\"name\\\": \\\"Antarctica\\\", \\\"sign\\\": true, \\\"isJS\\\": false, "
+    "\\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
+    "\\\"args\\\": null, \\\"arity\\\": 0}], \\\"head\\\": {\\\"name\\\": \\\"Wings\\\", "
+    "\\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}");
 
     free(rule_prudensjs_string);
 
