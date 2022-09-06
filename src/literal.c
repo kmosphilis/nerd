@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "literal.h"
@@ -56,29 +56,6 @@ void literal_copy(Literal * const destination, const Literal * const source) {
 }
 
 /**
- * @brief Converts the Literal to a string format with it's sign (positive or negative).
- * 
- * @param literal The Literal to be converted.
- * @return The string format of the given Literal. Use free() to deallocate this string. Returns 
- * NULL if the Literal or its atom are empty (NULL).
- */
-char *literal_to_string(const Literal * const literal) {
-    if (literal != NULL) {
-        if (literal->atom != NULL) {
-            if (literal->sign > 0) {
-                return strdup(literal->atom);
-            }
-
-            char *result = (char *) malloc(strlen(literal->atom) + 2);
-            sprintf(result, "-%s", literal->atom);
-            return result;
-        }
-    }
-    return NULL;
-}
-
-
-/**
  * @brief Negates the given Literal. If it is positive it will become negative, and vice versa.
  * 
  * @param literal The Literal to negate. If NULL, nothing will happen.
@@ -108,4 +85,53 @@ int literal_equals(const Literal * const literal1, const Literal * const literal
         return 0;
     }
     return -1;
+}
+
+/**
+ * @brief Converts the Literal to a string format with it's sign (positive or negative).
+ * 
+ * @param literal The Literal to be converted.
+ * @return The string format of the given Literal. Use free() to deallocate this string. Returns 
+ * NULL if the Literal or its atom are NULL.
+ */
+char *literal_to_string(const Literal * const literal) {
+    if (literal != NULL) {
+        if (literal->atom != NULL) {
+            if (literal->sign > 0) {
+                return strdup(literal->atom);
+            }
+
+            char *result = (char *) malloc(strlen(literal->atom) + 2);
+            sprintf(result, "-%s", literal->atom);
+            return result;
+        }
+    }
+    return NULL;
+}
+
+/**
+ * @brief Converts a Literal to a Prudens JS Literal format.
+ * 
+ * @param literal The Literal to be converted.
+ * @return The Prudens JS Literal format (as a string) of the given Literal. Use free() to deallocate the result. 
+ * Returns NULL if the Literal or its atom are NULL.
+ */
+char *literal_to_prudensjs(const Literal * const literal) {
+    if (literal != NULL) {
+        if (literal->atom != NULL) {
+            const char * const start = "{\\\"name\\\": \\\"", * const sign = ", \\\"sign\\\": ", 
+            * const end = ", \\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, "
+            "\\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}";
+            char *result;
+            size_t result_size = strlen(start) + strlen(literal->atom) + strlen(sign) + 
+            (literal->sign ? 4 : 5) + strlen(end) + 3;
+
+            result = (char *) malloc(result_size);
+            sprintf(result, "%s%s\\\"%s%s%s", start, literal->atom, sign,
+            literal->sign ? "true" : "false", end);
+
+            return result;
+        }
+    }
+    return NULL;
 }

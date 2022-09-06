@@ -96,34 +96,6 @@ START_TEST(copy_test) {
 }
 END_TEST
 
-START_TEST(to_string_test) {
-    Literal literal, *literal_pointer = NULL;
-    literal_constructor(&literal, "Penguin", 1);
-
-    char *literal_string = literal_to_string(&literal);
-    ck_assert_str_eq(literal_string, "Penguin");
-    free(literal_string);
-
-    literal_destructor(&literal);
-
-    literal_constructor(&literal, "Penguin", 0);
-
-    literal_string = literal_to_string(&literal);
-    ck_assert_str_eq(literal_string, "-Penguin");
-    free(literal_string);
-
-    literal_string = literal_to_string(literal_pointer);
-    ck_assert_pstr_eq(literal_string, NULL);
-
-    literal_pointer = &literal;
-
-    literal_destructor(&literal);
-
-    literal_string = literal_to_string(literal_pointer);
-    ck_assert_pstr_eq(literal_string, NULL);
-}
-END_TEST
-
 START_TEST(negate_test) {
     Literal literal, *literal_pointer = NULL;
     literal_constructor(&literal, "Penguin", 1);
@@ -180,9 +152,78 @@ START_TEST(equality_check_test) {
     literal_destructor(&literal4);
 }
 END_TEST
+
+START_TEST(to_string_test) {
+    Literal literal, *literal_pointer = NULL;
+    literal_constructor(&literal, "Penguin", 1);
+
+    char *literal_string = literal_to_string(&literal);
+    ck_assert_str_eq(literal_string, "Penguin");
+    free(literal_string);
+
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Penguin", 0);
+
+    literal_string = literal_to_string(&literal);
+    ck_assert_str_eq(literal_string, "-Penguin");
+    free(literal_string);
+
+    literal_string = literal_to_string(literal_pointer);
+    ck_assert_pstr_eq(literal_string, NULL);
+
+    literal_pointer = &literal;
+
+    literal_destructor(&literal);
+
+    literal_string = literal_to_string(literal_pointer);
+    ck_assert_pstr_eq(literal_string, NULL);
+}
+END_TEST
+
+START_TEST(to_prudensjs_test) {
+    Literal literal, *literal_pointer = NULL;
+    literal_constructor(&literal, "Penguin", 1);
+
+    char *literal_prudensjs_string = literal_to_prudensjs(&literal);
+    ck_assert_str_eq(literal_prudensjs_string, "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true, "
+    "\\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
+    "\\\"args\\\": null, \\\"arity\\\": 0}");
+    free(literal_prudensjs_string);
+
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Penguin", 0);
+
+    literal_prudensjs_string = literal_to_prudensjs(&literal);
+    ck_assert_str_eq(literal_prudensjs_string, "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": false, "
+    "\\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
+    "\\\"args\\\": null, \\\"arity\\\": 0}");
+    free(literal_prudensjs_string);
+
+    literal_prudensjs_string = literal_to_prudensjs(literal_pointer);
+    ck_assert_pstr_eq(literal_prudensjs_string, NULL);
+
+    literal_pointer = &literal;
+
+    literal_destructor(&literal);
+
+    literal_prudensjs_string = literal_to_prudensjs(literal_pointer);
+    ck_assert_pstr_eq(literal_prudensjs_string, NULL);
+
+    literal_constructor(&literal, "Albatross", 0);
+    literal_prudensjs_string = literal_to_prudensjs(&literal);
+    ck_assert_str_eq(literal_prudensjs_string, "{\\\"name\\\": \\\"Albatross\\\", \\\"sign\\\": false, "
+    "\\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
+    "\\\"args\\\": null, \\\"arity\\\": 0}");
+    free(literal_prudensjs_string);
+    literal_destructor(&literal);
+}
+END_TEST
+
 Suite *literal_suite() {
     Suite *suite;
-    TCase *create_case, *copy_case, *string_case, *negate_case, *equality_check_case;
+    TCase *create_case, *copy_case, *negate_case, *equality_check_case, *convert_case;
     suite = suite_create("Literal");
     create_case = tcase_create("Create");
     tcase_add_test(create_case, construct_destruct_test);
@@ -192,10 +233,6 @@ Suite *literal_suite() {
     tcase_add_test(copy_case, copy_test);
     suite_add_tcase(suite, copy_case);
 
-    string_case = tcase_create("To string");
-    tcase_add_test(string_case, to_string_test);
-    suite_add_tcase(suite, string_case);
-
     negate_case = tcase_create("Negate");
     tcase_add_test(negate_case, negate_test);
     suite_add_tcase(suite, negate_case);
@@ -203,6 +240,11 @@ Suite *literal_suite() {
     equality_check_case = tcase_create("Equality Check");
     tcase_add_test(equality_check_case, equality_check_test);
     suite_add_tcase(suite, equality_check_case);
+
+    convert_case = tcase_create("Conversion");
+    tcase_add_test(convert_case, to_string_test);
+    tcase_add_test(convert_case, to_prudensjs_test);
+    suite_add_tcase(suite, convert_case);
 
     return suite;
 }
