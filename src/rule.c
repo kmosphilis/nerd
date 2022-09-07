@@ -195,8 +195,8 @@ char *rule_to_string(const Rule * const rule) {
  * 
  * @param rule The Rule to be converted.
  * @param rule_number A number to be appended at the name of the rule.
- * @return The Prudens JS Rule format (as a string) of the given Rule. Use free() to deallocate the result. 
- * Returns NULL if the Rule, its body or the head's atom are NULL.
+ * @return The Prudens JS Rule format (as a string) of the given Rule. Use free() to deallocate the 
+ * result. Returns NULL if the Rule, its body or the head's atom are NULL.
  */
 char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number) {
     if (rule != NULL) {
