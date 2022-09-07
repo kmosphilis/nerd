@@ -290,37 +290,82 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
  * Returns NULL if the KnowledgeBase is NULL.
  */
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
-    char *result, *temp, *rule_queue_string;
-    const char * const beginning = "Knowledge Base:\n", * const active_rules = "Active Rules: ",
-    * const inactive_rules = "Inactive Rules: ", * const threshold = "Activation Threshold: ";
+    if (knowledge_base != NULL) {
+        char *result, *temp, *rule_queue_string;
+        const char * const beginning = "Knowledge Base:\n", * const active_rules = "Active Rules: ",
+        * const inactive_rules = "Inactive Rules: ", * const threshold = "Activation Threshold: ";
 
-    size_t result_size = strlen(beginning) + strlen(active_rules) + strlen(inactive_rules) + 
-    strlen(threshold) + 1;
+        size_t result_size = strlen(beginning) + strlen(active_rules) + strlen(inactive_rules) + 
+        strlen(threshold) + 1;
 
-    char weight_length[50];
-    int weight_size = sprintf(weight_length, "%.4f", knowledge_base->activation_threshold);
+        char weight_length[50];
+        int weight_size = sprintf(weight_length, "%.4f", knowledge_base->activation_threshold);
 
-    result = strdup(beginning);
+        result = strdup(beginning);
 
-    rule_queue_string = rule_queue_to_string(&(knowledge_base->active));
-    temp = strdup(result);
-    result_size += strlen(rule_queue_string) + weight_size + 2;
-    result = (char *) realloc(result, result_size);
+        rule_queue_string = rule_queue_to_string(&(knowledge_base->active));
+        temp = strdup(result);
+        result_size += strlen(rule_queue_string) + weight_size + 2;
+        result = (char *) realloc(result, result_size);
 
-    sprintf(result, "%s%s%.4f\n%s%s\n", temp, threshold, knowledge_base->activation_threshold,
-    active_rules, rule_queue_string);
+        sprintf(result, "%s%s%.4f\n%s%s\n", temp, threshold, knowledge_base->activation_threshold,
+        active_rules, rule_queue_string);
 
-    free(temp);
-    free(rule_queue_string);
+        free(temp);
+        free(rule_queue_string);
 
-    rule_queue_string = rule_queue_to_string(&(knowledge_base->inactive));
-    temp = strdup(result);
-    result_size += strlen(rule_queue_string);
-    result = (char *) realloc(result, result_size);
+        rule_queue_string = rule_queue_to_string(&(knowledge_base->inactive));
+        temp = strdup(result);
+        result_size += strlen(rule_queue_string);
+        result = (char *) realloc(result, result_size);
 
-    sprintf(result, "%s%s%s", temp, inactive_rules, rule_queue_string);
-    
-    free(temp);
-    free(rule_queue_string);
-    return result;
+        sprintf(result, "%s%s%s", temp, inactive_rules, rule_queue_string);
+        
+        free(temp);
+        free(rule_queue_string);
+        return result;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Converts a KnowledgeBase to a Prudens JS Knowledge base format. Note: It only returns the 
+ * active rules of a KnowledgeBase, since the inactive should not be considered until their 
+ * activation.
+ * 
+ * @param knowledge_base The KnowledgeBase to be converted.
+ * @return The Prudens JS Knowledge base format (as a string) of the given KnowledgeBase. Use free()
+ *  to deallocate the result. Returns NULL if the KnowledgeBase or its active rules are NULL.
+ */
+char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
+    if (knowledge_base != NULL) {
+        if (knowledge_base->active.rules != NULL) {
+            char *result = strdup("["), *temp, *rule_prudensjs_string;
+            size_t result_size = strlen(result) + 1;
+
+            unsigned int i;
+            for (i = 0; i < knowledge_base->active.length - 1; ++i) {
+                rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]),
+                i + 1);
+                result_size += strlen(rule_prudensjs_string) + 2;
+                temp = strdup(result);
+                result = (char *) realloc(result, result_size);
+                sprintf(result, "%s%s, ", temp, rule_prudensjs_string);
+                free(rule_prudensjs_string);
+                free(temp);
+            }
+
+            rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]),
+            i + 1);
+            result_size += strlen(rule_prudensjs_string) + 1;
+            temp = strdup(result);
+            result = (char *) realloc(result, result_size);
+            sprintf(result, "%s%s]", temp, rule_prudensjs_string);
+            free(rule_prudensjs_string);
+            free(temp);
+
+            return result;
+        }
+    }
+    return NULL;
 }

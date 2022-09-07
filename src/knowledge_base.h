@@ -25,5 +25,6 @@ const RuleQueue * const rules_to_promote, const float promotion_rate);
 void knowledge_base_demote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_demote, const float demotion_rate);
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base);
+char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base);
 
 #endif
