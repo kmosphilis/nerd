@@ -1,5 +1,6 @@
 #include "rule_queue.h"
 #include "scene.h"
+#include "context.h"
 
 #ifndef __KNOWLEDGE_BASE_H__
 #define __KNOWLEDGE_BASE_H__
@@ -19,7 +20,7 @@ void knowledge_base_create_new_rules(KnowledgeBase * const KnowledgeBase,
 const Scene * const observed, const Scene * const inferred, const unsigned int max_body_size,
 const unsigned int max_number_of_rules);
 void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,
-Literal ** const literals, const unsigned int literals_size, RuleQueue * const applicaple_rules);
+const Context * const observed, RuleQueue * const applicable_rules);
 void knowledge_base_promote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_promote, const float promotion_rate);
 void knowledge_base_demote_rules(KnowledgeBase * const knowledge_base,

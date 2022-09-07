@@ -5,7 +5,6 @@
 #include <time.h>
 
 #include "knowledge_base.h"
-#include "context.h"
 
 /**
  * @brief Constructs a KnowledgeBase.
@@ -84,17 +83,17 @@ const Scene * const observed, const Scene * const inferred, const unsigned int m
 const unsigned int max_number_of_rules) {
     if ((knowledge_base != NULL) && (observed != NULL)) {
         Context uncovered;
+        Scene combined;
 
-        scene_constructor(&uncovered);
+        context_constructor(&uncovered);
+        scene_constructor(&combined);
+
         scene_difference(observed, inferred, &uncovered);
+        scene_combine(observed, inferred, &combined);
 
         srand(time(NULL));
 
-        Scene combined;
         unsigned int i, j, body_size, rules_to_create = (rand() % max_number_of_rules) + 1;
-
-        scene_constructor(&combined);
-        scene_combine(observed, inferred, &combined);
 
         for (i = 0; i < rules_to_create; ++i) {
             if (uncovered.size != 0) {
@@ -146,36 +145,33 @@ const unsigned int max_number_of_rules) {
         }
 
         scene_destructor(&combined);
-        scene_destructor(&uncovered);
+        context_destructor(&uncovered);
     }
 }
 
-//TODO Create a Context struct.
 /**
- * @brief Finds the applicaple rules from the given context (Literals).
+ * @brief Finds the applicaple rules from the given context/scene (Literals).
  * 
  * @param knowledge_base The KnowledgeBase to find the Rules from.
- * @param literals The context.
- * @param literals_size The size of the context.
- * @param applicaple_rules The RuleQueue to save the applicaple Rules.
+ * @param observed The observed Context (Scene).
+ * @param applicable_rules The RuleQueue to save the applicable Rules.
  */
 void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,
-Literal ** const literals, const unsigned int literals_size, RuleQueue * const applicaple_rules) {
-    if ((knowledge_base != NULL) && (literals != NULL) && (applicaple_rules != NULL) && 
-    (literals_size != 0)) {
+const Context * const observed, RuleQueue * const applicable_rules) {
+    if ((knowledge_base != NULL) && (observed != NULL) && (applicable_rules != NULL)) {
         unsigned int i, j, k, literals_in_found_in_body = 0;
         for (i = 0; i < knowledge_base->active.length; ++i) {
             Rule *current_rule = &(knowledge_base->active.rules[i]);
             for (j = 0; j < current_rule->body_size; ++j) {
-                for (k = 0; k < literals_size; ++k) {
-                    if (literal_equals(&(current_rule->body[j]), &((*literals)[k]))) {
+                for (k = 0; k < observed->size; ++k) {
+                    if (literal_equals(&(current_rule->body[j]), &(observed->observations[k]))) {
                         ++literals_in_found_in_body;
                         break;
                     }
                 }
             }
             if (literals_in_found_in_body == current_rule->body_size) {
-                rule_queue_enqueue(applicaple_rules, current_rule);
+                rule_queue_enqueue(applicable_rules, current_rule);
             }
             literals_in_found_in_body = 0;
         }
@@ -183,15 +179,15 @@ Literal ** const literals, const unsigned int literals_size, RuleQueue * const a
         for (i = 0; i < knowledge_base->inactive.length; ++i) {
             Rule *current_rule = &(knowledge_base->inactive.rules[i]);
             for (j = 0; j < current_rule->body_size; ++j) {
-                for (k = 0; k < literals_size; ++k) {
-                    if (literal_equals(&(current_rule->body[j]), &((*literals)[k]))) {
+                for (k = 0; k < observed->size; ++k) {
+                    if (literal_equals(&(current_rule->body[j]), &(observed->observations[k]))) {
                         ++literals_in_found_in_body;
                         break;
                     }
                 }
             }
             if (literals_in_found_in_body == current_rule->body_size) {
-                rule_queue_enqueue(applicaple_rules, current_rule);
+                rule_queue_enqueue(applicable_rules, current_rule);
             }
             literals_in_found_in_body = 0;
         }

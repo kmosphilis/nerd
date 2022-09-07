@@ -117,16 +117,19 @@ END_TEST
 START_TEST(applicable_rules_test) {
     KnowledgeBase knowledge_base, *knowledge_base_ptr = NULL;
     RuleQueue rule_queue;
-    Literal *literals = NULL;
+    Context context;
     size_t literals_size = 4;
 
-    literals = (Literal *) malloc(literals_size * sizeof(Literal));
     char *literal_atoms[4] = {"Penguin", "Bird", "Antarctica", "Fly"};
     int literal_signs[4] = {1, 1, 1, 1};
+    context_constructor(&context);
 
     unsigned int i;
     for (i = 0; i < literals_size; ++i) {
-        literal_constructor(&(literals[i]), literal_atoms[i], literal_signs[i]);
+        Literal literal;
+        literal_constructor(&literal, literal_atoms[i], literal_signs[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
     }
 
     create_rule_queue(&rule_queue);
@@ -139,46 +142,54 @@ START_TEST(applicable_rules_test) {
 
     rule_queue_destructor(&rule_queue);
 
-    knowledge_base_applicable_rules(&knowledge_base, &literals, literals_size, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
 
     ck_assert_int_eq(rule_queue.length, 1);
     ck_assert_rule_eq(&(rule_queue.rules[0]), &(knowledge_base.inactive.rules[0]));
 
     rule_queue_destructor(&rule_queue);
 
+    context_destructor(&context);
     char *literal_atoms2[4] = {"Seagull", "Bird", "Antarctica", "Fly"};
 
     for (i = 0; i < literals_size; ++i) {
-        literal_destructor(&(literals[i]));
-        literal_constructor(&(literals[i]), literal_atoms2[i], literal_signs[i]);
+        Literal literal;
+        literal_constructor(&literal, literal_atoms2[i], literal_signs[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
     }
 
-    knowledge_base_applicable_rules(&knowledge_base, &literals, literals_size, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
 
     ck_assert_int_eq(rule_queue.length, 0);
 
     char *literal_atoms3[4] = {"Seagull", "Bird", "Harbor", "Ocean"};
 
     for (i = 0; i < literals_size; ++i) {
-        literal_destructor(&(literals[i]));
-        literal_constructor(&(literals[i]), literal_atoms3[i], literal_signs[i]);
+        Literal literal;
+        literal_constructor(&literal, literal_atoms3[i], literal_signs[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
     }
 
-    knowledge_base_applicable_rules(&knowledge_base, &literals, literals_size, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
 
     ck_assert_int_eq(rule_queue.length, 1);
     ck_assert_rule_eq(&(rule_queue.rules[0]), &(knowledge_base.inactive.rules[2]));
 
     rule_queue_destructor(&rule_queue);
 
+    context_destructor(&context);
     char *literal_atoms4[4] = {"Albatross", "Bird", "Antarctica", "Penguin"};
 
     for (i = 0; i < literals_size; ++i) {
-        literal_destructor(&(literals[i]));
-        literal_constructor(&(literals[i]), literal_atoms4[i], literal_signs[i]);
+        Literal literal;
+        literal_constructor(&literal, literal_atoms4[i], literal_signs[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
     }
 
-    knowledge_base_applicable_rules(&knowledge_base, &literals, literals_size, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
 
     ck_assert_int_eq(rule_queue.length, 2);
     ck_assert_rule_eq(&(rule_queue.rules[0]), &(knowledge_base.inactive.rules[0]));
@@ -186,25 +197,17 @@ START_TEST(applicable_rules_test) {
     
     rule_queue_destructor(&rule_queue);
 
-    knowledge_base_applicable_rules(knowledge_base_ptr, &literals, literals_size, &rule_queue);
+    knowledge_base_applicable_rules(knowledge_base_ptr, &context, &rule_queue);
     ck_assert_ptr_null(knowledge_base_ptr);
 
-    knowledge_base_applicable_rules(&knowledge_base, NULL, literals_size, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, NULL, &rule_queue);
     ck_assert_rule_queue_empty(&rule_queue);
 
-    knowledge_base_applicable_rules(&knowledge_base, &literals, 0, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, NULL);
     ck_assert_rule_queue_empty(&rule_queue);
 
-    knowledge_base_applicable_rules(&knowledge_base, &literals, literals_size, NULL);
-    ck_assert_rule_queue_empty(&rule_queue);
-
-    for (i = 0; i < literals_size; ++i) {
-        literal_destructor(&(literals[i]));
-    }
-
+    context_destructor(&context);
     knowledge_base_destructor(&knowledge_base);
-    free(literals);
-
 }
 END_TEST
 
