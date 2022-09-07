@@ -330,8 +330,10 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
  * activation.
  * 
  * @param knowledge_base The KnowledgeBase to be converted.
- * @return The Prudens JS Knowledge base format (as a string) of the given KnowledgeBase. Use free()
- *  to deallocate the result. Returns NULL if the KnowledgeBase or its active rules are NULL.
+ * @return The Prudens JS Knowledge base format (as a string) of the given KnowledgeBase. The rules 
+ * will be in reverse order since younger rules in Prudens JS have higher priority unlike NERD, 
+ * where older rules have higher priority. Use free() to deallocate the result. Returns NULL if the 
+ * KnowledgeBase or its active rules are NULL.
  */
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
     if (knowledge_base != NULL) {
@@ -340,9 +342,9 @@ char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
             size_t result_size = strlen(result) + 1;
 
             unsigned int i;
-            for (i = 0; i < knowledge_base->active.length - 1; ++i) {
+            for (i = knowledge_base->active.length - 1; i > 0; --i) {
                 rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]),
-                i + 1);
+                knowledge_base->active.length - i);
                 result_size += strlen(rule_prudensjs_string) + 2;
                 temp = strdup(result);
                 result = (char *) realloc(result, result_size);
@@ -352,7 +354,7 @@ char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
             }
 
             rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]),
-            i + 1);
+            knowledge_base->active.length - i);
             result_size += strlen(rule_prudensjs_string) + 1;
             temp = strdup(result);
             result = (char *) realloc(result, result_size);
