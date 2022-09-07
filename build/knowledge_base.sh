@@ -1,7 +1,7 @@
 #! /bin/bash
 set -x
 cd "${0%/*}"
-mkdir ../bin
+mkdir -p ../bin
 rm -f ../bin/knowledge_base
 gcc -Wall -Wextra -o ../bin/knowledge_base ../src/literal.c ../src/rule.c ../src/rule_queue.c \
 ../src/knowledge_base.c ../src/scene.c ../src/context.c ../test/helper/literal.c \
