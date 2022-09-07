@@ -135,7 +135,7 @@ void scene_combine(const Scene * const scene1, const Scene * const scene2, Scene
             if ((scene2 != NULL) && (scene2->size != 0)) {
                 unsigned int i, j;
                 for (i = 0; i < scene2->size; ++i) {
-                    for (j = 0; j < scene1->size;++j) {
+                    for (j = 0; j < scene1->size; ++j) {
                         if (literal_equals(&(scene2->observations[i]),
                         &(scene1->observations[j]))) {
                             break;
@@ -168,8 +168,8 @@ void scene_difference(const Scene * const scene1, const Scene * const scene2, Sc
                 unsigned int i, j;
                 for (i = 0; i < scene1->size; ++i) {
                     for (j = 0; j < scene2->size; ++j) {
-                        if (literal_equals(&(scene2->observations[i]),
-                        &(scene1->observations[j]))) {
+                        if (literal_equals(&(scene2->observations[j]),
+                        &(scene1->observations[i]))) {
                             break;
                         }
                     }
