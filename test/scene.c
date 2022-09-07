@@ -386,6 +386,78 @@ START_TEST(difference_test) {
 }
 END_TEST
 
+START_TEST(opposed_literals_test) {
+    Scene scene1, scene2, expected1, expected2, result, *scene_ptr = NULL;
+    Literal literal;
+
+    scene_constructor(&scene1);
+    scene_constructor(&scene2);
+    scene_constructor(&expected1);
+    scene_constructor(&expected2);
+    scene_constructor(&result);
+
+    literal_constructor(&literal, "Penguin", 1);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Bird", 1);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&scene2, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Fly", 0);
+    scene_add_literal(&scene1, &literal);
+    scene_add_literal(&expected1, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Fly", 1);
+    scene_add_literal(&scene2, &literal);
+    scene_add_literal(&expected2, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Antarctica", 1);
+    scene_add_literal(&scene1, &literal);
+    literal_destructor(&literal);
+    
+    scene_opposed_literals(&scene1, &scene2, &result);
+    ck_assert_scene_eq(&expected2, &result);
+    scene_destructor(&result);
+
+    scene_opposed_literals(&scene2, &scene1, &result);
+    ck_assert_scene_eq(&expected1, &result);
+    scene_destructor(&result);
+
+    literal_constructor(&literal, "Antarctica", 0);
+    scene_add_literal(&scene2, &literal);
+    scene_add_literal(&expected2, &literal);
+    literal_destructor(&literal);
+
+    scene_opposed_literals(&scene1, &scene2, &result);
+    ck_assert_scene_eq(&expected2, &result);
+    scene_destructor(&result);
+
+    scene_opposed_literals(&scene1, NULL, &result);
+    ck_assert_scene_empty(&result);
+
+    scene_opposed_literals(NULL, &scene2, &result);
+    ck_assert_scene_empty(&result);
+
+    scene_opposed_literals(NULL, NULL, &result);
+    ck_assert_scene_empty(&result);
+
+    scene_opposed_literals(&scene1, &scene2, scene_ptr);
+    ck_assert_ptr_null(scene_ptr);
+
+
+    scene_destructor(&scene1);
+    scene_destructor(&scene2);
+    scene_destructor(&expected1);
+    scene_destructor(&expected2);
+    scene_destructor(&result);
+}
+END_TEST
+
 Suite *scene_suite() {
     Suite *suite;
     TCase *create_case, *manipulation_case, *copy_case, *to_string_case;
@@ -400,6 +472,7 @@ Suite *scene_suite() {
     tcase_add_test(manipulation_case, delete_test);
     tcase_add_test(manipulation_case, combine_test);
     tcase_add_test(manipulation_case, difference_test);
+    tcase_add_test(manipulation_case, opposed_literals_test);
     suite_add_tcase(suite, manipulation_case);
 
     copy_case = tcase_create("Copy");

@@ -188,6 +188,33 @@ void scene_difference(const Scene * const scene1, const Scene * const scene2, Sc
 }
 
 /**
+ * @brief Finds all the literals that have the same atom, but a different (opposing) sign. If any of
+ *  the parameters is NULL, the operation will not be performed.
+ * 
+ * @param scene1 The Scene used as ground truth.
+ * @param scene2 The Scene to find the different Literals.
+ * @param result The output of the operation to be returned.
+ */
+void scene_opposed_literals(const Scene * const scene1, const Scene * const scene2,
+Scene * const result) {
+    if ((scene1 != NULL) && (scene2 != NULL) && (result != NULL)) {
+        unsigned int i, j;
+        for (i = 0; i < scene1->size; ++i) {
+            for (j = 0; j < scene2->size; ++j) {
+                if (!literal_equals(&(scene1->observations[i]), &(scene2->observations[j]))) {
+                    if (strcmp(scene1->observations[i].atom, scene2->observations[j].atom) == 0) {
+                        scene_add_literal(result, &(scene2->observations[j]));
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/**
  * @brief Converts a Scene into a string format.
  * 
  * @param scene The Scene to be converted.
