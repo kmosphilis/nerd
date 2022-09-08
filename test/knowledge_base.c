@@ -596,12 +596,13 @@ START_TEST(to_prudensjs_test) {
     for (i = 0; i < rule_queue_length; ++i) {
         knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
     }
-    const char *expected_result = "[{\\\"name\\\": \\\"Rule1\\\", \\\"body\\\": [{\\\"name\\\": "
-    "\\\"Seagull\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, "
-    "{\\\"name\\\": \\\"Bird\\\", \\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": "
-    "false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, "
-    "\\\"arity\\\": 0}, {\\\"name\\\": \\\"Harbor\\\", \\\"sign\\\": true, \\\"isJS\\\": false, "
+    const char *expected_result = "{\\\"type\\\": \\\"output\\\", \\\"kb\\\": [{\\\"name\\\": "
+    "\\\"Rule1\\\", \\\"body\\\": [{\\\"name\\\": \\\"Seagull\\\", \\\"sign\\\": true, "
+    "\\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, "
+    "\\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, {\\\"name\\\": \\\"Bird\\\", "
+    "\\\"sign\\\": true, \\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": "
+    "false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}, {\\\"name\\\": "
+    "\\\"Harbor\\\", \\\"sign\\\": true, \\\"isJS\\\": false, "
     "\\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
     "\\\"args\\\": null, \\\"arity\\\": 0}, {\\\"name\\\": \\\"Ocean\\\", \\\"sign\\\": true, "
     "\\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, "
@@ -627,7 +628,8 @@ START_TEST(to_prudensjs_test) {
     "\\\"isEquality\\\": false, \\\"isInEquality\\\": false, \\\"isAction\\\": false, "
     "\\\"args\\\": null, \\\"arity\\\": 0}], \\\"head\\\": {\\\"name\\\": \\\"Fly\\\", "
     "\\\"sign\\\": false, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}]";
+    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}}]"
+    ", \\\"code\\\": \\\"\\\", \\\"imports\\\": \\\"\\\", \\\"warnings\\\": []}";
 
     char *knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(&knowledge_base);
     ck_assert_pstr_eq(knowledge_base_prudensjs_string, NULL);

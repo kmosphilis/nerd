@@ -338,7 +338,10 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
     if (knowledge_base != NULL) {
         if (knowledge_base->active.rules != NULL) {
-            char *result = strdup("["), *temp, *rule_prudensjs_string;
+            char const *end = "], \\\"code\\\": \\\"\\\", \\\"imports\\\": \\\"\\\", "
+            "\\\"warnings\\\": []}";
+            char *result = strdup("{\\\"type\\\": \\\"output\\\", \\\"kb\\\": ["), *temp,
+            *rule_prudensjs_string;
             size_t result_size = strlen(result) + 1;
 
             unsigned int i;
@@ -355,10 +358,10 @@ char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
 
             rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]),
             knowledge_base->active.length - i);
-            result_size += strlen(rule_prudensjs_string) + 1;
+            result_size += strlen(rule_prudensjs_string) + strlen(end);
             temp = strdup(result);
             result = (char *) realloc(result, result_size);
-            sprintf(result, "%s%s]", temp, rule_prudensjs_string);
+            sprintf(result, "%s%s%s", temp, rule_prudensjs_string, end);
             free(rule_prudensjs_string);
             free(temp);
 
