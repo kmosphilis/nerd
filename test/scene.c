@@ -247,7 +247,7 @@ START_TEST(to_string_test) {
     literal_destructor(&literal);
 
     char *scene_string = scene_to_string(&scene);
-    ck_assert_str_eq(scene_string, "Scene: [\n\tPenguin,\n\tAntarctica,\n\tBird,\n\t-Fly\n]");
+    ck_assert_str_eq(scene_string, "Scene: [\n\tpenguin,\n\tantarctica,\n\tbird,\n\t-fly\n]");
     free(scene_string);
 
     scene_string = scene_to_string(scene_ptr);

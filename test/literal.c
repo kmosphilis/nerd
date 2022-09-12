@@ -9,14 +9,14 @@ START_TEST(construct_destruct_test) {
     
     literal_constructor(&literal, "Penguin", 1);
 
-    ck_assert_str_eq(literal.atom, "Penguin");
+    ck_assert_str_eq(literal.atom, "penguin");
     ck_assert_int_eq(literal.sign, 1);
 
     literal_destructor(&literal);
     ck_assert_literal_empty(&literal);
 
     literal_constructor(&literal, "Penguin", 0);
-    ck_assert_str_eq(literal.atom, "Penguin");
+    ck_assert_str_eq(literal.atom, "penguin");
     ck_assert_int_eq(literal.sign, 0);
 
     literal_destructor(&literal);
@@ -26,14 +26,14 @@ START_TEST(construct_destruct_test) {
 
     ck_assert_literal_notempty(&literal);
 
-    ck_assert_str_eq(literal.atom, "Penguin");
+    ck_assert_str_eq(literal.atom, "penguin");
     ck_assert_int_eq(literal.sign, 1);
 
     literal_destructor(&literal);
 
     literal_constructor(&literal, "Penguin", -9);
 
-    ck_assert_str_eq(literal.atom, "Penguin");
+    ck_assert_str_eq(literal.atom, "penguin");
     ck_assert_int_eq(literal.sign, 0);
 
     literal_destructor(&literal);
@@ -102,21 +102,21 @@ START_TEST(negate_test) {
 
     ck_assert_int_eq(literal.sign, 1);
     char *literal_string = literal_to_string(&literal);
-    ck_assert_str_eq(literal_string, "Penguin");
+    ck_assert_str_eq(literal_string, "penguin");
     free(literal_string);
 
     literal_negate(&literal);
 
     ck_assert_int_eq(literal.sign, 0);
     literal_string = literal_to_string(&literal);
-    ck_assert_str_eq(literal_string, "-Penguin");
+    ck_assert_str_eq(literal_string, "-penguin");
     free(literal_string);
 
     literal_negate(&literal);
 
     ck_assert_int_eq(literal.sign, 1);
     literal_string = literal_to_string(&literal);
-    ck_assert_str_eq(literal_string, "Penguin");
+    ck_assert_str_eq(literal_string, "penguin");
     free(literal_string);
 
     literal_negate(literal_pointer);
@@ -158,7 +158,7 @@ START_TEST(to_string_test) {
     literal_constructor(&literal, "Penguin", 1);
 
     char *literal_string = literal_to_string(&literal);
-    ck_assert_str_eq(literal_string, "Penguin");
+    ck_assert_str_eq(literal_string, "penguin");
     free(literal_string);
 
     literal_destructor(&literal);
@@ -166,7 +166,7 @@ START_TEST(to_string_test) {
     literal_constructor(&literal, "Penguin", 0);
 
     literal_string = literal_to_string(&literal);
-    ck_assert_str_eq(literal_string, "-Penguin");
+    ck_assert_str_eq(literal_string, "-penguin");
     free(literal_string);
 
     literal_string = literal_to_string(literal_pointer);
@@ -186,7 +186,7 @@ START_TEST(to_prudensjs_test) {
     literal_constructor(&literal, "Penguin", 1);
 
     char *literal_prudensjs_string = literal_to_prudensjs(&literal);
-    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"Penguin\", \"sign\": true,"
+    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"penguin\", \"sign\": true,"
     " \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
     "\"isAction\": false, \"arity\": 0}");
     free(literal_prudensjs_string);
@@ -196,7 +196,7 @@ START_TEST(to_prudensjs_test) {
     literal_constructor(&literal, "Penguin", 0);
 
     literal_prudensjs_string = literal_to_prudensjs(&literal);
-    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"Penguin\", "
+    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"penguin\", "
     "\"sign\": false, \"isJS\": false, \"isEquality\": false, "
     "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}");
     free(literal_prudensjs_string);
@@ -213,7 +213,7 @@ START_TEST(to_prudensjs_test) {
 
     literal_constructor(&literal, "Albatross", 0);
     literal_prudensjs_string = literal_to_prudensjs(&literal);
-    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"Albatross\", "
+    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"albatross\", "
     "\"sign\": false, \"isJS\": false, \"isEquality\": false, "
     "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}");
     free(literal_prudensjs_string);

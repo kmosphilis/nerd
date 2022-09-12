@@ -517,12 +517,12 @@ START_TEST(to_string_test) {
     char *knowledge_base_string = knowledge_base_to_string(&knowledge_base);
 
     ck_assert_str_eq(knowledge_base_string, "Knowledge Base:\n"
-    "Activation Threshold: 3.0000\n"
-    "Active Rules: [\n]\n"
-    "Inactive Rules: [\n"
-    "\t(Penguin, Bird, Antarctica) => -Fly (0.0000),\n"
-    "\t(Albatross, Bird) => Fly (1.0000),\n"
-    "\t(Seagull, Bird, Harbor, Ocean) => Fly (2.0000)\n]");
+        "Activation Threshold: 3.0000\n"
+        "Active Rules: [\n]\n"
+        "Inactive Rules: [\n"
+        "\t(penguin, bird, antarctica) => -fly (0.0000),\n"
+        "\t(albatross, bird) => fly (1.0000),\n"
+        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
     free(knowledge_base_string);
 
     for (; i < rule_queue.length; ++i) {
@@ -534,13 +534,13 @@ START_TEST(to_string_test) {
     ck_assert_str_eq(knowledge_base_string, "Knowledge Base:\n"
         "Activation Threshold: 3.0000\n"
         "Active Rules: [\n"
-        "\t(Penguin, Bird, Antarctica) => -Fly (3.0000),\n"
-        "\t(Albatross, Bird) => Fly (4.0000),\n"
-        "\t(Seagull, Bird, Harbor, Ocean) => Fly (5.0000)\n]\n"
+        "\t(penguin, bird, antarctica) => -fly (3.0000),\n"
+        "\t(albatross, bird) => fly (4.0000),\n"
+        "\t(seagull, bird, harbor, ocean) => fly (5.0000)\n]\n"
         "Inactive Rules: [\n"
-        "\t(Penguin, Bird, Antarctica) => -Fly (0.0000),\n"
-        "\t(Albatross, Bird) => Fly (1.0000),\n"
-        "\t(Seagull, Bird, Harbor, Ocean) => Fly (2.0000)\n]");
+        "\t(penguin, bird, antarctica) => -fly (0.0000),\n"
+        "\t(albatross, bird) => fly (1.0000),\n"
+        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
     free(knowledge_base_string);
 
     rule_queue_destructor(&(knowledge_base.inactive));
@@ -548,9 +548,9 @@ START_TEST(to_string_test) {
     ck_assert_str_eq(knowledge_base_string, "Knowledge Base:\n"
         "Activation Threshold: 3.0000\n"
         "Active Rules: [\n"
-        "\t(Penguin, Bird, Antarctica) => -Fly (3.0000),\n"
-        "\t(Albatross, Bird) => Fly (4.0000),\n"
-        "\t(Seagull, Bird, Harbor, Ocean) => Fly (5.0000)\n]\n"
+        "\t(penguin, bird, antarctica) => -fly (3.0000),\n"
+        "\t(albatross, bird) => fly (4.0000),\n"
+        "\t(seagull, bird, harbor, ocean) => fly (5.0000)\n]\n"
         "Inactive Rules: [\n]");
     free(knowledge_base_string);
 
@@ -597,26 +597,26 @@ START_TEST(to_prudensjs_test) {
         knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
     }
     const char *expected_result = "{\"type\": \"output\", \"kb\": [{\"name\": \"Rule1\", "
-    "\"body\": [{\"name\": \"Seagull\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"Bird\", "
+    "\"body\": [{\"name\": \"seagull\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}, {\"name\": \"Harbor\", \"sign\": true, \"isJS\": false, "
+    "\"isAction\": false, \"arity\": 0}, {\"name\": \"harbor\", \"sign\": true, \"isJS\": false, "
     "\"isEquality\": false, \"isInEquality\": false, \"isAction\": false, \"arity\": 0}, "
-    "{\"name\": \"Ocean\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"Fly\", "
+    "{\"name\": \"ocean\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
     "\"isAction\": false, \"arity\": 0}}, {\"name\": \"Rule2\", \"body\": ["
-    "{\"name\": \"Albatross\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"Bird\", "
+    "{\"name\": \"albatross\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"Fly\", \"sign\": true, "
+    "\"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
-    "\"arity\": 0}}, {\"name\": \"Rule3\", \"body\": [{\"name\": \"Penguin\", \"sign\": true, "
+    "\"arity\": 0}}, {\"name\": \"Rule3\", \"body\": [{\"name\": \"penguin\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
-    "\"arity\": 0}, {\"name\": \"Bird\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"Antarctica\", "
+    "\"arity\": 0}, {\"name\": \"bird\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"antarctica\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"Fly\", \"sign\": false, "
+    "\"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", \"sign\": false, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
     "\"arity\": 0}}], \"code\": \"\", \"imports\": \"\", \"warnings\": [], "
     "\"customPriorities\": []}";

@@ -27,13 +27,13 @@ START_TEST(to_prudensjs_test) {
 
     char *context_prudensjs_string = context_to_prudensjs(&context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
-    "{\"name\": \"Penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": "
+    "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": "
     "false, \"isInEquality\": false, \"isAction\": false, \"arity\": "
-    "0}, {\"name\": \"Antarctica\", \"sign\": true, \"isJS\": false, "
+    "0}, {\"name\": \"antarctica\", \"sign\": true, \"isJS\": false, "
     "\"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
-    "\"arity\": 0}, {\"name\": \"Bird\", \"sign\": true, "
+    "\"arity\": 0}, {\"name\": \"bird\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}, {\"name\": \"Fly\", "
+    "\"isAction\": false, \"arity\": 0}, {\"name\": \"fly\", "
     "\"sign\": false, \"isJS\": false, \"isEquality\": false, \"isInEquality\": "
     "false, \"isAction\": false, \"arity\": 0}]}");
     free(context_prudensjs_string);
@@ -42,9 +42,9 @@ START_TEST(to_prudensjs_test) {
     scene_remove_literal(&context, 2);
     context_prudensjs_string = context_to_prudensjs(&context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
-    "{\"name\": \"Penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": "
+    "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": "
     "false, \"isInEquality\": false, \"isAction\": false, \"arity\": "
-    "0}, {\"name\": \"Bird\", \"sign\": true, \"isJS\": false, "
+    "0}, {\"name\": \"bird\", \"sign\": true, \"isJS\": false, "
     "\"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
     "\"arity\": 0}]}");
     free(context_prudensjs_string);

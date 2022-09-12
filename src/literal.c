@@ -6,8 +6,8 @@
 #include "literal.h"
 
 /**
- * @brief Constructs a Literal. If the atom is NULL, the Literal that will be created will be in a 
- * destructed, unusable form.
+ * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form. If 
+ * the atom is NULL, the Literal that will be created will be in a destructed, unusable form.
  * 
  * @param literal The Literal to be constructed.
  * @param atom The name of the atom to be used.
@@ -17,6 +17,10 @@ void literal_constructor(Literal * const literal, const char * const atom, const
     if (literal != NULL) {
         if (atom != NULL) {
             literal->atom = strdup(atom);
+            unsigned int i;
+            for (i = 0; i < strlen(atom); ++i) {
+                literal->atom[i] = tolower(literal->atom[i]);
+            }
             literal->sign = sign > 0;
         } else {
             literal->atom = NULL;

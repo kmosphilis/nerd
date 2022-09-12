@@ -201,9 +201,9 @@ START_TEST(to_string_test) {
     char *rule_queue_string = rule_queue_to_string(&rule_queue);
 
     ck_assert_str_eq(rule_queue_string, "[\n"
-        "\t(Penguin, Bird, Antarctica) => -Fly (0.0000),\n"
-        "\t(Albatross, Bird) => Fly (1.0000),\n"
-        "\t(Seagull, Bird, Harbor, Ocean) => Fly (2.0000)\n]");
+        "\t(penguin, bird, antarctica) => -fly (0.0000),\n"
+        "\t(albatross, bird) => fly (1.0000),\n"
+        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
 
     free(rule_queue_string);
 
@@ -212,8 +212,8 @@ START_TEST(to_string_test) {
     rule_queue_string = rule_queue_to_string(&rule_queue);
 
     ck_assert_str_eq(rule_queue_string, "[\n"
-        "\t(Albatross, Bird) => Fly (1.0000),\n"
-        "\t(Seagull, Bird, Harbor, Ocean) => Fly (2.0000)\n]");
+        "\t(albatross, bird) => fly (1.0000),\n"
+        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
 
     free(rule_queue_string);
 

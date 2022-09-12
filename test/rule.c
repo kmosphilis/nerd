@@ -337,7 +337,7 @@ START_TEST(to_string_test) {
     
     char *rule_string = rule_to_string(&rule);
 
-    ck_assert_str_eq(rule_string, "(Penguin, Bird, Antarctica) => -Fly (0.0000)");
+    ck_assert_str_eq(rule_string, "(penguin, bird, antarctica) => -fly (0.0000)");
     
     free(rule_string);
 
@@ -359,7 +359,7 @@ START_TEST(to_string_test) {
 
     rule_string = rule_to_string(&rule);
 
-    ck_assert_str_eq(rule_string, "(Penguin, Bird, Antarctica) => Wings (3.1415)");
+    ck_assert_str_eq(rule_string, "(penguin, bird, antarctica) => wings (3.1415)");
 
     free(rule_string);
 
@@ -411,12 +411,12 @@ START_TEST(to_prudensjs_test) {
     char *rule_prudensjs_string = rule_to_prudensjs(&rule, 1);
 
     ck_assert_str_eq(rule_prudensjs_string, "{\"name\": \"Rule1\", \"body\": ["
-    "{\"name\": \"Penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"Bird\", "
+    "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}, {\"name\": \"Antarctica\", \"sign\": true, "
+    "\"isAction\": false, \"arity\": 0}, {\"name\": \"antarctica\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
-    "\"arity\": 0}], \"head\": {\"name\": \"Fly\", \"sign\": false, \"isJS\": false, "
+    "\"arity\": 0}], \"head\": {\"name\": \"fly\", \"sign\": false, \"isJS\": false, "
     "\"isEquality\": false, \"isInEquality\": false, \"isAction\": false, \"arity\": 0}}");
     
     free(rule_prudensjs_string);
@@ -440,12 +440,12 @@ START_TEST(to_prudensjs_test) {
     rule_prudensjs_string = rule_to_prudensjs(&rule, 22);
 
     ck_assert_str_eq(rule_prudensjs_string, "{\"name\": \"Rule22\", \"body\": ["
-    "{\"name\": \"Penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"Bird\", "
+    "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}, {\"name\": \"Antarctica\", \"sign\": true, "
+    "\"isAction\": false, \"arity\": 0}, {\"name\": \"antarctica\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
-    "\"arity\": 0}], \"head\": {\"name\": \"Wings\", \"sign\": true, \"isJS\": false, "
+    "\"arity\": 0}], \"head\": {\"name\": \"wings\", \"sign\": true, \"isJS\": false, "
     "\"isEquality\": false, \"isInEquality\": false, \"isAction\": false, \"arity\": 0}}");
 
     free(rule_prudensjs_string);
