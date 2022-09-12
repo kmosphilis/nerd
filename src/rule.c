@@ -204,8 +204,8 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
             char temp_buffer[50];
             int rule_number_size = sprintf(temp_buffer, "%d", rule_number);
 
-            const char * const start = "{\\\"name\\\": \\\"Rule";
-            char *result, *body = strdup("\\\", \\\"body\\\": ["), *temp, *literal_prudensjs_string;
+            const char * const start = "{\"name\": \"Rule";
+            char *result, *body = strdup("\", \"body\": ["), *temp, *literal_prudensjs_string;
             size_t body_size = strlen(body) + 1, result_size;
 
             unsigned int i;
@@ -220,10 +220,10 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
             }
 
             literal_prudensjs_string = literal_to_prudensjs(&(rule->body[i]));
-            body_size += strlen(literal_prudensjs_string) + 13;
+            body_size += strlen(literal_prudensjs_string) + 11;
             temp = strdup(body);
             body = (char *) realloc(body, body_size);
-            sprintf(body, "%s%s], \\\"head\\\": ", temp, literal_prudensjs_string);
+            sprintf(body, "%s%s], \"head\": ", temp, literal_prudensjs_string);
             free(temp);
             free(literal_prudensjs_string);
 

@@ -338,9 +338,9 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
     if (knowledge_base != NULL) {
         if (knowledge_base->active.rules != NULL) {
-            char const *end = "], \\\"code\\\": \\\"\\\", \\\"imports\\\": \\\"\\\", "
-            "\\\"warnings\\\": []}";
-            char *result = strdup("{\\\"type\\\": \\\"output\\\", \\\"kb\\\": ["), *temp,
+            char const *end = "], \"code\": \"\", \"imports\": \"\", "
+            "\"warnings\": [], \"customPriorities\": []}";
+            char *result = strdup("{\"type\": \"output\", \"kb\": ["), *temp,
             *rule_prudensjs_string;
             size_t result_size = strlen(result) + 1;
 

@@ -39,7 +39,7 @@ void context_add_literal(Context * const context, const Literal * const literal)
 char *context_to_prudensjs(const Context * const context) {
     if (context != NULL) {
         if (context->observations != NULL) {
-            char *result = strdup("{\\\"type\\\": \\\"output\\\", \\\"context\\\": ["), *temp,
+            char *result = strdup("{\"type\": \"output\", \"context\": ["), *temp,
             *literal_prudensjs_string;
             size_t result_size = strlen(result) + 1;
 
@@ -56,9 +56,9 @@ char *context_to_prudensjs(const Context * const context) {
 
             literal_prudensjs_string = literal_to_prudensjs(&(context->observations[i]));
             temp = strdup(result);
-            result_size += strlen(literal_prudensjs_string) + 1;
+            result_size += strlen(literal_prudensjs_string) + 2;
             result = (char *) realloc(result, result_size);
-            sprintf(result, "%s%s]", temp, literal_prudensjs_string);
+            sprintf(result, "%s%s]}", temp, literal_prudensjs_string);
             free(temp);
             free(literal_prudensjs_string);
 

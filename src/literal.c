@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "literal.h"
 
@@ -119,15 +120,15 @@ char *literal_to_string(const Literal * const literal) {
 char *literal_to_prudensjs(const Literal * const literal) {
     if (literal != NULL) {
         if (literal->atom != NULL) {
-            const char * const start = "{\\\"name\\\": \\\"", * const sign = ", \\\"sign\\\": ", 
-            * const end = ", \\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, "
-            "\\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}";
+            const char * const start = "{\"name\": \"", * const sign = ", \"sign\": ", 
+            * const end = ", \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
+            "\"isAction\": false, \"arity\": 0}";
             char *result;
             size_t result_size = strlen(start) + strlen(literal->atom) + strlen(sign) + 
-            (literal->sign ? 4 : 5) + strlen(end) + 3;
+            (literal->sign ? 4 : 5) + strlen(end) + 2;
 
             result = (char *) malloc(result_size);
-            sprintf(result, "%s%s\\\"%s%s%s", start, literal->atom, sign,
+            sprintf(result, "%s%s\"%s%s%s", start, literal->atom, sign,
             literal->sign ? "true" : "false", end);
 
             return result;

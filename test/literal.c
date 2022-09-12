@@ -186,9 +186,9 @@ START_TEST(to_prudensjs_test) {
     literal_constructor(&literal, "Penguin", 1);
 
     char *literal_prudensjs_string = literal_to_prudensjs(&literal);
-    ck_assert_str_eq(literal_prudensjs_string, "{\\\"name\\\": \\\"Penguin\\\", \\\"sign\\\": true,"
-    " \\\"isJS\\\": false, \\\"isEquality\\\": false, \\\"isInEquality\\\": false, "
-    "\\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}");
+    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"Penguin\", \"sign\": true,"
+    " \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
+    "\"isAction\": false, \"arity\": 0}");
     free(literal_prudensjs_string);
 
     literal_destructor(&literal);
@@ -196,9 +196,9 @@ START_TEST(to_prudensjs_test) {
     literal_constructor(&literal, "Penguin", 0);
 
     literal_prudensjs_string = literal_to_prudensjs(&literal);
-    ck_assert_str_eq(literal_prudensjs_string, "{\\\"name\\\": \\\"Penguin\\\", "
-    "\\\"sign\\\": false, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}");
+    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"Penguin\", "
+    "\"sign\": false, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}");
     free(literal_prudensjs_string);
 
     literal_prudensjs_string = literal_to_prudensjs(literal_pointer);
@@ -213,9 +213,9 @@ START_TEST(to_prudensjs_test) {
 
     literal_constructor(&literal, "Albatross", 0);
     literal_prudensjs_string = literal_to_prudensjs(&literal);
-    ck_assert_str_eq(literal_prudensjs_string, "{\\\"name\\\": \\\"Albatross\\\", "
-    "\\\"sign\\\": false, \\\"isJS\\\": false, \\\"isEquality\\\": false, "
-    "\\\"isInEquality\\\": false, \\\"isAction\\\": false, \\\"args\\\": null, \\\"arity\\\": 0}");
+    ck_assert_str_eq(literal_prudensjs_string, "{\"name\": \"Albatross\", "
+    "\"sign\": false, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}");
     free(literal_prudensjs_string);
     literal_destructor(&literal);
 }
