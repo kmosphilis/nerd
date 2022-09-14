@@ -16,6 +16,7 @@ void scene_remove_literal(Scene * const scene, const unsigned int literal_index)
 int scene_literal_index(const Scene * const scene, const Literal * const literal);
 void scene_combine(const Scene * const scene1, const Scene * const2, Scene * const result);
 void scene_difference(const Scene * const scene1, const Scene * const scene2, Scene * const result);
+void scene_intersect(const Scene * const scene1, const Scene * const scene2, Scene * const result);
 void scene_opposed_literals(const Scene * const scene1, const Scene * const scene2,
 Scene * const result);
 char *scene_to_string(const Scene * const scene);

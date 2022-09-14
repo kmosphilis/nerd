@@ -188,12 +188,35 @@ void scene_difference(const Scene * const scene1, const Scene * const scene2, Sc
 }
 
 /**
+ * @brief Performs a set intersection operation on two Scenes (scene1 ⋂ scene2).
+ * 
+ * @param scene1 The first Scene to compare.
+ * @param scene2 The second Scene to compare.
+ * @param result The output of the operation to be returned. If NULL, the operation will not be 
+ * performed.
+ */
+void scene_intersect(const Scene * const scene1, const Scene * const scene2, Scene * const result) {
+    if ((scene1 != NULL) && (scene2 != NULL) && (result != NULL)) {
+        unsigned int i, j;
+        for (i = 0; i < scene1->size; ++i) {
+            for (j = 0; j < scene2->size; ++j) {
+                if (literal_equals(&(scene1->observations[i]), &(scene2->observations[j]))) {
+                    scene_add_literal(result, &(scene1->observations[i]));
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/**
  * @brief Finds all the literals that have the same atom, but a different (opposing) sign. If any of
  *  the parameters is NULL, the operation will not be performed.
  * 
  * @param scene1 The Scene used as ground truth.
  * @param scene2 The Scene to find the different Literals.
- * @param result The output of the operation to be returned.
+ * @param result The output of the operation to be returned. If NULL, the operation will not be
+ * performed.
  */
 void scene_opposed_literals(const Scene * const scene1, const Scene * const scene2,
 Scene * const result) {
