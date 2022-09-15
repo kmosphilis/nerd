@@ -596,7 +596,7 @@ START_TEST(to_prudensjs_test) {
     for (i = 0; i < rule_queue_length; ++i) {
         knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
     }
-    const char *expected_result = "{\"type\": \"output\", \"kb\": [{\"name\": \"Rule0\", "
+    const char *expected_result = "{\"type\": \"output\", \"kb\": [{\"name\": \"Rule2\", "
     "\"body\": [{\"name\": \"seagull\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
     "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
@@ -611,7 +611,7 @@ START_TEST(to_prudensjs_test) {
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
     "\"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
-    "\"arity\": 0}}, {\"name\": \"Rule2\", \"body\": [{\"name\": \"penguin\", \"sign\": true, "
+    "\"arity\": 0}}, {\"name\": \"Rule0\", \"body\": [{\"name\": \"penguin\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
     "\"arity\": 0}, {\"name\": \"bird\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
     "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"antarctica\", "

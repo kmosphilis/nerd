@@ -346,8 +346,7 @@ char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
 
             unsigned int i;
             for (i = knowledge_base->active.length - 1; i > 0; --i) {
-                rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]),
-                knowledge_base->active.length - 1 - i);
+                rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]), i);
                 result_size += strlen(rule_prudensjs_string) + 2;
                 temp = strdup(result);
                 result = (char *) realloc(result, result_size);
@@ -356,8 +355,7 @@ char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
                 free(temp);
             }
 
-            rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]),
-            knowledge_base->active.length -1 - i);
+            rule_prudensjs_string = rule_to_prudensjs(&(knowledge_base->active.rules[i]), i);
             result_size += strlen(rule_prudensjs_string) + strlen(end);
             temp = strdup(result);
             result = (char *) realloc(result, result_size);
