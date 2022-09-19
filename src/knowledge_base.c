@@ -157,40 +157,14 @@ const unsigned int max_number_of_rules) {
  * @param applicable_rules The RuleQueue to save the applicable Rules.
  */
 void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,
-const Context * const observed, RuleQueue * const applicable_rules) {
-    if ((knowledge_base != NULL) && (observed != NULL) && (applicable_rules != NULL)) {
-        unsigned int i, j, k, literals_in_found_in_body = 0;
-        for (i = 0; i < knowledge_base->active.length; ++i) {
-            Rule *current_rule = &(knowledge_base->active.rules[i]);
-            for (j = 0; j < current_rule->body_size; ++j) {
-                for (k = 0; k < observed->size; ++k) {
-                    if (literal_equals(&(current_rule->body[j]), &(observed->observations[k]))) {
-                        ++literals_in_found_in_body;
-                        break;
-                    }
-                }
-            }
-            if (literals_in_found_in_body == current_rule->body_size) {
-                rule_queue_enqueue(applicable_rules, current_rule);
-            }
-            literals_in_found_in_body = 0;
-        }
-
-        for (i = 0; i < knowledge_base->inactive.length; ++i) {
-            Rule *current_rule = &(knowledge_base->inactive.rules[i]);
-            for (j = 0; j < current_rule->body_size; ++j) {
-                for (k = 0; k < observed->size; ++k) {
-                    if (literal_equals(&(current_rule->body[j]), &(observed->observations[k]))) {
-                        ++literals_in_found_in_body;
-                        break;
-                    }
-                }
-            }
-            if (literals_in_found_in_body == current_rule->body_size) {
-                rule_queue_enqueue(applicable_rules, current_rule);
-            }
-            literals_in_found_in_body = 0;
-        }
+const Context * const observed, IntVector * restrict applicable_active_rules,
+IntVector * restrict applicable_inactive_rules) {
+    if ((knowledge_base != NULL) && (observed != NULL) && (applicable_active_rules != NULL) &&
+    (applicable_inactive_rules != NULL)) {
+        rule_queue_find_applicable_rules(&(knowledge_base->active), observed,
+        applicable_active_rules);
+        rule_queue_find_applicable_rules(&(knowledge_base->inactive), observed,
+        applicable_inactive_rules);
     }
 }
 

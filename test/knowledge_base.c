@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <check.h>
 
+#include "helper/int_vector.h"
 #include "helper/knowledge_base.h"
 #include "helper/rule_queue.h"
 #include "helper/rule.h"
@@ -119,10 +120,14 @@ START_TEST(applicable_rules_test) {
     RuleQueue rule_queue;
     Context context;
     size_t literals_size = 4;
+    IntVector active_applicables, inactive_applicables;
+
+    context_constructor(&context);
+    int_vector_constructor(&active_applicables);
+    int_vector_constructor(&inactive_applicables);
 
     char *literal_atoms[4] = {"Penguin", "Bird", "Antarctica", "Fly"};
-    int literal_signs[4] = {1, 1, 1, 1};
-    context_constructor(&context);
+    int literal_signs[4] = {1, 1, 1, 0};
 
     unsigned int i;
     for (i = 0; i < literals_size; ++i) {
@@ -140,14 +145,13 @@ START_TEST(applicable_rules_test) {
         knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
     }
 
-    rule_queue_destructor(&rule_queue);
-
-    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
-
-    ck_assert_int_eq(rule_queue.length, 1);
-    ck_assert_rule_eq(&(rule_queue.rules[0]), &(knowledge_base.inactive.rules[0]));
-
-    rule_queue_destructor(&rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables,
+    &inactive_applicables);
+    ck_assert_int_vector_empty(&active_applicables);
+    ck_assert_int_vector_notempty(&inactive_applicables);
+    ck_assert_int_eq(inactive_applicables.size, 1);
+    ck_assert_int_eq(inactive_applicables.items[0], 0);
+    int_vector_destructor(&inactive_applicables);
 
     context_destructor(&context);
     char *literal_atoms2[4] = {"Seagull", "Bird", "Antarctica", "Fly"};
@@ -159,53 +163,83 @@ START_TEST(applicable_rules_test) {
         literal_destructor(&literal);
     }
 
-    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables,
+    &inactive_applicables);
+    ck_assert_int_vector_empty(&active_applicables);
+    ck_assert_int_vector_empty(&inactive_applicables);
 
-    ck_assert_int_eq(rule_queue.length, 0);
-
-    char *literal_atoms3[4] = {"Seagull", "Bird", "Harbor", "Ocean"};
+    char *literal_atoms3[5] = {"Seagull", "Bird", "Harbor", "Ocean", "Fly"};
+    int literal_signs2[5] = {1, 1, 1, 1, 1};
+    ++literals_size;
 
     for (i = 0; i < literals_size; ++i) {
         Literal literal;
-        literal_constructor(&literal, literal_atoms3[i], literal_signs[i]);
+        literal_constructor(&literal, literal_atoms3[i], literal_signs2[i]);
         context_add_literal(&context, &literal);
         literal_destructor(&literal);
     }
 
-    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
-
-    ck_assert_int_eq(rule_queue.length, 1);
-    ck_assert_rule_eq(&(rule_queue.rules[0]), &(knowledge_base.inactive.rules[2]));
-
-    rule_queue_destructor(&rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables,
+    &inactive_applicables);
+    ck_assert_int_vector_empty(&active_applicables);
+    ck_assert_int_eq(inactive_applicables.size, 1);
+    ck_assert_int_eq(inactive_applicables.items[0], 2);
+    int_vector_destructor(&inactive_applicables);
 
     context_destructor(&context);
-    char *literal_atoms4[4] = {"Albatross", "Bird", "Antarctica", "Penguin"};
+    char *literal_atoms4[5] = {"Albatross", "Bird", "Antarctica", "Penguin", "Fly"};
 
     for (i = 0; i < literals_size; ++i) {
         Literal literal;
-        literal_constructor(&literal, literal_atoms4[i], literal_signs[i]);
+        literal_constructor(&literal, literal_atoms4[i], literal_signs2[i]);
         context_add_literal(&context, &literal);
         literal_destructor(&literal);
     }
 
-    knowledge_base_applicable_rules(&knowledge_base, &context, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables,
+    &inactive_applicables);
+    ck_assert_int_vector_empty(&active_applicables);
+    ck_assert_int_eq(inactive_applicables.size, 1);
+    ck_assert_int_eq(inactive_applicables.items[0], 1);
+    int_vector_destructor(&inactive_applicables);
 
-    ck_assert_int_eq(rule_queue.length, 2);
-    ck_assert_rule_eq(&(rule_queue.rules[0]), &(knowledge_base.inactive.rules[0]));
-    ck_assert_rule_eq(&(rule_queue.rules[1]), &(knowledge_base.inactive.rules[1]));
-    
-    rule_queue_destructor(&rule_queue);
+    for (i = 0; i < rule_queue.length; ++i) {
+        Rule rule;
+        rule_copy(&rule, &(rule_queue.rules[i]));
+        rule_promote(&rule, 3.0);
+        knowledge_base_add_rule(&knowledge_base, &rule);
+        rule_destructor(&rule);
+    }
 
-    knowledge_base_applicable_rules(knowledge_base_ptr, &context, &rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables,
+    &inactive_applicables);
+    ck_assert_int_eq(active_applicables.size, 1);
+    ck_assert_int_eq(active_applicables.items[0], 1);
+    ck_assert_int_eq(inactive_applicables.size, 1);
+    ck_assert_int_eq(inactive_applicables.items[0], 1);
+    int_vector_destructor(&active_applicables);
+    int_vector_destructor(&inactive_applicables);
+
+    knowledge_base_applicable_rules(knowledge_base_ptr, &context, &active_applicables,
+    &inactive_applicables);
     ck_assert_ptr_null(knowledge_base_ptr);
+    ck_assert_int_vector_empty(&active_applicables);
+    ck_assert_int_vector_empty(&inactive_applicables);
 
-    knowledge_base_applicable_rules(&knowledge_base, NULL, &rule_queue);
-    ck_assert_rule_queue_empty(&rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, NULL, &active_applicables,
+    &inactive_applicables);
+    ck_assert_int_vector_empty(&active_applicables);
+    ck_assert_int_vector_empty(&inactive_applicables);
 
-    knowledge_base_applicable_rules(&knowledge_base, &context, NULL);
-    ck_assert_rule_queue_empty(&rule_queue);
+    knowledge_base_applicable_rules(&knowledge_base, &context, NULL, &inactive_applicables);
+    ck_assert_int_vector_empty(&inactive_applicables);
 
+    knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables, NULL);
+    ck_assert_int_vector_empty(&active_applicables);
+
+    int_vector_destructor(&active_applicables);
+    int_vector_destructor(&inactive_applicables);
+    rule_queue_destructor(&rule_queue);
     context_destructor(&context);
     knowledge_base_destructor(&knowledge_base);
 }
