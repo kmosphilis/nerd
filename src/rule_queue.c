@@ -178,32 +178,18 @@ Rule * removed_rule) {
  * @brief Finds all the applicable rules with a given context. An applicable rules, is a rule whose 
  * body can be fired, and its head is true.
  * 
+ * @param rule_queue The RuleQueue to find the applicable Rules from.
+ * @param context The Context to check for applicable Rules.
+ * @param rule_indices The IntVector to save the indices of the Rules that are applicable.
  */
 void rule_queue_find_applicable_rules(const RuleQueue * const rule_queue,
-const Context * const observed, IntVector * restrict rule_indices) {
-    if ((rule_queue != NULL) && (observed != NULL) && (rule_indices != NULL)) {
-        unsigned int i, j, k, literals_found_in_body = 0;
+const Context * const context, IntVector * restrict rule_indices) {
+    if ((rule_queue != NULL) && (context != NULL) && (rule_indices != NULL)) {
+        unsigned int i;
         for (i = 0; i < rule_queue->length; ++i) {
-            for (j = 0; j < observed->size; ++j) {
-                if (literal_equals(&(rule_queue->rules[i].head),
-                &(observed->observations[j]))) {
-                    ++literals_found_in_body;
-                    for (j = 0; j < rule_queue->rules[i].body_size; ++j) {
-                        for (k = 0; k < observed->size; ++k) {
-                            if (literal_equals(&(rule_queue->rules[i].body[j]),
-                            &(observed->observations[k]))) {
-                                ++literals_found_in_body;
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-            if (literals_found_in_body == (rule_queue->rules[i].body_size + 1)) {
+            if (rule_applicable(&(rule_queue->rules[i]), context)) {
                 int_vector_push(rule_indices, i);
             }
-            literals_found_in_body = 0;
         }
     }
 }
