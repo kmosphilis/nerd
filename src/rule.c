@@ -109,6 +109,35 @@ void rule_demote(Rule * const rule, const float amount) {
 }
 
 /**
+ * @brief Checks if a Rule is applicable with a given context.
+ * 
+ * @param rule The Rule to be checked.
+ * @param context The Context that the Rule will be assest with.
+ * @return 1 if the Rule is applicable, 0 if it is not, or -1 if at least one of the given 
+ * parameters is NULL.
+ */
+int rule_applicable(const Rule * restrict rule, const Context * restrict context) {
+    if ((rule != NULL) && (context != NULL)) {
+        unsigned int i, j, applicable_literals = 0;
+        for (i = 0; i < context->size; ++i) {
+            if (literal_equals(&(context->observations[i]), &(rule->head))) {
+                for (i = 0; i < context->size; ++i) {
+                    for (j = 0; j < rule->body_size; ++j) {
+                        if (literal_equals(&(context->observations[i]), &(rule->body[j]))) {
+                            ++applicable_literals;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        return (applicable_literals == rule->body_size);
+    }
+    return -1;
+}
+
+/**
  * @brief Check two Rules to see if they are equal. It check their body, and their head. Their body 
  * Literals can be in different order.
  * 

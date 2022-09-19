@@ -235,6 +235,50 @@ START_TEST(demote_test) {
 }
 END_TEST
 
+START_TEST(applicable_test) {
+    Rule rule, *rule_pointer = NULL;
+    const size_t body_size = 3;
+    Literal *body = (Literal *) malloc(sizeof(Literal) * body_size);
+    Literal head;
+    Context context;
+    char *body_literal_atoms[3] = {"Penguin", "Bird", "North_Pole"};
+    int body_literal_signs[3] = {1, 1, 1};
+    float starting_weight = 5;
+
+    context_constructor(&context);
+    unsigned int i;
+    for (i = 0; i < body_size; ++i) {
+        Literal l;
+        literal_constructor(&l, body_literal_atoms[i], body_literal_signs[i]);
+        context_add_literal(&context, &l);
+        body[i] = l;
+    }
+    
+    literal_constructor(&head, "Fly", 0);
+    context_add_literal(&context, &head);
+
+    rule_constructor(&rule, body_size, &body, &head, starting_weight);
+
+    for (i = 0; i < body_size; ++i) {
+        literal_destructor(&body[i]);
+    }
+    free(body);
+    literal_destructor(&head);
+
+    ck_assert_int_eq(rule_applicable(&rule, &context), 1);
+
+    scene_remove_literal(&context, 0);
+    ck_assert_int_eq(rule_applicable(&rule, &context), 0);
+    
+    ck_assert_int_eq(rule_applicable(&rule, NULL), -1);
+    ck_assert_int_eq(rule_applicable(rule_pointer, &context), -1);
+    ck_assert_ptr_null(rule_pointer);
+
+    context_destructor(&context);
+    rule_destructor(&rule);
+}
+END_TEST
+
 START_TEST(equality_checK_test) {
     Rule rule1, rule2, rule3, rule4, rule5, rule6, rule7;
     const size_t body_size = 3, body_size2 = 2;
@@ -493,6 +537,7 @@ Suite *rule_suite() {
     suite_add_tcase(suite, weight_adjustment_case);
 
     equality_check_case = tcase_create("Equality Check");
+    tcase_add_test(equality_check_case, applicable_test);
     tcase_add_test(equality_check_case, equality_checK_test);
     suite_add_tcase(suite, equality_check_case);
 
