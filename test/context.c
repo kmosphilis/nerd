@@ -22,7 +22,6 @@ START_TEST(to_prudensjs_test) {
 
     literal_constructor(&literal, "Fly", 0);
     context_add_literal(&context, &literal);
-
     literal_destructor(&literal);
 
     char *context_prudensjs_string = context_to_prudensjs(&context);

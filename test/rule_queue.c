@@ -324,6 +324,57 @@ START_TEST(remove_indexed_rule_test) {
 }
 END_TEST
 
+START_TEST(find_applicable_rules_test) {
+    RuleQueue rule_queue;
+    Context context;
+    Literal literal;
+    IntVector result;
+    
+    rule_queue_constructor(&rule_queue);
+    int_vector_constructor(&result);
+
+    Rule *rules = create_rules();
+
+    unsigned int i;
+    for (i = 0; i < RULES_TO_CREATE; ++i) {
+        rule_queue_enqueue(&rule_queue, &(rules[i]));
+    }
+
+    context_constructor(&context);
+    literal_constructor(&literal, "Penguin", 1);
+    context_add_literal(&context, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Antarctica", 1);
+    context_add_literal(&context, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Bird", 1);
+    context_add_literal(&context, &literal);
+    literal_destructor(&literal);
+
+    literal_constructor(&literal, "Fly", 0);
+    context_add_literal(&context, &literal);
+    literal_destructor(&literal);
+
+    rule_queue_find_applicable_rules(&rule_queue, &context, &result);
+    ck_assert_int_eq(result.size, 1);
+    ck_assert_int_eq(int_vector_get(&result, 0), 0);
+    int_vector_destructor(&result);
+
+    rule_queue_find_applicable_rules(NULL, &context, &result);
+    ck_assert_ptr_null(result.items);
+    
+    rule_queue_find_applicable_rules(&rule_queue, NULL, &result);
+    ck_assert_ptr_null(result.items);
+
+    rule_queue_find_applicable_rules(&rule_queue, &context, NULL);
+
+    context_destructor(&context);
+    rule_queue_destructor(&rule_queue);
+    destruct_rules(rules);
+}
+
 Suite *rule_queue_suite() {
     Suite *suite;
     TCase *create_case, *operations_case, *copy_case, *string_case;
@@ -338,6 +389,7 @@ Suite *rule_queue_suite() {
     tcase_add_test(operations_case, dequeue_test);
     tcase_add_test(operations_case, retrieve_index_text);
     tcase_add_test(operations_case, remove_indexed_rule_test);
+    tcase_add_test(operations_case, find_applicable_rules_test);
     suite_add_tcase(suite, operations_case);
 
     copy_case = tcase_create("Copy");
