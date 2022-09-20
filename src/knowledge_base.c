@@ -150,21 +150,44 @@ const unsigned int max_number_of_rules) {
 }
 
 /**
- * @brief Finds the applicaple rules from the given context/scene (Literals).
+ * @brief Finds the applicable rules from the given Context/Scene (Literals). If any given parameter
+ *  is NULL, the function will not be executed.
  * 
  * @param knowledge_base The KnowledgeBase to find the Rules from.
- * @param observed The observed Context (Scene).
- * @param applicable_rules The RuleQueue to save the applicable Rules.
+ * @param context The context Context (Scene).
+ * @param applicable_active_rules The IntVector to save the active applicable Rules.
+ * @param applicable_inactive_rules The IntVector to save the inactive applicable Rules.
  */
-void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,
-const Context * const observed, IntVector * restrict applicable_active_rules,
+void knowledge_base_applicable_rules(const KnowledgeBase * restrict knowledge_base,
+const Context * restrict context, IntVector * restrict applicable_active_rules,
 IntVector * restrict applicable_inactive_rules) {
-    if ((knowledge_base != NULL) && (observed != NULL) && (applicable_active_rules != NULL) &&
+    if ((knowledge_base != NULL) && (context != NULL) && (applicable_active_rules != NULL) &&
     (applicable_inactive_rules != NULL)) {
-        rule_queue_find_applicable_rules(&(knowledge_base->active), observed,
+        rule_queue_find_applicable_rules(&(knowledge_base->active), context,
         applicable_active_rules);
-        rule_queue_find_applicable_rules(&(knowledge_base->inactive), observed,
+        rule_queue_find_applicable_rules(&(knowledge_base->inactive), context,
         applicable_inactive_rules);
+    }
+}
+
+/**
+ * @brief Finds the concurring Rules from the given Context/Scene (Literals). If any given parameter
+ *  is NULL, the function will not be executed.
+ * 
+ * @param knowledge_base The KnowledgeBase to find the Rules from.
+ * @param context The context Context (Scene).
+ * @param concurring_active_rules The IntVector to save the active concurring Rules.
+ * @param concurring_inactive_rules The IntVector to save the inactive concurring Rules.
+ */
+void knowledge_base_concurring_rules(const KnowledgeBase * restrict knowledge_base,
+const Context * restrict context, IntVector * restrict concurring_active_rules,
+IntVector * restrict concurring_inactive_rules) {
+    if ((knowledge_base != NULL) && (context != NULL) && (concurring_active_rules != NULL) &&
+    (concurring_inactive_rules != NULL)) {
+        rule_queue_find_concurring_rules(&(knowledge_base->active), context,
+        concurring_active_rules);
+        rule_queue_find_concurring_rules(&(knowledge_base->inactive), context,
+        concurring_inactive_rules);
     }
 }
 

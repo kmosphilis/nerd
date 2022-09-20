@@ -199,8 +199,9 @@ START_TEST(applicable_rules_test) {
     knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables,
     &inactive_applicables);
     ck_assert_int_vector_empty(&active_applicables);
-    ck_assert_int_eq(inactive_applicables.size, 1);
-    ck_assert_int_eq(inactive_applicables.items[0], 1);
+    ck_assert_int_eq(inactive_applicables.size, 2);
+    ck_assert_int_eq(inactive_applicables.items[0], 0);
+    ck_assert_int_eq(inactive_applicables.items[1], 1);
     int_vector_destructor(&inactive_applicables);
 
     for (i = 0; i < rule_queue.length; ++i) {
@@ -213,10 +214,12 @@ START_TEST(applicable_rules_test) {
 
     knowledge_base_applicable_rules(&knowledge_base, &context, &active_applicables,
     &inactive_applicables);
-    ck_assert_int_eq(active_applicables.size, 1);
-    ck_assert_int_eq(active_applicables.items[0], 1);
-    ck_assert_int_eq(inactive_applicables.size, 1);
-    ck_assert_int_eq(inactive_applicables.items[0], 1);
+    ck_assert_int_eq(active_applicables.size, 2);
+    ck_assert_int_eq(active_applicables.items[0], 0);
+    ck_assert_int_eq(active_applicables.items[1], 1);
+    ck_assert_int_eq(inactive_applicables.size, 2);
+    ck_assert_int_eq(inactive_applicables.items[0], 0);
+    ck_assert_int_eq(inactive_applicables.items[1], 1);
     int_vector_destructor(&active_applicables);
     int_vector_destructor(&inactive_applicables);
 
@@ -239,6 +242,136 @@ START_TEST(applicable_rules_test) {
 
     int_vector_destructor(&active_applicables);
     int_vector_destructor(&inactive_applicables);
+    rule_queue_destructor(&rule_queue);
+    context_destructor(&context);
+    knowledge_base_destructor(&knowledge_base);
+}
+END_TEST
+
+START_TEST(concurring_rules_test) {
+    KnowledgeBase knowledge_base, *knowledge_base_ptr = NULL;
+    RuleQueue rule_queue;
+    Context context;
+    size_t literals_size = 4;
+    IntVector active_concurring, inactive_concurring;
+
+    context_constructor(&context);
+    int_vector_constructor(&active_concurring);
+    int_vector_constructor(&inactive_concurring);
+
+    char *literal_atoms[4] = {"Penguin", "Bird", "Antarctica", "Fly"};
+    int literal_signs[4] = {1, 1, 1, 0};
+
+    unsigned int i;
+    for (i = 0; i < literals_size; ++i) {
+        Literal literal;
+        literal_constructor(&literal, literal_atoms[i], literal_signs[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
+    }
+
+    create_rule_queue(&rule_queue);
+
+    knowledge_base_constructor(&knowledge_base, 3.0);
+
+    for (i = 0; i < rule_queue.length; ++i) {
+        knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
+    }
+
+    knowledge_base_concurring_rules(&knowledge_base, &context, &active_concurring,
+    &inactive_concurring);
+    ck_assert_int_vector_empty(&active_concurring);
+    ck_assert_int_vector_notempty(&inactive_concurring);
+    ck_assert_int_eq(inactive_concurring.size, 1);
+    ck_assert_int_eq(inactive_concurring.items[0], 0);
+    int_vector_destructor(&inactive_concurring);
+
+    context_destructor(&context);
+    char *literal_atoms2[4] = {"Seagull", "Bird", "Antarctica", "Fly"};
+
+    for (i = 0; i < literals_size; ++i) {
+        Literal literal;
+        literal_constructor(&literal, literal_atoms2[i], literal_signs[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
+    }
+
+    knowledge_base_concurring_rules(&knowledge_base, &context, &active_concurring,
+    &inactive_concurring);
+    ck_assert_int_vector_empty(&active_concurring);
+    ck_assert_int_vector_empty(&inactive_concurring);
+
+    char *literal_atoms3[5] = {"Seagull", "Bird", "Harbor", "Ocean", "Fly"};
+    int literal_signs2[5] = {1, 1, 1, 1, 1};
+    ++literals_size;
+
+    for (i = 0; i < literals_size; ++i) {
+        Literal literal;
+        literal_constructor(&literal, literal_atoms3[i], literal_signs2[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
+    }
+
+    knowledge_base_concurring_rules(&knowledge_base, &context, &active_concurring,
+    &inactive_concurring);
+    ck_assert_int_vector_empty(&active_concurring);
+    ck_assert_int_eq(inactive_concurring.size, 1);
+    ck_assert_int_eq(inactive_concurring.items[0], 2);
+    int_vector_destructor(&inactive_concurring);
+
+    context_destructor(&context);
+    char *literal_atoms4[5] = {"Albatross", "Bird", "Antarctica", "Penguin", "Fly"};
+
+    for (i = 0; i < literals_size; ++i) {
+        Literal literal;
+        literal_constructor(&literal, literal_atoms4[i], literal_signs2[i]);
+        context_add_literal(&context, &literal);
+        literal_destructor(&literal);
+    }
+
+    knowledge_base_concurring_rules(&knowledge_base, &context, &active_concurring,
+    &inactive_concurring);
+    ck_assert_int_vector_empty(&active_concurring);
+    ck_assert_int_eq(inactive_concurring.size, 1);
+    ck_assert_int_eq(inactive_concurring.items[0], 1);
+    int_vector_destructor(&inactive_concurring);
+
+    for (i = 0; i < rule_queue.length; ++i) {
+        Rule rule;
+        rule_copy(&rule, &(rule_queue.rules[i]));
+        rule_promote(&rule, 3.0);
+        knowledge_base_add_rule(&knowledge_base, &rule);
+        rule_destructor(&rule);
+    }
+
+    knowledge_base_concurring_rules(&knowledge_base, &context, &active_concurring,
+    &inactive_concurring);
+    ck_assert_int_eq(active_concurring.size, 1);
+    ck_assert_int_eq(active_concurring.items[0], 1);
+    ck_assert_int_eq(inactive_concurring.size, 1);
+    ck_assert_int_eq(inactive_concurring.items[0], 1);
+    int_vector_destructor(&active_concurring);
+    int_vector_destructor(&inactive_concurring);
+
+    knowledge_base_concurring_rules(knowledge_base_ptr, &context, &active_concurring,
+    &inactive_concurring);
+    ck_assert_ptr_null(knowledge_base_ptr);
+    ck_assert_int_vector_empty(&active_concurring);
+    ck_assert_int_vector_empty(&inactive_concurring);
+
+    knowledge_base_concurring_rules(&knowledge_base, NULL, &active_concurring,
+    &inactive_concurring);
+    ck_assert_int_vector_empty(&active_concurring);
+    ck_assert_int_vector_empty(&inactive_concurring);
+
+    knowledge_base_concurring_rules(&knowledge_base, &context, NULL, &inactive_concurring);
+    ck_assert_int_vector_empty(&inactive_concurring);
+
+    knowledge_base_concurring_rules(&knowledge_base, &context, &active_concurring, NULL);
+    ck_assert_int_vector_empty(&active_concurring);
+
+    int_vector_destructor(&active_concurring);
+    int_vector_destructor(&inactive_concurring);
     rule_queue_destructor(&rule_queue);
     context_destructor(&context);
     knowledge_base_destructor(&knowledge_base);
@@ -701,6 +834,7 @@ Suite *knowledge_base_suite() {
 
     applicable_rule_case = tcase_create("Find Applicable Rules");
     tcase_add_test(applicable_rule_case, applicable_rules_test);
+    tcase_add_test(applicable_rule_case, concurring_rules_test);
     suite_add_tcase(suite, applicable_rule_case);
 
     rule_weight_manipulation_case = tcase_create("Rule Weight Manipulation");

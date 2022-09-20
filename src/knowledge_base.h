@@ -19,9 +19,12 @@ void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * 
 void knowledge_base_create_new_rules(KnowledgeBase * const KnowledgeBase,
 const Scene * const observed, const Scene * const inferred, const unsigned int max_body_size,
 const unsigned int max_number_of_rules);
-void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,
-const Context * const observed, IntVector * restrict applicable_active_rules,
+void knowledge_base_applicable_rules(const KnowledgeBase * restrict knowledge_base,
+const Context * restrict context, IntVector * restrict applicable_active_rules,
 IntVector * restrict applicable_inactive_rules);
+void knowledge_base_concurring_rules(const KnowledgeBase * restrict knowledge_base,
+const Context * restrict context, IntVector * restrict concurring_active_rules,
+IntVector * restrict concurring_inactive_rules);
 void knowledge_base_promote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_promote, const float promotion_rate);
 void knowledge_base_demote_rules(KnowledgeBase * const knowledge_base,
