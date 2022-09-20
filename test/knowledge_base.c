@@ -627,15 +627,17 @@ START_TEST(create_new_rules_test) {
 
     unsigned int old_size, new_size;
     old_size = knowledge_base.active.length + knowledge_base.inactive.length;
-    knowledge_base_create_new_rules(&knowledge_base, &observed, &inferred, 3, 5);
-    knowledge_base_create_new_rules(&knowledge_base, &observed, &inferred, 3, 5);
-    new_size = knowledge_base.active.length + knowledge_base.inactive.length;
+    do {
+        knowledge_base_create_new_rules(&knowledge_base, &observed, &inferred, 3, 5);
+        new_size = knowledge_base.active.length + knowledge_base.inactive.length;
+    } while (old_size == new_size);
     ck_assert_int_ne(old_size, new_size);
     
     old_size = new_size;
-    knowledge_base_create_new_rules(&knowledge_base, &observed, NULL, 3, 5);
-    knowledge_base_create_new_rules(&knowledge_base, &observed, NULL, 3, 5);
-    new_size = knowledge_base.active.length + knowledge_base.inactive.length;
+    do {
+        knowledge_base_create_new_rules(&knowledge_base, &observed, &inferred, 3, 5);
+        new_size = knowledge_base.active.length + knowledge_base.inactive.length;
+    } while (old_size == new_size);
     ck_assert_int_ne(old_size, new_size);
 
     old_size = new_size;
@@ -763,7 +765,11 @@ START_TEST(to_prudensjs_test) {
     for (i = 0; i < rule_queue_length; ++i) {
         knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
     }
-    const char *expected_result = "{\"type\": \"output\", \"kb\": [{\"name\": \"Rule2\", "
+
+    const char * const expected_empty_result = "{\"type\": \"output\", \"kb\": [], \"code\": \"\", "
+    "\"imports\": \"\", \"warnings\": [], \"customPriorities\": []}";
+
+    const char * const expected_result = "{\"type\": \"output\", \"kb\": [{\"name\": \"Rule2\", "
     "\"body\": [{\"name\": \"seagull\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
     "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
@@ -789,7 +795,8 @@ START_TEST(to_prudensjs_test) {
     "\"customPriorities\": []}";
 
     char *knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(&knowledge_base);
-    ck_assert_pstr_eq(knowledge_base_prudensjs_string, NULL);
+    ck_assert_pstr_eq(knowledge_base_prudensjs_string, expected_empty_result);
+    free(knowledge_base_prudensjs_string);
 
     for (; i < rule_queue.length; ++i) {
         knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
@@ -807,14 +814,17 @@ START_TEST(to_prudensjs_test) {
 
     rule_queue_destructor(&(knowledge_base.active));
     knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(&knowledge_base);
-    ck_assert_pstr_eq(knowledge_base_prudensjs_string, NULL);
+    ck_assert_pstr_eq(knowledge_base_prudensjs_string, expected_empty_result);
+    free(knowledge_base_prudensjs_string);
 
     knowledge_base_destructor(&knowledge_base);
     knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(&knowledge_base);
-    ck_assert_pstr_eq(knowledge_base_prudensjs_string, NULL);
+    ck_assert_pstr_eq(knowledge_base_prudensjs_string, expected_empty_result);
+    free(knowledge_base_prudensjs_string);
 
     knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(knowledge_base_ptr);
     ck_assert_pstr_eq(knowledge_base_prudensjs_string, NULL);
+    free(knowledge_base_prudensjs_string);
 }
 END_TEST
 

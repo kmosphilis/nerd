@@ -330,7 +330,7 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
  * @return The Prudens JS Knowledge base format (as a string) of the given KnowledgeBase. The rules 
  * will be in reverse order since younger rules in Prudens JS have higher priority unlike NERD, 
  * where older rules have higher priority. Use free() to deallocate the result. Returns NULL if the 
- * KnowledgeBase or its active rules are NULL.
+ * given KnowledgeBase * is NULL.
  */
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
     if (knowledge_base != NULL) {
@@ -362,6 +362,8 @@ char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
 
             return result;
         }
+        return strdup("{\"type\": \"output\", \"kb\": [], \"code\": \"\", \"imports\": \"\", "
+            "\"warnings\": [], \"customPriorities\": []}");
     }
     return NULL;
 }
