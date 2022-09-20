@@ -109,7 +109,8 @@ void rule_demote(Rule * const rule, const float amount) {
 }
 
 /**
- * @brief Checks if a Rule is applicable with a given context.
+ * @brief Checks if a Rule is applicable with a given context. An applicable Rule, is a rule whose 
+ * body is true in the given Context.
  * 
  * @param rule The Rule to be checked.
  * @param context The Context that the Rule will be assest with.
@@ -120,16 +121,11 @@ int rule_applicable(const Rule * restrict rule, const Context * restrict context
     if ((rule != NULL) && (context != NULL)) {
         unsigned int i, j, applicable_literals = 0;
         for (i = 0; i < context->size; ++i) {
-            if (literal_equals(&(context->observations[i]), &(rule->head))) {
-                for (i = 0; i < context->size; ++i) {
-                    for (j = 0; j < rule->body_size; ++j) {
-                        if (literal_equals(&(context->observations[i]), &(rule->body[j]))) {
-                            ++applicable_literals;
-                            break;
-                        }
-                    }
+            for (j = 0; j < rule->body_size; ++j) {
+                if (literal_equals(&(context->observations[i]), &(rule->body[j]))) {
+                    ++applicable_literals;
+                    break;
                 }
-                break;
             }
         }
         return (applicable_literals == rule->body_size);
