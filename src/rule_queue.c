@@ -175,20 +175,45 @@ Rule * removed_rule) {
 }
 
 /**
- * @brief Finds all the applicable rules with a given context. An applicable rules, is a rule whose 
- * body can be fired, and its head is true.
+ * @brief Find all the applicable Rules with a given Context. An applicable Rule, is a Rule whose
+ * body is true.
  * 
  * @param rule_queue The RuleQueue to find the applicable Rules from.
  * @param context The Context to check for applicable Rules.
  * @param rule_indices The IntVector to save the indices of the Rules that are applicable.
  */
-void rule_queue_find_applicable_rules(const RuleQueue * const rule_queue,
-const Context * const context, IntVector * restrict rule_indices) {
+void rule_queue_find_applicable_rules(const RuleQueue * restrict rule_queue,
+const Context * restrict context, IntVector * restrict rule_indices) {
     if ((rule_queue != NULL) && (context != NULL) && (rule_indices != NULL)) {
         unsigned int i;
         for (i = 0; i < rule_queue->length; ++i) {
             if (rule_applicable(&(rule_queue->rules[i]), context)) {
                 int_vector_push(rule_indices, i);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Finds all the concurring rules with a given Context. A concurring Rule, is a Rule whose 
+ * body and its head are true.
+ * 
+ * @param rule_queue The RuleQueue to find the concurring Rules from.
+ * @param context The Context to check for concurring Rules.
+ * @param rule_indices The IntVector to save the indices of the Rules that are concurring.
+ */
+void rule_queue_find_concurring_rules(const RuleQueue * restrict rule_queue,
+const Context * restrict context, IntVector * restrict rule_indices) {
+    if ((rule_queue != NULL) && (context != NULL) && (rule_indices != NULL)) {
+        unsigned int i, j;
+        for (i = 0; i < rule_queue->length; ++i) {
+            if (rule_applicable(&(rule_queue->rules[i]), context)) {
+                for (j = 0; j < context->size; ++j) {
+                    if (literal_equals(&(rule_queue->rules[i].head), &(context->observations[j]))) {
+                        int_vector_push(rule_indices, i);
+                        break;
+                    }
+                }
             }
         }
     }
