@@ -153,6 +153,33 @@ START_TEST(equality_check_test) {
 }
 END_TEST
 
+START_TEST(opposed_test) {
+    Literal literal1, literal2, literal3, literal4;
+    
+    literal_constructor(&literal1, "Penguin", 1);
+    literal_copy(&literal2, &literal1);
+    literal_constructor(&literal3, "Penguin", 0);
+    literal_constructor(&literal4, "Fly", 0);
+
+    ck_assert_int_eq(literal_opposed(&literal1, &literal2), 0);
+    ck_assert_int_ne(literal_opposed(&literal1, &literal3), 0);
+    ck_assert_int_eq(literal_opposed(&literal1, &literal3), 1);
+    ck_assert_int_ne(literal_opposed(&literal1, &literal4), 1);
+    ck_assert_int_eq(literal_opposed(&literal1, &literal4), 0);
+    ck_assert_int_ne(literal_opposed(&literal3, &literal4), 1);
+    ck_assert_int_eq(literal_opposed(&literal3, &literal4), 0);
+    ck_assert_int_eq(literal_opposed(&literal1, NULL), -1);
+    ck_assert_int_eq(literal_opposed(NULL, &literal1), -1);
+    ck_assert_int_eq(literal_opposed(NULL, NULL), -1);
+
+    literal_destructor(&literal1);
+    literal_destructor(&literal2);
+    literal_destructor(&literal3);
+    literal_destructor(&literal4);
+
+}
+END_TEST
+
 START_TEST(to_string_test) {
     Literal literal, *literal_pointer = NULL;
     literal_constructor(&literal, "Penguin", 1);
@@ -239,6 +266,7 @@ Suite *literal_suite() {
 
     equality_check_case = tcase_create("Equality Check");
     tcase_add_test(equality_check_case, equality_check_test);
+    tcase_add_test(equality_check_case, opposed_test);
     suite_add_tcase(suite, equality_check_case);
 
     convert_case = tcase_create("Conversion");

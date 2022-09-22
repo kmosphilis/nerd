@@ -93,6 +93,25 @@ int literal_equals(const Literal * const literal1, const Literal * const literal
 }
 
 /**
+ * @brief Check two Literals to see if their atoms are equal, and their signs are opposed. If they 
+ * are not opposed, it does not imply that they are equal.
+ * 
+ * @param literal1 The first Literal to be checked.
+ * @param literal2 The second Literal to bec checked.
+ * @return 1 if they are opposed, 0 if they are not opposed, and -1 if one of the Literals is NULL.
+ */
+int literal_opposed(const Literal * restrict literal1, const Literal * restrict literal2) {
+    if ((literal1 != NULL) && (literal2 != NULL)) {
+        if (literal1->sign != literal2->sign) {
+            int result = strcmp(literal1->atom, literal2->atom);
+            return result == 0;
+        }
+        return 0;
+    }
+    return -1;
+}
+
+/**
  * @brief Converts the Literal to a string format with it's sign (positive or negative).
  * 
  * @param literal The Literal to be converted.
