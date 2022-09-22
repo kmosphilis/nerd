@@ -120,6 +120,10 @@ const unsigned int max_number_of_rules) {
                     random_indices[j] = j;
                 }
 
+                if (body_size > combined.size) {
+                    body_size = combined.size;
+                }
+
                 for (j = 0; j < body_size; ++j) {
                     random_chosen = rand() % remaining_randoms;
                     chosen_index = random_indices[random_chosen];
