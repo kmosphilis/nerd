@@ -577,6 +577,153 @@ START_TEST(demote_rules_test) {
 }
 END_TEST
 
+START_TEST(promote_rule_test) {
+    KnowledgeBase knowledge_base, *knowledge_base_ptr = NULL;
+    RuleQueue rule_queue, copy;
+
+    unsigned int i;
+
+    create_rule_queue(&rule_queue);
+    rule_queue_copy(&copy, &rule_queue);
+
+    knowledge_base_constructor(&knowledge_base, 3.0);
+
+    for (i = 0; i < rule_queue.length; ++i) {
+        knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
+    }
+    rule_queue_destructor(&rule_queue);
+
+    ck_assert_rule_queue_empty(&(knowledge_base.active));
+    ck_assert_rule_queue_notempty(&(knowledge_base.inactive));
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 0.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[1].weight, 1.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[2].weight, 2.0, 0.00001);
+    ck_assert_int_eq(knowledge_base.inactive.length, 3);
+    ck_assert_int_eq(rule_equals(&(copy.rules[0]), &(knowledge_base.inactive.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[1]), &(knowledge_base.inactive.rules[1])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[2]), &(knowledge_base.inactive.rules[2])), 1);
+
+    knowledge_base_promote_rule(&knowledge_base, ACTIVE, 0, 8);
+    ck_assert_rule_queue_empty(&(knowledge_base.active));
+    ck_assert_rule_queue_notempty(&(knowledge_base.inactive));
+    ck_assert_int_eq(knowledge_base.inactive.length, 3);
+
+    knowledge_base_promote_rule(&knowledge_base, INACTIVE, 1, 8);
+    ck_assert_rule_queue_notempty(&knowledge_base.active);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 9.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 0.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[1].weight, 2.0, 0.00001);
+    ck_assert_int_eq(rule_equals(&(copy.rules[0]), &(knowledge_base.inactive.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[1]), &(knowledge_base.active.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[2]), &(knowledge_base.inactive.rules[1])), 1);
+
+    knowledge_base_promote_rule(&knowledge_base, INACTIVE, 0, 6);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 9.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[1].weight, 6.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 2.0, 0.00001);
+    ck_assert_int_eq(knowledge_base.active.length, 2);
+    ck_assert_int_eq(knowledge_base.inactive.length, 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[0]), &(knowledge_base.active.rules[1])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[1]), &(knowledge_base.active.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[2]), &(knowledge_base.inactive.rules[0])), 1);
+
+    knowledge_base_promote_rule(&knowledge_base, INACTIVE, 1, 9);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 9.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[1].weight, 6.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 2.0, 0.00001);
+    ck_assert_int_eq(knowledge_base.active.length, 2);
+    ck_assert_int_eq(knowledge_base.inactive.length, 1);
+
+    knowledge_base_promote_rule(knowledge_base_ptr, ACTIVE, 0, 5);
+    ck_assert_ptr_null(knowledge_base_ptr);
+
+    knowledge_base_promote_rule(knowledge_base_ptr, INACTIVE, 0, 7);
+    ck_assert_ptr_null(knowledge_base_ptr);
+
+    knowledge_base_destructor(&knowledge_base);
+    rule_queue_destructor(&copy);
+}
+END_TEST
+
+START_TEST(demote_rule_test) {
+    KnowledgeBase knowledge_base, *knowledge_base_ptr = NULL;
+    RuleQueue rule_queue, copy;
+
+    unsigned int i;
+
+    create_rule_queue(&rule_queue);
+    rule_queue_copy(&copy, &rule_queue);
+
+    knowledge_base_constructor(&knowledge_base, 3.0);
+
+    for (i = 0; i < rule_queue.length; ++i) {
+        rule_promote(&(rule_queue.rules[i]), 8);
+        knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
+    }
+    rule_queue_destructor(&rule_queue);
+
+    ck_assert_rule_queue_notempty(&(knowledge_base.active));
+    ck_assert_rule_queue_empty(&(knowledge_base.inactive));
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 8.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[1].weight, 9.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[2].weight, 10.0, 0.00001);
+    ck_assert_int_eq(knowledge_base.active.length, 3);
+    ck_assert_int_eq(rule_equals(&(copy.rules[0]), &(knowledge_base.active.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[1]), &(knowledge_base.active.rules[1])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[2]), &(knowledge_base.active.rules[2])), 1);
+
+    knowledge_base_demote_rule(&knowledge_base, INACTIVE, 0, 8);
+    ck_assert_rule_queue_notempty(&(knowledge_base.active));
+    ck_assert_rule_queue_empty(&(knowledge_base.inactive));
+    ck_assert_int_eq(knowledge_base.active.length, 3);
+
+    knowledge_base_demote_rule(&knowledge_base, ACTIVE, 1, 8);
+    ck_assert_rule_queue_notempty(&knowledge_base.inactive);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 8.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[1].weight, 10.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 1.0, 0.00001);
+    ck_assert_int_eq(rule_equals(&(copy.rules[0]), &(knowledge_base.active.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[1]), &(knowledge_base.inactive.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[2]), &(knowledge_base.active.rules[1])), 1);
+
+    knowledge_base_demote_rule(&knowledge_base, ACTIVE, 0, 4);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 4.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[1].weight, 10.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 1.0, 0.00001);
+    ck_assert_int_eq(knowledge_base.active.length, 2);
+    ck_assert_int_eq(knowledge_base.inactive.length, 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[0]), &(knowledge_base.active.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[1]), &(knowledge_base.inactive.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[2]), &(knowledge_base.active.rules[1])), 1);
+
+    knowledge_base_demote_rule(&knowledge_base, ACTIVE, 1, 8);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 4.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 1.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[1].weight, 2.0, 0.00001);
+    ck_assert_int_eq(knowledge_base.active.length, 1);
+    ck_assert_int_eq(knowledge_base.inactive.length, 2);
+    ck_assert_int_eq(rule_equals(&(copy.rules[0]), &(knowledge_base.active.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[1]), &(knowledge_base.inactive.rules[0])), 1);
+    ck_assert_int_eq(rule_equals(&(copy.rules[2]), &(knowledge_base.inactive.rules[1])), 1);
+
+    knowledge_base_demote_rule(&knowledge_base, ACTIVE, 1, 9);
+    ck_assert_float_eq_tol(knowledge_base.active.rules[0].weight, 4.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[0].weight, 1.0, 0.00001);
+    ck_assert_float_eq_tol(knowledge_base.inactive.rules[1].weight, 2.0, 0.00001);
+    ck_assert_int_eq(knowledge_base.active.length, 1);
+    ck_assert_int_eq(knowledge_base.inactive.length, 2);
+
+    knowledge_base_demote_rule(knowledge_base_ptr, ACTIVE, 0, 5);
+    ck_assert_ptr_null(knowledge_base_ptr);
+
+    knowledge_base_demote_rule(knowledge_base_ptr, INACTIVE, 0, 7);
+    ck_assert_ptr_null(knowledge_base_ptr);
+
+    knowledge_base_destructor(&knowledge_base);
+    rule_queue_destructor(&copy);
+}
+END_TEST
+
 START_TEST(create_new_rules_test) {
     KnowledgeBase knowledge_base, *knowledge_base_ptr = NULL;
     RuleQueue rule_queue;
@@ -850,6 +997,8 @@ Suite *knowledge_base_suite() {
     rule_weight_manipulation_case = tcase_create("Rule Weight Manipulation");
     tcase_add_test(rule_weight_manipulation_case, promote_rules_test);
     tcase_add_test(rule_weight_manipulation_case, demote_rules_test);
+    tcase_add_test(rule_weight_manipulation_case, promote_rule_test);
+    tcase_add_test(rule_weight_manipulation_case, demote_rule_test);
     suite_add_tcase(suite, rule_weight_manipulation_case);
 
     create_new_rules_case = tcase_create("Create New Rules");

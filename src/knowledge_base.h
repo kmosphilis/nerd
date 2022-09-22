@@ -11,6 +11,11 @@ typedef struct KnowledgeBase {
     float activation_threshold;
 } KnowledgeBase;
 
+typedef enum RuleType {
+    ACTIVE,
+    INACTIVE
+} RuleType;
+
 void knowledge_base_constructor(KnowledgeBase * const knolwedge_base,
 const float activation_threshold);
 void knowledge_base_destructor(KnowledgeBase * const knowledge_base);
@@ -29,6 +34,10 @@ void knowledge_base_promote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_promote, const float promotion_rate);
 void knowledge_base_demote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_demote, const float demotion_rate);
+void knowledge_base_promote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+const unsigned int rule_index, const float promotion_weight);
+void knowledge_base_demote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+const unsigned int rule_index, const float demotion_weight);
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base);
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base);
 

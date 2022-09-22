@@ -280,6 +280,70 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
 }
 
 /**
+ * @brief Promotes a Rule in the given KnowledgeBase. If the Rule is inactive and its weight is 
+ * higher or equal to the activation_threshold, then the Rule will become active.
+ * 
+ * @param knowledge_base The KnowledgeBase in which the the given Rule should be promoted.
+ * @param type The type of the Rule to be promoted.
+ * @param rule_index The index of the rule to be promoted. If the index is not within bounds, the 
+ * function will be ignored.
+ * @param promotion_weight The amount that the Rule should be promoted with. If the amount is <= 0,
+ * nothing will be changed.
+ */
+void knowledge_base_promote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+const unsigned int rule_index, const float promotion_weight) {
+    if ((knowledge_base != NULL) && (promotion_weight > 0)) {
+        if ((type == ACTIVE) && (knowledge_base->active.length > rule_index)) {
+            rule_promote(&(knowledge_base->active.rules[rule_index]), promotion_weight);
+        } else if ((type == INACTIVE) && (knowledge_base->inactive.length > rule_index)) {
+            rule_promote(&(knowledge_base->inactive.rules[rule_index]), promotion_weight);
+
+            if (knowledge_base->inactive.rules[rule_index].weight >=
+            knowledge_base->activation_threshold) {
+                Rule rule_to_move;
+
+                rule_queue_remove_rule(&(knowledge_base->inactive), rule_index, &rule_to_move);
+                rule_queue_enqueue(&(knowledge_base->active), &rule_to_move);
+
+                rule_destructor(&rule_to_move);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Demotes a rule in the given KnowledgeBase. If the Rule is active and its weight is lower 
+ * than the activation_threshold, then the Rule will become inactive.
+  * 
+ * @param knowledge_base The KnowledgeBase in which the the given Rule should be demoted.
+ * @param type The type of the Rule to be demoted.
+ * @param rule_index The index of the rule to be demoted. If the index is not within bounds, the 
+ * function will be ignored.
+ * @param demotion_weight The amount that the Rule should be demoted with. If the amount is <= 0,
+ * nothing will be changed.
+*/
+void knowledge_base_demote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+const unsigned int rule_index, const float demotion_weight) {
+    if ((knowledge_base != NULL) && (demotion_weight > 0)) {
+        if ((type == ACTIVE) && (knowledge_base->active.length > rule_index)) {
+            rule_demote(&(knowledge_base->active.rules[rule_index]), demotion_weight);
+
+            if (knowledge_base->active.rules[rule_index].weight <
+            knowledge_base->activation_threshold) {
+                Rule rule_to_move;
+
+                rule_queue_remove_rule(&(knowledge_base->active), rule_index, &rule_to_move);
+                rule_queue_enqueue(&(knowledge_base->inactive), &rule_to_move);
+
+                rule_destructor(&rule_to_move);
+            }
+        } else if ((type == INACTIVE) && (knowledge_base->inactive.length > rule_index)) {
+            rule_demote(&(knowledge_base->inactive.rules[rule_index]), demotion_weight);
+        }
+    }
+}
+
+/**
  * @brief Converts the KnowledgeBase to a string.
  * 
  * @param knowledge_base The KnowledgeBase to be converted.
