@@ -207,12 +207,12 @@ const Context * restrict context, IntVector * restrict rule_indices) {
     if ((rule_queue != NULL) && (context != NULL) && (rule_indices != NULL)) {
         unsigned int i, j;
         for (i = 0; i < rule_queue->length; ++i) {
-            if (rule_applicable(&(rule_queue->rules[i]), context)) {
-                for (j = 0; j < context->size; ++j) {
-                    if (literal_equals(&(rule_queue->rules[i].head), &(context->observations[j]))) {
+            for (j = 0; j < context->size; ++j) {
+                if (literal_equals(&(rule_queue->rules[i].head), &(context->observations[j]))) {
+                    if (rule_applicable(&(rule_queue->rules[i]), context)) {
                         int_vector_push(rule_indices, i);
-                        break;
                     }
+                    break;
                 }
             }
         }
