@@ -165,12 +165,12 @@ START_TEST(opposed_test) {
     ck_assert_int_ne(literal_opposed(&literal1, &literal3), 0);
     ck_assert_int_eq(literal_opposed(&literal1, &literal3), 1);
     ck_assert_int_ne(literal_opposed(&literal1, &literal4), 1);
-    ck_assert_int_eq(literal_opposed(&literal1, &literal4), 0);
+    ck_assert_int_eq(literal_opposed(&literal1, &literal4), -1);
     ck_assert_int_ne(literal_opposed(&literal3, &literal4), 1);
-    ck_assert_int_eq(literal_opposed(&literal3, &literal4), 0);
-    ck_assert_int_eq(literal_opposed(&literal1, NULL), -1);
-    ck_assert_int_eq(literal_opposed(NULL, &literal1), -1);
-    ck_assert_int_eq(literal_opposed(NULL, NULL), -1);
+    ck_assert_int_eq(literal_opposed(&literal3, &literal4), -1);
+    ck_assert_int_eq(literal_opposed(&literal1, NULL), -2);
+    ck_assert_int_eq(literal_opposed(NULL, &literal1), -2);
+    ck_assert_int_eq(literal_opposed(NULL, NULL), -2);
 
     literal_destructor(&literal1);
     literal_destructor(&literal2);
