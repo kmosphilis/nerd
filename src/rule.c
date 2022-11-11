@@ -108,8 +108,9 @@ void rule_demote(Rule * const rule, const float amount) {
     }
 }
 
+//TODO Create a test function.
 /**
- * @brief Checks if a Rule is applicable with a given context. An applicable Rule, is a rule whose 
+ * @brief Checks if a Rule is applicable with a given context. An applicable Rule, is a Rule whose 
  * body is true in the given Context.
  * 
  * @param rule The Rule to be checked.
@@ -124,11 +125,36 @@ int rule_applicable(const Rule * restrict rule, const Context * restrict context
             for (j = 0; j < rule->body_size; ++j) {
                 if (literal_equals(&(context->observations[i]), &(rule->body[j]))) {
                     ++applicable_literals;
-                    break;
+                    if (applicable_literals == rule->body_size) {
+                        return 1;
+                    }
                 }
             }
         }
-        return (applicable_literals == rule->body_size);
+        return 0;
+    }
+    return -1;
+}
+
+//TODO Create a test function.
+/**
+ * @brief Check if a Rule concurs with a given context. A concurring Rule, is a Rule whose head is 
+ * true in the given context, and it's body doesn't have to be.
+ * 
+ * @param rule The Rule to be checked.
+ * @param context The Context that the Rule will be assest with.
+ * @return 1 if the Rule concurs; i.e. the head is true, 0 if the head does not concur, and -1 if 
+ * one of given parameters is NULL.
+*/
+int rule_concurs(const Rule * restrict rule, const Context * restrict context) {
+    if (rule && context) {
+        unsigned int i;
+        for (i = 0; i < context->size; ++i) {
+            if (literal_equals(&(rule->head), &(context->observations[i]))) {
+                return 1;
+            }
+        }
+        return 0;
     }
     return -1;
 }
