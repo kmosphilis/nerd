@@ -81,7 +81,7 @@ void int_vector_push(IntVector * restrict int_vector, const int item) {
 }
 
 /**
- * @brief Deletes the item in the given index and resize the vector.
+ * @brief Deletes the item at the given index and resize the vector.
  * 
  * @param int_vector The IntVector to delete the item from. If NULL the process will fail.
  * @param index The index of the item to be removed. If index > int_vector.size, the process will 
