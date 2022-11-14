@@ -152,7 +152,7 @@ void nerd_start_learning(Nerd * restrict nerd) {
 
     unsigned int *inferred_literals_rule_numbers = NULL;
     int **inferred_literals_rule_indices = NULL;
-    unsigned int epoch, i, j, k;
+    unsigned int epoch, index, i, k;
 
     scene_constructor(&observation);
     scene_constructor(&inferred);
@@ -176,92 +176,123 @@ void nerd_start_learning(Nerd * restrict nerd) {
 
         knowledge_base_create_new_rules(&(nerd->knowledge_base), &observation, &inferred_literals,
         nerd->breadth, 5);
+        Scene uncovered;
+        scene_constructor(&uncovered);
+        scene_difference(&observation, &inferred_literals, &uncovered);
 
-        knowledge_base_applicable_rules(&(nerd->knowledge_base), &inferred,
-        &active_applicable_rules_inferred, &inactive_applicable_rules_inferred);
-        knowledge_base_concurring_rules(&(nerd->knowledge_base), &observation,
-        &active_concurring_rules_observed, &inactive_concurring_rules_observed);
+        str = scene_to_string(&observation);
+        printf("Observed: %s\n", str);
+        free(str);
+        str = scene_to_string(&inferred_literals);
+        printf("Inferred: %s\n", str);
+        free(str);
+        str = scene_to_string(&uncovered);
+        printf("Observed ∖ Inferred: %s\n", str);
+        free(str);
 
-        for (i = 0; i < active_applicable_rules_inferred.size; ++i) {
-            int active_applicable_inferred_rule_index = active_applicable_rules_inferred.items[i];
-            for (j = 0; j < active_concurring_rules_observed.size; ++j) {
-                int active_concurring_rule_index = active_concurring_rules_observed.items[j];
-                if (active_applicable_inferred_rule_index == 
-                active_concurring_rule_index) {
-                    knowledge_base_promote_rule(&(nerd->knowledge_base), ACTIVE,
-                    active_applicable_inferred_rule_index, nerd->promotion_weight);
-                    break;
-                } else {
-                    const Rule * const active_applicable_rule = &(nerd->knowledge_base.active.
-                    rules[active_applicable_inferred_rule_index]);
-                    const Rule * const active_concurring_rule = &(nerd->knowledge_base.active.
-                    rules[active_concurring_rule_index]);
-                    if (literal_opposed(&(active_applicable_rule->head),
-                    &(active_concurring_rule->head)) == 1) {
-                        if (active_concurring_rule_index > active_applicable_inferred_rule_index) {
-                            unsigned int old_active_size = nerd->knowledge_base.active.length;
-                            knowledge_base_demote_rule(&(nerd->knowledge_base), ACTIVE,
-                            active_applicable_inferred_rule_index, nerd->demotion_weight);
-                            if (old_active_size != nerd->knowledge_base.active.length) {
-                                for (k = i; k < active_applicable_rules_inferred.size; ++k) {
-                                    --active_applicable_rules_inferred.items[k];
-                                }
-                                unsigned int observed_rules_size =
-                                active_concurring_rules_observed.size;
-                                for (k = 0; k < observed_rules_size; ++k) {
-                                    --active_concurring_rules_observed.items[k];
-                                    if (active_concurring_rules_observed.items[k] < 0) {
-                                        int_vector_delete(&active_concurring_rules_observed, k);
-                                        --observed_rules_size;
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
+        unsigned int rules_demoted = 0, rules_promoted = 0;
+        IntVector rules_demoted_vector, applicable_rules;
+        int_vector_constructor(&rules_demoted_vector);
+        int_vector_constructor(&applicable_rules);
+
+        for (index = nerd->knowledge_base.active.length; index > 0; --index) {
+            const Rule * const current_rule = &(nerd->knowledge_base.active.rules[index - 1]);
+            
+            if (rule_applicable(current_rule, &inferred)) {
+                int_vector_push(&applicable_rules, index - 1);
             }
         }
 
-        for (i = 0; i < inactive_applicable_rules_inferred.size; ++i) {
-            int inactive_applicable_inferred_rule_index =
-            inactive_applicable_rules_inferred.items[i];
-            for (j = 0; j < inactive_concurring_rules_observed.size; ++j) {
-                int inactive_concurring_inferred_rule_index =
-                inactive_concurring_rules_observed.items[j];
-                if (inactive_applicable_inferred_rule_index ==
-                inactive_concurring_inferred_rule_index) {
-                    unsigned int old_inactive_size = nerd->knowledge_base.inactive.length;
-                    knowledge_base_promote_rule(&(nerd->knowledge_base), INACTIVE,
-                    inactive_concurring_inferred_rule_index, nerd->promotion_weight);
-                    if (old_inactive_size != nerd->knowledge_base.inactive.length) {
-                        for (k = i; k < inactive_applicable_rules_inferred.size; ++k) {
-                            --inactive_applicable_rules_inferred.items[k];
-                        }
-                        unsigned int observed_rules_size = inactive_concurring_rules_observed.size;
-                        for (k = 0; k < observed_rules_size; ++k) {
-                            --inactive_concurring_rules_observed.items[k];
-                            if (inactive_concurring_rules_observed.items[k] < 0) {
-                                int_vector_delete(&inactive_concurring_rules_observed, k);
-                                --observed_rules_size;
-                            }
-                        }
-                    }
-                    break;
-                } else {
-                    const Rule * const inactive_applicable_rule = &(nerd->knowledge_base.inactive.
-                    rules[inactive_applicable_inferred_rule_index]);
-                    const Rule * const inactive_concurring_rule = &(nerd->knowledge_base.inactive.
-                    rules[inactive_concurring_inferred_rule_index]);
-                    if (literal_opposed(&(inactive_applicable_rule->head),
-                    &(inactive_concurring_rule->head)) == 1) {
-                        knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE,
-                        inactive_applicable_inferred_rule_index, nerd->demotion_weight);
+        printf("Applicable rule indices: ");
+        for (index = 0; index < applicable_rules.size; ++index) {
+            printf("%d ", applicable_rules.items[index]);
+        }
+        printf("\n");
+
+
+        for (index = 0; index < applicable_rules.size; ++index) {
+            const unsigned int current_rule_index = int_vector_get(&applicable_rules, index);
+            const Rule * const current_rule = &(nerd->knowledge_base.active
+            .rules[current_rule_index]);
+
+            int rule_concurs_result = rule_concurs(current_rule, &observation);
+            if (rule_concurs_result == 1) {
+                  knowledge_base_promote_rule(&(nerd->knowledge_base), ACTIVE, current_rule_index,
+                  nerd->promotion_weight);
+            } else if (rule_concurs_result == 0) {
+                int opposed_to_observation = 0;
+                for (k = 0 ; k < uncovered.size; ++k) {
+                    if (literal_opposed(&(current_rule->head),
+                    &(uncovered.observations[k])) == 1) {
+                        opposed_to_observation = 1;
                         break;
                     }
                 }
+                if (!opposed_to_observation) {
+                    continue;
+                }
+                int higher_positive = 0;
+                int higher_similar = 0;
+                for (k = index + 1; k < applicable_rules.size; ++k) {
+                    const unsigned int rule_to_compare_index = int_vector_get(&applicable_rules, k);
+                    const Rule * const rule_to_compare = &(nerd->knowledge_base.active.
+                    rules[rule_to_compare_index]);
+
+                    int opposed_result =
+                    literal_opposed(&(current_rule->head), &(rule_to_compare->head));
+                    if (opposed_result >= 0) {
+                        higher_positive = opposed_result == 1;
+                        higher_similar = opposed_result == 0;
+                    }
+                }
+                if (!higher_positive) {
+                    str = rule_to_string(current_rule);
+                    if (knowledge_base_demote_rule(&(nerd->knowledge_base), ACTIVE,
+                    current_rule_index, nerd->demotion_weight)) {
+                        ++rules_demoted;
+                        int_vector_delete(&applicable_rules, index);
+                    }
+                    printf("Active Rule demoted: %s\n", str);
+                    free(str);
+                }
             }
         }
+
+        for (index = 0; index < nerd->knowledge_base.inactive.length - rules_demoted; ++index) {
+            const unsigned rule_index = index - rules_promoted;
+            const Rule * const current_rule = &(nerd->knowledge_base.inactive.rules[rule_index]);
+
+            if (rule_applicable(current_rule, &inferred)) {
+                int rule_concurs_result = rule_concurs(current_rule, &observation);
+                if (rule_concurs_result) {
+                    if (knowledge_base_promote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
+                    nerd->promotion_weight)) {
+                        ++rules_promoted;
+                    }
+                } else if (rule_concurs_result == 0) {
+                    int opposed_to_observation = 0;
+                    for (k = 0 ; k < uncovered.size; ++k) {
+                        if (literal_opposed(&(current_rule->head),
+                        &(uncovered.observations[k])) == 1) {
+                            opposed_to_observation = 1;
+                            break;
+                        }
+                    }
+                    if (!opposed_to_observation) {
+                        continue;
+                    }
+                    knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
+                    nerd->demotion_weight);
+                    str = rule_to_string(current_rule);
+                    printf("Inactive Rule demoted: %s\n", str);
+                    free(str);
+                }
+            }
+        }
+
+        int_vector_destructor(&rules_demoted_vector);
+        int_vector_destructor(&applicable_rules);
+        scene_destructor(&uncovered);
 
         free(inferred_literals_rule_numbers);
         inferred_literals_rule_numbers = NULL;
@@ -279,8 +310,8 @@ void nerd_start_learning(Nerd * restrict nerd) {
         int_vector_destructor(&inactive_concurring_rules_observed);
         int_vector_destructor(&active_applicable_rules_inferred);
         int_vector_destructor(&inactive_applicable_rules_inferred);
+        str = knowledge_base_to_string(&(nerd->knowledge_base));
+        printf("%s\n", str);
+        free(str);
     }
-    str = knowledge_base_to_string(&(nerd->knowledge_base));
-    printf("%s\n", str);
-    free(str);
 }
