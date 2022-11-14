@@ -17,11 +17,7 @@ fs.readFile(".temp", (err, data) => {
         let inferredContext = 
             parsers.contextToString(result.facts).replace(/;/g,"").replace("true", "").trim();
         for (let key in result.graph) {
-            result.graph[key].filter((element, index, array) => {
-                if (element.name.startsWith('$')) {
-                    array.splice(index, 1);
-                }
-            });
+            result.graph[key] = result.graph[key].filter((element) => !element.name.startsWith('$'));
             if (result.graph[key].length > 0) {
                 rules.push([]);
                 for (let rule of result.graph[key]) {
@@ -31,7 +27,6 @@ fs.readFile(".temp", (err, data) => {
                 literals.push(`${key}, ${rules[rules.length - 1].length}`);
             }
         }
-        // console.log(result);
         rules.forEach((value, index, array) => array[index] = value.join(" "));
         fs.writeFile(".temp", `${inferredContext}\n${literals.join(" ")}\n${rules.join("\n")}`, (err) => {
             if (err) throw err;
