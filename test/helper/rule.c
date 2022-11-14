@@ -10,11 +10,11 @@
  * @param rule2 The second Rule to compare.
  */
 void ck_assert_rule_eq(const Rule * const rule1, const Rule * const rule2) {
-    ck_assert_int_eq(rule1->body_size, rule2->body_size);
+    ck_assert_int_eq(rule1->body.size, rule2->body.size);
 
     unsigned int i;
-    for (i = 0; i < rule1->body_size; ++i) {
-        ck_assert_literal_eq(&(rule1->body[i]), &(rule2->body[i]));
+    for (i = 0; i < rule1->body.size; ++i) {
+        ck_assert_literal_eq(&(rule1->body.observations[i]), &(rule2->body.observations[i]));
     }
 
     ck_assert_literal_eq(&rule1->head, &rule2->head);
@@ -27,8 +27,8 @@ void ck_assert_rule_eq(const Rule * const rule1, const Rule * const rule2) {
  * @param rule The Rule to check.
  */
 void ck_assert_rule_notempty(const Rule * const rule) {
-    ck_assert_int_ne(rule->body_size, 0);
-    ck_assert_ptr_nonnull(rule->body);
+    ck_assert_int_ne(rule->body.size, 0);
+    ck_assert_ptr_nonnull(rule->body.observations);
     ck_assert_float_ne(rule->weight, INFINITY);
     ck_assert_literal_notempty(&(rule->head));
 }
@@ -39,8 +39,8 @@ void ck_assert_rule_notempty(const Rule * const rule) {
  * @param rule The Rule to check.
  */
 void ck_assert_rule_empty(const Rule * const rule) {
-    ck_assert_int_eq(rule->body_size, 0);
-    ck_assert_ptr_null(rule->body);
+    ck_assert_int_eq(rule->body.size, 0);
+    ck_assert_ptr_null(rule->body.observations);
     ck_assert_float_eq(rule->weight, INFINITY);
     ck_assert_literal_empty(&(rule->head));
 }

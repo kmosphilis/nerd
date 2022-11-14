@@ -4,15 +4,16 @@
 #ifndef __RULE_H__
 #define __RULE_H__
 
+typedef Context Body;
+
 typedef struct Rule {
-    unsigned int body_size;
-    Literal *body;
+    Body body;
     Literal head;
     float weight;
 } Rule;
 
 void rule_constructor(Rule * const rule, const unsigned int body_size, Literal ** const body,
-    const Literal * const head, const float weight);
+const Literal * const head, const float weight);
 void rule_destructor(Rule * const rule);
 void rule_copy(Rule * const destination, const Rule * const source);
 void rule_promote(Rule * const rule, const float amount);

@@ -26,10 +26,10 @@ START_TEST(construct_destruct_test) {
     rule_constructor(&rule, body_size, &body, &head, starting_weight);
 
     ck_assert_rule_notempty(&rule);
-    ck_assert_int_eq(rule.body_size, body_size);
+    ck_assert_int_eq(rule.body.size, body_size);
     ck_assert_literal_eq(&rule.head, &head);
     for(i = 0; i < body_size; ++i) {
-        ck_assert_literal_eq(&rule.body[i], &body[i]);
+        ck_assert_literal_eq(&rule.body.observations[i], &body[i]);
     }
     ck_assert_float_eq(rule.weight, starting_weight);
     
@@ -94,7 +94,7 @@ START_TEST(copy_test) {
     rule_copy(&rule2, &rule1);
 
     ck_assert_ptr_ne(&rule1, &rule2);
-    ck_assert_ptr_ne(rule1.body, rule2.body);
+    ck_assert_ptr_ne(&(rule1.body), &(rule2.body));
     ck_assert_rule_eq(&rule1, &rule2);
     
     rule_destructor(&rule1);
@@ -122,11 +122,6 @@ START_TEST(copy_test) {
     ck_assert_rule_notempty(rule_pointer2);
 
     rule_pointer1 = &rule1;
-
-    rule_copy(rule_pointer2, rule_pointer1);
-
-    ck_assert_rule_empty(rule_pointer1);
-    ck_assert_rule_notempty(rule_pointer2);
 
     rule_copy(rule_pointer1, rule_pointer2);
 
@@ -409,11 +404,12 @@ START_TEST(to_string_test) {
 
     rule_copy(&copy, &rule);
 
-    for (i = 0; i < copy.body_size; ++i) {
-        literal_destructor(&(copy.body[i]));
-    }
-    free(copy.body);
-    copy.body = NULL;
+    context_destructor(&(copy.body));
+    // for (i = 0; i < copy.body.size; ++i) {
+    //     literal_destructor(&(copy.body[i]));
+    // }
+    // free(copy.body);
+    // copy.body = NULL;
 
     rule_string = rule_to_string(&copy);
 
@@ -496,11 +492,12 @@ START_TEST(to_prudensjs_test) {
 
     rule_copy(&copy, &rule);
 
-    for (i = 0; i < copy.body_size; ++i) {
-        literal_destructor(&(copy.body[i]));
-    }
-    free(copy.body);
-    copy.body = NULL;
+    context_destructor(&(copy.body));
+    // for (i = 0; i < copy.body_size; ++i) {
+    //     literal_destructor(&(copy.body[i]));
+    // }
+    // free(copy.body);
+    // copy.body = NULL;
 
     rule_prudensjs_string = rule_to_prudensjs(&copy, 2);
 

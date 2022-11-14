@@ -83,7 +83,6 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule) {
             if (dequeued_rule != NULL) {
                 const Rule * const rule = &(rule_queue->rules[0]);
                 dequeued_rule->body = rule->body;
-                dequeued_rule->body_size = rule->body_size;
                 dequeued_rule->head = rule->head;
                 dequeued_rule->weight = rule->weight;
             } else {
@@ -143,7 +142,6 @@ Rule * removed_rule) {
             if (removed_rule != NULL) {
                 const Rule * const rule = &(rule_queue->rules[u_rule_index]);
                 removed_rule->body = rule->body;
-                removed_rule->body_size = rule->body_size;
                 removed_rule->head = rule->head;
                 removed_rule->weight = rule->weight;
             } else {

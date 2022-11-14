@@ -16,24 +16,19 @@
  */
 void rule_constructor(Rule * const rule, const unsigned int body_size, Literal ** const body,
 const Literal * const head, const float weight) {
-    if (rule != NULL) {
-        if ((head != NULL) && (body != NULL) && (body_size > 0)) {
+    if (rule) {
+        if (head && body  && (body_size > 0)) {
             literal_copy(&(rule->head), head);
-
-            rule->body_size = body_size;
-
-            rule->body = (Literal *) malloc(body_size * sizeof(Literal));
+            context_constructor(&rule->body);
 
             unsigned int i;
             for (i = 0; i < body_size; ++i) {
-                literal_copy(&(rule->body[i]), &(*body)[i]);
+                context_add_literal(&(rule->body), &((*body)[i]));
             }
+
             rule->weight = weight;
         } else {
-            rule->body_size = 0;
-            literal_destructor(&(rule->head));
-            rule->body = NULL;
-            rule->weight = INFINITY;
+            rule_destructor(rule);
         }
     }
 }
@@ -44,17 +39,9 @@ const Literal * const head, const float weight) {
  * @param rule The Rule to be destructed.
  */
 void rule_destructor(Rule * const rule) {
-    if (rule != NULL) {
+    if (rule) {
         literal_destructor(&(rule->head));
-        if (rule->body != NULL) {
-            unsigned int i;
-            for (i = 0; i < rule->body_size; ++i) {
-                literal_destructor(&(rule->body[i]));
-            }
-            free(rule->body);
-            rule->body = NULL;
-        }
-        rule->body_size = 0;
+        context_destructor(&(rule->body));
         rule->weight = INFINITY;
     }
 }
@@ -67,18 +54,10 @@ void rule_destructor(Rule * const rule) {
  * content of the destination will not be changed.
  */
 void rule_copy(Rule * const destination, const Rule * const source) {
-    if ((destination != NULL) && (source != NULL)) {
-        if ((source->body != NULL) && (source->head.atom != NULL)) {
-            destination->body_size = source->body_size;
-            literal_copy(&(destination->head), &(source->head));
-
-            destination->body = (Literal *) malloc(source->body_size * sizeof(Literal));
-            unsigned int i;
-            for (i = 0; i < source->body_size; ++i) {
-                literal_copy(&(destination->body[i]), &(source->body[i]));
-            }
-            destination->weight = source->weight;
-        }
+    if (destination && source) {
+        literal_copy(&(destination->head), &(source->head));
+        scene_copy(&(destination->body), &(source->body));
+        destination->weight = source->weight;
     }
 }
 
@@ -122,10 +101,10 @@ int rule_applicable(const Rule * restrict rule, const Context * restrict context
     if ((rule != NULL) && (context != NULL)) {
         unsigned int i, j, applicable_literals = 0;
         for (i = 0; i < context->size; ++i) {
-            for (j = 0; j < rule->body_size; ++j) {
-                if (literal_equals(&(context->observations[i]), &(rule->body[j]))) {
+            for (j = 0; j < rule->body.size; ++j) {
+                if (literal_equals(&(context->observations[i]), &(rule->body.observations[j]))) {
                     ++applicable_literals;
-                    if (applicable_literals == rule->body_size) {
+                    if (applicable_literals == rule->body.size) {
                         return 1;
                     }
                 }
@@ -169,18 +148,19 @@ int rule_concurs(const Rule * restrict rule, const Context * restrict context) {
  */
 int rule_equals(const Rule * const rule1, const Rule * const rule2) {
     if ((rule1 != NULL) && (rule2 != NULL)) {
-        if (rule1->body_size == rule2->body_size) {
+        if (rule1->body.size == rule2->body.size) {
             if (literal_equals(&(rule1->head), &(rule2->head))) {
                 unsigned int i, j;
                 unsigned short failed = 0;
-                for (i = 0; i < rule1->body_size; ++i) {
-                    for (j = 0; j < rule2->body_size; ++j) {
-                        if (!literal_equals(&(rule1->body[i]), &(rule2->body[j]))) {
+                for (i = 0; i < rule1->body.size; ++i) {
+                    for (j = 0; j < rule2->body.size; ++j) {
+                        if (!literal_equals(&(rule1->body.observations[i]),
+                        &(rule2->body.observations[j]))) {
                             ++failed;
                         }
                     }
 
-                    if (failed == rule1->body_size) {
+                    if (failed == rule1->body.size) {
                         return 0;
                     } else {
                         failed = 0;
@@ -202,13 +182,13 @@ int rule_equals(const Rule * const rule1, const Rule * const rule2) {
  * if the Rule, its body or the head's atom are NULL.
  */
 char *rule_to_string(const Rule * const rule) {
-    if (rule != NULL) {
-        if ((rule->body != NULL) && (rule->head.atom != NULL)) {
+    if (rule) {
+        if (rule->body.observations && rule->head.atom) {
             unsigned int i;
             char *literal_string, *result = strdup("(");
             size_t result_size = strlen(result) + 1;
 
-            literal_string = literal_to_string(&(rule->body[0]));
+            literal_string = literal_to_string(&(rule->body.observations[0]));
             result_size += strlen(literal_string);
             char *temp = strdup(result);
             result = (char *) realloc(result, result_size);
@@ -216,8 +196,8 @@ char *rule_to_string(const Rule * const rule) {
             free(temp);
             free(literal_string);
 
-            for (i = 1; i < rule->body_size; ++i) {
-                literal_string = literal_to_string(&(rule->body[i]));
+            for (i = 1; i < rule->body.size; ++i) {
+                literal_string = literal_to_string(&(rule->body.observations[i]));
                 result_size += strlen(literal_string) + 2;
                 temp = strdup(result);
                 result = (char *) realloc(result, result_size);
@@ -251,7 +231,7 @@ char *rule_to_string(const Rule * const rule) {
  */
 char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number) {
     if (rule != NULL) {
-        if ((rule->body != NULL) && (rule->head.atom != NULL)) {
+        if (rule->body.observations && rule->head.atom) {
             char temp_buffer[50];
             int rule_number_size = sprintf(temp_buffer, "%d", rule_number);
 
@@ -260,8 +240,8 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
             size_t body_size = strlen(body) + 1, result_size;
 
             unsigned int i;
-            for (i = 0; i < rule->body_size - 1; ++i) {
-                literal_prudensjs_string = literal_to_prudensjs(&(rule->body[i]));
+            for (i = 0; i < rule->body.size - 1; ++i) {
+                literal_prudensjs_string = literal_to_prudensjs(&(rule->body.observations[i]));
                 body_size += strlen(literal_prudensjs_string) + 2;
                 temp = strdup(body);
                 body = (char *) realloc(body, body_size);
@@ -270,7 +250,7 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
                 free(literal_prudensjs_string);
             }
 
-            literal_prudensjs_string = literal_to_prudensjs(&(rule->body[i]));
+            literal_prudensjs_string = literal_to_prudensjs(&(rule->body.observations[i]));
             body_size += strlen(literal_prudensjs_string) + 11;
             temp = strdup(body);
             body = (char *) realloc(body, body_size);
