@@ -1,4 +1,11 @@
-Albatross Antarctica Bird Wings Fly
-Seagull Ocean Bird Wings Fly
-Penguin Bird
-Penguin Antarctica Wings Bird -Fly
+Albatross Antarctica Bird Wings Feathers Fly
+Seagull Ocean Bird Wings Feathers Fly
+Penguin Antarctica Wings Bird Feathers -Fly
+Pigeon Wings Bird Feathers Fly
+Chicken Wings Bird Feathers -Fly
+Turkey Wings Feathers Bird -Fly
+Parrot Wings Feathers Fly
+Parrot Wings -Feathers -Fly
+Hummingbird Wings Fly
+Mockingbird Wings Fly
+Ostrich Wings Feathers -Fly
