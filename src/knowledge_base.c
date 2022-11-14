@@ -155,7 +155,8 @@ const unsigned int max_number_of_rules) {
 
 /**
  * @brief Finds the applicable rules from the given Context/Scene (Literals). If any given parameter
- *  is NULL, the function will not be executed.
+ *  is NULL, the function will not be executed. An applicable Rule, is a Rule whose body is true. 
+ * The head can be true or false.
  * 
  * @param knowledge_base The KnowledgeBase to find the Rules from.
  * @param context The context Context (Scene).
@@ -174,9 +175,12 @@ IntVector * restrict applicable_inactive_rules) {
     }
 }
 
+//TODO Rename the function to effective rules, and create a new one in which concurring rules, are 
+// rules whose head is true and bodu can be false or true.
 /**
  * @brief Finds the concurring Rules from the given Context/Scene (Literals). If any given parameter
- *  is NULL, the function will not be executed.
+ *  is NULL, the function will not be executed. A concurring Rule, is a Rule whose body and head are
+ *  true.
  * 
  * @param knowledge_base The KnowledgeBase to find the Rules from.
  * @param context The context Context (Scene).
@@ -289,10 +293,12 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
  * function will be ignored.
  * @param promotion_weight The amount that the Rule should be promoted with. If the amount is <= 0,
  * nothing will be changed.
+ * @return 1 if Rule was INACTIVE and it was promoted to ACTIVE, 0 if a Rule was simply promoted, 
+ * and -1 if the given KnowledgeBase is NULL.
  */
-void knowledge_base_promote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+int knowledge_base_promote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
 const unsigned int rule_index, const float promotion_weight) {
-    if ((knowledge_base != NULL) && (promotion_weight > 0)) {
+    if (knowledge_base && (promotion_weight > 0)) {
         if ((type == ACTIVE) && (knowledge_base->active.length > rule_index)) {
             rule_promote(&(knowledge_base->active.rules[rule_index]), promotion_weight);
         } else if ((type == INACTIVE) && (knowledge_base->inactive.length > rule_index)) {
@@ -306,9 +312,12 @@ const unsigned int rule_index, const float promotion_weight) {
                 rule_queue_enqueue(&(knowledge_base->active), &rule_to_move);
 
                 rule_destructor(&rule_to_move);
+                return 1;
             }
         }
+        return 0;
     }
+    return -1;
 }
 
 /**
@@ -321,10 +330,12 @@ const unsigned int rule_index, const float promotion_weight) {
  * function will be ignored.
  * @param demotion_weight The amount that the Rule should be demoted with. If the amount is <= 0,
  * nothing will be changed.
-*/
-void knowledge_base_demote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+ * @return 1 if Rule was ACTIVE and it was demoted to INACTIVE, 0 if a Rule was simply demoted, and 
+ * -1 if the given KnowledgeBase is NULL.
+ */
+int knowledge_base_demote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
 const unsigned int rule_index, const float demotion_weight) {
-    if ((knowledge_base != NULL) && (demotion_weight > 0)) {
+    if (knowledge_base && (demotion_weight > 0)) {
         if ((type == ACTIVE) && (knowledge_base->active.length > rule_index)) {
             rule_demote(&(knowledge_base->active.rules[rule_index]), demotion_weight);
 
@@ -336,11 +347,14 @@ const unsigned int rule_index, const float demotion_weight) {
                 rule_queue_enqueue(&(knowledge_base->inactive), &rule_to_move);
 
                 rule_destructor(&rule_to_move);
+                return 1;
             }
         } else if ((type == INACTIVE) && (knowledge_base->inactive.length > rule_index)) {
             rule_demote(&(knowledge_base->inactive.rules[rule_index]), demotion_weight);
         }
+        return 0;
     }
+    return -1;
 }
 
 /**
