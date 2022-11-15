@@ -14,8 +14,8 @@
  * @param sign Indicates whether the atom is negated or not. > 0 is positive, 0 is negative.
  */
 void literal_constructor(Literal * const literal, const char * const atom, const int sign) {
-    if (literal != NULL) {
-        if (atom != NULL) {
+    if (literal) {
+        if (atom) {
             literal->atom = strdup(atom);
             unsigned int i;
             for (i = 0; i < strlen(atom); ++i) {
@@ -35,8 +35,8 @@ void literal_constructor(Literal * const literal, const char * const atom, const
  * @param literal The Literal to be destructed.
  */
 void literal_destructor(Literal * const literal) {
-    if (literal != NULL) {
-        if (literal->atom != NULL) {
+    if (literal) {
+        if (literal->atom) {
             free(literal->atom);
             literal->atom = NULL;
         }
@@ -51,8 +51,8 @@ void literal_destructor(Literal * const literal) {
  * @param source The Literal to be copied. If the Literal or its atom are NULL, the content of the 
  * destination will not be changed.
  */
-void literal_copy(Literal * const destination, const Literal * const source) {
-    if ((destination != NULL) && (source != NULL)) {
+void literal_copy(Literal * const restrict destination, const Literal * const restrict source) {
+    if (destination && source) {
         if (source->atom != NULL) {
             destination->atom = strdup(source->atom);
             destination->sign = source->sign;
@@ -66,7 +66,7 @@ void literal_copy(Literal * const destination, const Literal * const source) {
  * @param literal The Literal to negate. If NULL, nothing will happen.
  */
 void literal_negate(Literal * const literal) {
-    if (literal != NULL) {
+    if (literal) {
         if (literal->sign) {
             literal->sign = 0;
         } else {
@@ -82,8 +82,9 @@ void literal_negate(Literal * const literal) {
  * @param literal2 The second literal to be checked.
  * @return 1 if they are equal, 0 if they are not and -1 if one the Literals is NULL.
  */
-int literal_equals(const Literal * const literal1, const Literal * const literal2) {
-    if ((literal1 != NULL) && (literal2 != NULL)) {
+int literal_equals(const Literal * const restrict literal1,
+const Literal * const restrict literal2) {
+    if (literal1 && literal2) {
         if (literal1->sign == literal2->sign) {
             return (strcmp(literal1->atom, literal2->atom) == 0);
         }
@@ -101,7 +102,8 @@ int literal_equals(const Literal * const literal1, const Literal * const literal
  * @return 1 if they are opposed, 0 if they are not opposed, -1 if the atoms are different, and -2 
  * if at least one of the Literals is NULL.
  */
-int literal_opposed(const Literal * restrict literal1, const Literal * restrict literal2) {
+int literal_opposed(const Literal * const restrict literal1,
+const Literal * const restrict literal2) {
     if (literal1 && literal2) {
         if (strcmp(literal1->atom, literal2->atom) == 0) {
             return (literal1->sign != literal2->sign);
@@ -119,8 +121,8 @@ int literal_opposed(const Literal * restrict literal1, const Literal * restrict 
  * NULL if the Literal or its atom are NULL.
  */
 char *literal_to_string(const Literal * const literal) {
-    if (literal != NULL) {
-        if (literal->atom != NULL) {
+    if (literal) {
+        if (literal->atom) {
             if (literal->sign > 0) {
                 return strdup(literal->atom);
             }
@@ -141,8 +143,8 @@ char *literal_to_string(const Literal * const literal) {
  * Returns NULL if the Literal or its atom are NULL.
  */
 char *literal_to_prudensjs(const Literal * const literal) {
-    if (literal != NULL) {
-        if (literal->atom != NULL) {
+    if (literal) {
+        if (literal->atom) {
             const char * const start = "{\"name\": \"", * const sign = ", \"sign\": ", 
             * const end = ", \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
             "\"isAction\": false, \"arity\": 0}";
