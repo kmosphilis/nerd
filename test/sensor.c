@@ -3,17 +3,19 @@
 
 #include "../src/sensor.h"
 
+#define SENSOR_TEST_DATA "./data/sensor_test.txt"
+
 START_TEST(construct_destruct_test) {
     Sensor sensor, *sensor_ptr = NULL;
 
-    sensor_constructor_from_file(&sensor, "./data/test.txt", 0);
+    sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 0);
     ck_assert_ptr_nonnull(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, 0);
     sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, -1);
 
-    sensor_constructor_from_file(&sensor, "./data/test.txt", 1);
+    sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 1);
     ck_assert_ptr_nonnull(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, 1);
     sensor_destructor(&sensor);
@@ -31,7 +33,7 @@ START_TEST(construct_destruct_test) {
     ck_assert_ptr_null(sensor.enviroment);
     sensor_destructor(&sensor);
 
-    sensor_constructor_from_file(sensor_ptr, "./data/test.txt", 0);
+    sensor_constructor_from_file(sensor_ptr, SENSOR_TEST_DATA, 0);
     ck_assert_ptr_null(sensor_ptr);
     ck_assert_ptr_null(sensor.enviroment);
     ck_assert_int_eq(sensor.reuse, -1);
@@ -44,7 +46,7 @@ START_TEST(get_scene_test) {
     Scene scene;
 
     scene_constructor(&scene);
-    sensor_constructor_from_file(&sensor, "./data/test.txt", 0);
+    sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 0);
 
     sensor_get_next_scene(&sensor, &scene);
 
