@@ -10,7 +10,7 @@
  * @param context The context to be constructed.
  */
 void context_constructor(Context * const context) {
-    scene_constructor((Scene *) context);
+    scene_constructor(context);
 }
 
 /**
@@ -37,8 +37,8 @@ void context_add_literal(Context * const context, const Literal * const literal)
  * deallocate the result. Returns NULL if the Context or its body are NULL.
  */
 char *context_to_prudensjs(const Context * const context) {
-    if (context != NULL) {
-        if (context->observations != NULL) {
+    if (context) {
+        if (context->observations) {
             char *result = strdup("{\"type\": \"output\", \"context\": ["), *temp,
             *literal_prudensjs_string;
             size_t result_size = strlen(result) + 1;
