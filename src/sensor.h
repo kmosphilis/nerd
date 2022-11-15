@@ -7,12 +7,13 @@
 
 typedef struct Sensor {
     FILE *enviroment;
-    short reuse;
+    unsigned short reuse;
 } Sensor;
 
 void sensor_constructor_from_file(Sensor * const sensor, const char * const filepath,
-const short reuse);
+const unsigned short reuse);
 void sensor_destructor(Sensor * const sensor);
-void sensor_get_next_scene(const Sensor * const sensor, Scene * const scene_to_save);
+void sensor_get_next_scene(const Sensor * const sensor, Scene * const restrict output,
+const unsigned short partial_observation, Scene * const restrict initial_observation);
 
 #endif
