@@ -298,25 +298,25 @@ START_TEST(combine_test) {
     scene_add_literal(&expected, &literal);
     literal_destructor(&literal);
 
-    scene_combine(&scene1, &scene2, &result);
+    scene_union(&scene1, &scene2, &result);
 
     ck_assert_int_eq(scene1.size, 4);
     ck_assert_int_eq(scene2.size, 4);
     ck_assert_scene_eq(&result, &expected);
     scene_destructor(&result);
 
-    scene_combine(NULL, &scene2, &result);
+    scene_union(NULL, &scene2, &result);
     ck_assert_scene_eq(&result, &scene2);
     scene_destructor(&result);
 
-    scene_combine(&scene1, NULL, &result);
+    scene_union(&scene1, NULL, &result);
     ck_assert_scene_eq(&result, &scene1);
     scene_destructor(&result);
 
-    scene_combine(NULL, NULL, &result);
+    scene_union(NULL, NULL, &result);
     ck_assert_scene_empty(&result);
     
-    scene_combine(&scene1, &scene2, scene_ptr);
+    scene_union(&scene1, &scene2, scene_ptr);
     ck_assert_ptr_null(scene_ptr);
 
     scene_destructor(&scene1);

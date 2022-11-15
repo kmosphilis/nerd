@@ -89,7 +89,7 @@ const unsigned int max_number_of_rules) {
         scene_constructor(&combined);
 
         scene_difference(observed, inferred, &uncovered);
-        scene_combine(observed, inferred, &combined);
+        scene_union(observed, inferred, &combined);
 
         srand(time(NULL));
 
