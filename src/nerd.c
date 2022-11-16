@@ -21,10 +21,10 @@
  * @param promotion_weight The amount that a Rule should be promoted with. It should be > 0.
  * @param demotion_weight The amount that a Rule should be demoted with. It should be > 0.
  */
-void nerd_constructor(Nerd * restrict nerd, const char * restrict filepath, unsigned short reuse,
+void nerd_constructor(Nerd * const nerd, const char * const filepath, unsigned short reuse,
 const float activation_threshold, const unsigned int breadth, const unsigned int depth,
 const unsigned int epochs, const float promotion_weight, const float demotion_weight) {
-    if ((nerd != NULL) && (filepath != NULL)) {
+    if (nerd && filepath) {
         sensor_constructor_from_file(&(nerd->sensor), filepath, reuse);
         nerd->breadth = breadth;
         nerd->depth = depth;
@@ -40,23 +40,25 @@ const unsigned int epochs, const float promotion_weight, const float demotion_we
  * 
  * @param nerd The Nerd structure to be destructed.
  */
-void nerd_destructor(Nerd * restrict nerd) {
-    nerd->breadth = 0;
-    nerd->depth = 0;
-    nerd->epochs = 0;
-    nerd->promotion_weight = INFINITY;
-    nerd->demotion_weight = INFINITY;
-    sensor_destructor(&(nerd->sensor));
-    knowledge_base_destructor(&(nerd->knowledge_base));
+void nerd_destructor(Nerd * const nerd) {
+    if (nerd) {
+        nerd->breadth = 0;
+        nerd->depth = 0;
+        nerd->epochs = 0;
+        nerd->promotion_weight = INFINITY;
+        nerd->demotion_weight = INFINITY;
+        sensor_destructor(&(nerd->sensor));
+        knowledge_base_destructor(&(nerd->knowledge_base));
+    }
 }
 
-void prudensjs_inference(const KnowledgeBase * restrict knowledge_base,
-const Scene * restrict context, Scene * restrict result, Scene * restrict inferred_literals,
+void prudensjs_inference(const KnowledgeBase * const knowledge_base,
+const Scene * const restrict context, Scene * restrict result, Scene * restrict inferred_literals,
 unsigned int ** inferred_literals_rule_numbers, int *** inferred_literals_rule_indices) {
     const char * const temp_filename = ".temp";
     char *knowledge_base_prudensjs = knowledge_base_to_prudensjs(knowledge_base),
     *context_prudensjs = context_to_prudensjs(context);
-    if ((knowledge_base_prudensjs != NULL) && (context_prudensjs != NULL)) {
+    if (knowledge_base_prudensjs && context_prudensjs) {
         FILE *file = fopen(temp_filename, "wb");
 
         fprintf(file, "%s\n%s", knowledge_base_prudensjs, context_prudensjs);
@@ -137,7 +139,10 @@ unsigned int ** inferred_literals_rule_numbers, int *** inferred_literals_rule_i
  * 
  * @param nerd The Nerd structure containing all the info for learn new Rules.
  */
-void nerd_start_learning(Nerd * restrict nerd) {
+void nerd_start_learning(Nerd * const nerd) {
+    if (!nerd) {
+        return;
+    }
     /*  1 - Create rules with heads that do not exist in effective rules (rules that were applicable and were correct).
         2 - Promote rules applicable on inferred that concur with observed. Promote both active and inactive rules.
             If head is the same as observed, promote, else demote it if it opposed.
@@ -169,7 +174,7 @@ void nerd_start_learning(Nerd * restrict nerd) {
     for (epoch = 0; epoch < nerd->epochs; ++epoch) {
         printf("Epoch %d of %d\n", epoch + 1, nerd->epochs);
 
-        sensor_get_next_scene(&(nerd->sensor), &observation);
+        sensor_get_next_scene(&(nerd->sensor), &observation, 0, NULL);
 
         prudensjs_inference(&(nerd->knowledge_base), &observation, &inferred, &inferred_literals,
         &inferred_literals_rule_numbers, &inferred_literals_rule_indices);
