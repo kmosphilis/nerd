@@ -53,7 +53,7 @@ void literal_destructor(Literal * const literal) {
  */
 void literal_copy(Literal * const restrict destination, const Literal * const restrict source) {
     if (destination && source) {
-        if (source->atom != NULL) {
+        if (source->atom) {
             destination->atom = strdup(source->atom);
             destination->sign = source->sign;
         }
