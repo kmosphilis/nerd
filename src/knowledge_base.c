@@ -97,9 +97,9 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
         unsigned int i, j, body_size, rules_to_create = (rand() % max_number_of_rules) + 1;
 
         for (i = 0; i < rules_to_create; ++i) {
-            if (uncovered.size != 0) {
+            if ((uncovered.size != 0) && (combined.size > 1)) {
                 Literal head;
-                Context body;
+                Body body;
                 Rule new_rule;
 
                 srand(time(NULL) + i);
