@@ -53,7 +53,7 @@ void rule_destructor(Rule * const rule) {
  * @param source The Rule to be copied. If the Rule, its body or the head's atom are NULL, the 
  * content of the destination will not be changed.
  */
-void rule_copy(Rule * const destination, const Rule * const source) {
+void rule_copy(Rule * const restrict destination, const Rule * const restrict source) {
     if (destination && source) {
         literal_copy(&(destination->head), &(source->head));
         scene_copy(&(destination->body), &(source->body));
@@ -69,7 +69,7 @@ void rule_copy(Rule * const destination, const Rule * const source) {
  * @param amount The amount to be added to the weight of the rule.
  */
 void rule_promote(Rule * const rule, const float amount) {
-    if (rule != NULL) {
+    if (rule) {
         rule->weight = fmaxf(rule->weight + amount, 0);
     }
 }
@@ -82,12 +82,11 @@ void rule_promote(Rule * const rule, const float amount) {
  * @param amount The amount to be subtracted from the weight of the rule.
  */
 void rule_demote(Rule * const rule, const float amount) {
-    if (rule != NULL) {
+    if (rule) {
         rule->weight = fmaxf(rule->weight - amount, 0);
     }
 }
 
-//TODO Create a test function.
 /**
  * @brief Checks if a Rule is applicable with a given context. An applicable Rule, is a Rule whose 
  * body is true in the given Context.
@@ -97,8 +96,8 @@ void rule_demote(Rule * const rule, const float amount) {
  * @return 1 if the Rule is applicable, 0 if it is not, or -1 if at least one of the given 
  * parameters is NULL.
  */
-int rule_applicable(const Rule * restrict rule, const Context * restrict context) {
-    if ((rule != NULL) && (context != NULL)) {
+int rule_applicable(const Rule * const rule, const Context * const context) {
+    if (rule && context) {
         unsigned int i, j, applicable_literals = 0;
         for (i = 0; i < context->size; ++i) {
             for (j = 0; j < rule->body.size; ++j) {
@@ -115,7 +114,6 @@ int rule_applicable(const Rule * restrict rule, const Context * restrict context
     return -1;
 }
 
-//TODO Create a test function.
 /**
  * @brief Check if a Rule concurs with a given context. A concurring Rule, is a Rule whose head is 
  * true in the given context, and it's body doesn't have to be.
@@ -125,7 +123,7 @@ int rule_applicable(const Rule * restrict rule, const Context * restrict context
  * @return 1 if the Rule concurs; i.e. the head is true, 0 if the head does not concur, and -1 if 
  * one of given parameters is NULL.
 */
-int rule_concurs(const Rule * restrict rule, const Context * restrict context) {
+int rule_concurs(const Rule * const rule, const Context * const context) {
     if (rule && context) {
         unsigned int i;
         for (i = 0; i < context->size; ++i) {
@@ -146,8 +144,8 @@ int rule_concurs(const Rule * restrict rule, const Context * restrict context) {
  * @param rule2 The second rule to be checked.
  * @return 1 if they are equal, 0 if they are not and -1 of one of the Rules is NULL.
  */
-int rule_equals(const Rule * const rule1, const Rule * const rule2) {
-    if ((rule1 != NULL) && (rule2 != NULL)) {
+int rule_equals(const Rule * const restrict rule1, const Rule * const restrict rule2) {
+    if (rule1 && rule2) {
         if (rule1->body.size == rule2->body.size) {
             if (literal_equals(&(rule1->head), &(rule2->head))) {
                 unsigned int i, j;
@@ -230,7 +228,7 @@ char *rule_to_string(const Rule * const rule) {
  * result. Returns NULL if the Rule, its body or the head's atom are NULL.
  */
 char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number) {
-    if (rule != NULL) {
+    if (rule) {
         if (rule->body.observations && rule->head.atom) {
             char temp_buffer[50];
             int rule_number_size = sprintf(temp_buffer, "%d", rule_number);
