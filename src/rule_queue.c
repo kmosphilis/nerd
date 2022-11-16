@@ -10,7 +10,7 @@
  * constructed.
  */
 void rule_queue_constructor(RuleQueue * const rule_queue) {
-    if (rule_queue != NULL) {
+    if (rule_queue) {
         rule_queue->length = 0;
         rule_queue->rules = NULL;
     }
@@ -22,8 +22,8 @@ void rule_queue_constructor(RuleQueue * const rule_queue) {
  * @param rule_queue The RuleQueue to be destructed.
  */
 void rule_queue_destructor(RuleQueue * const rule_queue) {
-    if (rule_queue != NULL) {
-        if (rule_queue->rules != NULL) {
+    if (rule_queue) {
+        if (rule_queue->rules) {
             unsigned int i;
             for (i = 0; i < rule_queue->length; ++i) {
                 rule_destructor(&(rule_queue->rules[i]));
@@ -44,7 +44,7 @@ void rule_queue_destructor(RuleQueue * const rule_queue) {
  * destination will not be changed.
  */
 void rule_queue_copy(RuleQueue * const destination, const RuleQueue * const source) {
-    if ((destination != NULL) && (source != NULL)) {
+    if (destination && source) {
         destination->length = source->length;
         destination->rules = (Rule *) malloc(source->length * sizeof(Rule));
 
@@ -62,7 +62,7 @@ void rule_queue_copy(RuleQueue * const destination, const RuleQueue * const sour
  * @param rule The Rule to be enqueued. If NULL is given, the queue will remain the same.
  */
 void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule) {
-    if ((rule_queue != NULL) && (rule != NULL)) {
+    if (rule_queue && rule) {
         ++rule_queue->length;
         rule_queue->rules = (Rule *) realloc(rule_queue->rules, rule_queue->length * sizeof(Rule));
         rule_copy(&(rule_queue->rules[rule_queue->length - 1]), rule);
@@ -76,11 +76,11 @@ void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule) {
  * @param dequeued_rule The Rule that was dequeued to be saved. If NULL is given, the rule will be 
  * destroyed.
  */
-void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule) {
-    if (rule_queue != NULL) {
-        if (rule_queue->rules != NULL) {
+void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * const dequeued_rule) {
+    if (rule_queue) {
+        if (rule_queue->rules) {
             --rule_queue->length;
-            if (dequeued_rule != NULL) {
+            if (dequeued_rule) {
                 const Rule * const rule = &(rule_queue->rules[0]);
                 dequeued_rule->body = rule->body;
                 dequeued_rule->head = rule->head;
@@ -112,8 +112,8 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule * dequeued_rule) {
  * @return index where the Rule is or -1 if it does not exist or either the Rule or the RuleQueue 
  * are NULL.
  */
-int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule) {
-    if ((rule_queue != NULL) && (rule != NULL)) {
+int rule_queue_find(const RuleQueue * const  restrict rule_queue, const Rule * const restrict rule) {
+    if (rule_queue && rule) {
         unsigned int i;
         for (i = 0; i < rule_queue->length; ++i) {
             if (rule_equals(&(rule_queue->rules[i]), rule)) {
@@ -135,11 +135,11 @@ int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule)
  */
 void rule_queue_remove_rule(RuleQueue * const rule_queue, const int rule_index,
 Rule * removed_rule) {
-    if ((rule_queue != NULL) && (rule_index >= 0)) {
+    if (rule_queue && (rule_index >= 0)) {
         const unsigned int u_rule_index = rule_index;
-        if ((rule_queue->rules != NULL) && (u_rule_index < rule_queue->length)) {
+        if (rule_queue->rules && (u_rule_index < rule_queue->length)) {
             --rule_queue->length;
-            if (removed_rule != NULL) {
+            if (removed_rule) {
                 const Rule * const rule = &(rule_queue->rules[u_rule_index]);
                 removed_rule->body = rule->body;
                 removed_rule->head = rule->head;
@@ -180,9 +180,9 @@ Rule * removed_rule) {
  * @param context The Context to check for applicable Rules.
  * @param rule_indices The IntVector to save the indices of the Rules that are applicable.
  */
-void rule_queue_find_applicable_rules(const RuleQueue * restrict rule_queue,
-const Context * restrict context, IntVector * restrict rule_indices) {
-    if ((rule_queue != NULL) && (context != NULL) && (rule_indices != NULL)) {
+void rule_queue_find_applicable_rules(const RuleQueue * const rule_queue,
+const Context * const context, IntVector * const rule_indices) {
+    if (rule_queue && context && rule_indices) {
         unsigned int i;
         for (i = 0; i < rule_queue->length; ++i) {
             if (rule_applicable(&(rule_queue->rules[i]), context)) {
@@ -200,9 +200,9 @@ const Context * restrict context, IntVector * restrict rule_indices) {
  * @param context The Context to check for concurring Rules.
  * @param rule_indices The IntVector to save the indices of the Rules that are concurring.
  */
-void rule_queue_find_concurring_rules(const RuleQueue * restrict rule_queue,
-const Context * restrict context, IntVector * restrict rule_indices) {
-    if ((rule_queue != NULL) && (context != NULL) && (rule_indices != NULL)) {
+void rule_queue_find_concurring_rules(const RuleQueue * const rule_queue,
+const Context * const context, IntVector * const rule_indices) {
+    if (rule_queue && context && rule_indices) {
         unsigned int i, j;
         for (i = 0; i < rule_queue->length; ++i) {
             for (j = 0; j < context->size; ++j) {
@@ -225,7 +225,7 @@ const Context * restrict context, IntVector * restrict rule_indices) {
  * NULL if the RuleQueue is NULL.
  */
 char *rule_queue_to_string(const RuleQueue * const rule_queue) {
-    if (rule_queue != NULL) {
+    if (rule_queue) {
         if (rule_queue->length == 0) {
             return strdup("[\n]");
         }
