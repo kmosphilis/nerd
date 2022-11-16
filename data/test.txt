@@ -9,3 +9,9 @@ Parrot Wings -Feathers -Fly
 Hummingbird Wings Fly
 Mockingbird Wings Fly
 Ostrich Wings Feathers -Fly
+Airplane Fly -Feathers
+Stone -Fly -Feathers -Wings
+Bat Fly -Bird Mammal
+Human Mammal -Fly
+Mammal -Bird
+Bird -Mammal
