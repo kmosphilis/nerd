@@ -15,7 +15,7 @@
  */
 void knowledge_base_constructor(KnowledgeBase * const knowledge_base,
 const float activation_threshold) {
-    if (knowledge_base != NULL) {
+    if (knowledge_base) {
         knowledge_base->activation_threshold = activation_threshold;
         rule_queue_constructor(&(knowledge_base->active));
         rule_queue_constructor(&(knowledge_base->inactive));
@@ -28,7 +28,7 @@ const float activation_threshold) {
  * @param knowledge_base The KnowledgeBase to be destructed. If NULL the process will fail.
  */
 void knowledge_base_destructor(KnowledgeBase * const knowledge_base) {
-    if (knowledge_base != NULL) {
+    if (knowledge_base) {
         rule_queue_destructor(&(knowledge_base->active));
         rule_queue_destructor(&(knowledge_base->inactive));
         knowledge_base->activation_threshold = INFINITY;
@@ -42,8 +42,9 @@ void knowledge_base_destructor(KnowledgeBase * const knowledge_base) {
  * @param source The KnowledgeBase to be copied. If the KnowledgeBase is NULL, the contents of the 
  * destination will not be changed.
  */
-void knowledge_base_copy(KnowledgeBase * const destination, const KnowledgeBase * const source) {
-    if ((destination != NULL) && (source != NULL)) {
+void knowledge_base_copy(KnowledgeBase * const restrict destination,
+const KnowledgeBase * const restrict source) {
+    if (destination && source) {
         destination->activation_threshold = source->activation_threshold;
         rule_queue_copy(&(destination->active), &(source->active));
         rule_queue_copy(&(destination->inactive), &(source->inactive));
@@ -59,7 +60,7 @@ void knowledge_base_copy(KnowledgeBase * const destination, const KnowledgeBase 
  * @param rule The Rule to be added.
  */
 void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * const rule) {
-    if ((knowledge_base != NULL) && (rule != NULL)) {
+    if (knowledge_base && rule) {
         if (rule->weight >= knowledge_base->activation_threshold) {
             rule_queue_enqueue(&(knowledge_base->active), rule);
         } else {
@@ -79,9 +80,9 @@ void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * 
  * @param max_number_of_rules The maximum number of Rules to be created.
  */
 void knowledge_base_create_new_rules(KnowledgeBase * const knowledge_base,
-const Scene * const observed, const Scene * const inferred, const unsigned int max_body_size,
-const unsigned int max_number_of_rules) {
-    if ((knowledge_base != NULL) && (observed != NULL)) {
+const Scene * const restrict observed, const Scene * const restrict inferred,
+const unsigned int max_body_size, const unsigned int max_number_of_rules) {
+    if (knowledge_base && observed) {
         Context uncovered;
         Scene combined;
 
@@ -163,11 +164,10 @@ const unsigned int max_number_of_rules) {
  * @param applicable_active_rules The IntVector to save the active applicable Rules.
  * @param applicable_inactive_rules The IntVector to save the inactive applicable Rules.
  */
-void knowledge_base_applicable_rules(const KnowledgeBase * restrict knowledge_base,
-const Context * restrict context, IntVector * restrict applicable_active_rules,
-IntVector * restrict applicable_inactive_rules) {
-    if ((knowledge_base != NULL) && (context != NULL) && (applicable_active_rules != NULL) &&
-    (applicable_inactive_rules != NULL)) {
+void knowledge_base_applicable_rules(const KnowledgeBase * const knowledge_base,
+const Context * const context, IntVector * const restrict applicable_active_rules,
+IntVector * const restrict applicable_inactive_rules) {
+    if (knowledge_base && context && applicable_active_rules && applicable_inactive_rules) {
         rule_queue_find_applicable_rules(&(knowledge_base->active), context,
         applicable_active_rules);
         rule_queue_find_applicable_rules(&(knowledge_base->inactive), context,
@@ -187,11 +187,10 @@ IntVector * restrict applicable_inactive_rules) {
  * @param concurring_active_rules The IntVector to save the active concurring Rules.
  * @param concurring_inactive_rules The IntVector to save the inactive concurring Rules.
  */
-void knowledge_base_concurring_rules(const KnowledgeBase * restrict knowledge_base,
-const Context * restrict context, IntVector * restrict concurring_active_rules,
-IntVector * restrict concurring_inactive_rules) {
-    if ((knowledge_base != NULL) && (context != NULL) && (concurring_active_rules != NULL) &&
-    (concurring_inactive_rules != NULL)) {
+void knowledge_base_concurring_rules(const KnowledgeBase * const knowledge_base,
+const Context * const context, IntVector * const restrict concurring_active_rules,
+IntVector * const restrict concurring_inactive_rules) {
+    if (knowledge_base && context && concurring_active_rules && concurring_inactive_rules) {
         rule_queue_find_concurring_rules(&(knowledge_base->active), context,
         concurring_active_rules);
         rule_queue_find_concurring_rules(&(knowledge_base->inactive), context,
@@ -209,7 +208,7 @@ IntVector * restrict concurring_inactive_rules) {
  */
 void knowledge_base_promote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_promote, const float promotion_rate) {
-    if ((knowledge_base != NULL) && (rules_to_promote != NULL) && promotion_rate > 0) {
+    if (knowledge_base && rules_to_promote && (promotion_rate > 0)) {
         unsigned int i;
 
         for (i = 0; i < rules_to_promote->length; ++i) {
@@ -251,7 +250,7 @@ const RuleQueue * const rules_to_promote, const float promotion_rate) {
  */
 void knowledge_base_demote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_demote, const float demotion_rate) {
-    if ((knowledge_base != NULL) && (rules_to_demote != NULL) && (demotion_rate > 0)) {
+    if (knowledge_base && rules_to_demote && (demotion_rate > 0)) {
         unsigned int i;
 
         for (i = 0; i < rules_to_demote->length; ++i) {
@@ -296,7 +295,7 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
  * @return 1 if Rule was INACTIVE and it was promoted to ACTIVE, 0 if a Rule was simply promoted, 
  * and -1 if the given KnowledgeBase is NULL.
  */
-int knowledge_base_promote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+int knowledge_base_promote_rule(KnowledgeBase * const knowledge_base, const RuleType type,
 const unsigned int rule_index, const float promotion_weight) {
     if (knowledge_base && (promotion_weight > 0)) {
         if ((type == ACTIVE) && (knowledge_base->active.length > rule_index)) {
@@ -333,7 +332,7 @@ const unsigned int rule_index, const float promotion_weight) {
  * @return 1 if Rule was ACTIVE and it was demoted to INACTIVE, 0 if a Rule was simply demoted, and 
  * -1 if the given KnowledgeBase is NULL.
  */
-int knowledge_base_demote_rule(KnowledgeBase * restrict knowledge_base, const RuleType type,
+int knowledge_base_demote_rule(KnowledgeBase * const knowledge_base, const RuleType type,
 const unsigned int rule_index, const float demotion_weight) {
     if (knowledge_base && (demotion_weight > 0)) {
         if ((type == ACTIVE) && (knowledge_base->active.length > rule_index)) {
@@ -365,7 +364,7 @@ const unsigned int rule_index, const float demotion_weight) {
  * Returns NULL if the KnowledgeBase is NULL.
  */
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
-    if (knowledge_base != NULL) {
+    if (knowledge_base) {
         char *result, *temp, *rule_queue_string;
         const char * const beginning = "Knowledge Base:\n", * const active_rules = "Active Rules: ",
         * const inactive_rules = "Inactive Rules: ", * const threshold = "Activation Threshold: ";
@@ -415,8 +414,8 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
  * given KnowledgeBase * is NULL.
  */
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
-    if (knowledge_base != NULL) {
-        if (knowledge_base->active.rules != NULL) {
+    if (knowledge_base) {
+        if (knowledge_base->active.rules) {
             char const *end = "], \"code\": \"\", \"imports\": \"\", "
             "\"warnings\": [], \"customPriorities\": []}";
             char *result = strdup("{\"type\": \"output\", \"kb\": ["), *temp,
