@@ -8,8 +8,8 @@
  * 
  * @param int_vector The IntVector to be constructed. If NULL the process will fail.
  */
-void int_vector_constructor(IntVector * restrict int_vector) {
-    if (int_vector != NULL) {
+void int_vector_constructor(IntVector * const int_vector) {
+    if (int_vector) {
         int_vector->items = NULL;
         int_vector->size = 0;
     }
@@ -20,9 +20,9 @@ void int_vector_constructor(IntVector * restrict int_vector) {
  * 
  * @param int_vector The IntVector to be destructed. If NULL the process will fail.
  */
-void int_vector_destructor(IntVector * restrict int_vector) {
-    if (int_vector != NULL) {
-        if (int_vector->items != NULL) {
+void int_vector_destructor(IntVector * const int_vector) {
+    if (int_vector) {
+        if (int_vector->items) {
             free(int_vector->items);
             int_vector->items = NULL;
         }
@@ -37,9 +37,10 @@ void int_vector_destructor(IntVector * restrict int_vector) {
  * @param source The IntVector to be copied. If NULL is given, the contents of the destination will 
  * not be changed.
  */
-void int_vector_copy(IntVector * restrict destination, const IntVector * restrict source) {
-    if ((destination != NULL) && (source != NULL)) {
-        if (source != NULL) {
+void int_vector_copy(IntVector * const restrict destination,
+const IntVector * const restrict source) {
+    if (destination && source) {
+        if (source) {
             destination->items = (int *) malloc(source->size * sizeof(int));
             memcpy(destination->items, source->items, source->size * sizeof(int));
             destination->size = source->size;
@@ -53,8 +54,8 @@ void int_vector_copy(IntVector * restrict destination, const IntVector * restric
  * @param int_vector The IntVector to be resized. If NULL the process will fail.
  * @param new_size The new size of the vector.
  */
-void int_vector_resize(IntVector * restrict int_vector, const unsigned int new_size) {
-    if (int_vector != NULL) {
+void int_vector_resize(IntVector * const int_vector, const unsigned int new_size) {
+    if (int_vector) {
         int old_size = int_vector->size;
 
         int_vector->items = (int *) realloc(int_vector->items, new_size * sizeof(int));
@@ -73,8 +74,8 @@ void int_vector_resize(IntVector * restrict int_vector, const unsigned int new_s
  * @param int_vector The IntVector to push the new element in. If NULL the process will fail.
  * @param item The item to be added in the IntVector.
  */
-void int_vector_push(IntVector * restrict int_vector, const int item) {
-    if (int_vector != NULL) {
+void int_vector_push(IntVector * const int_vector, const int item) {
+    if (int_vector) {
         int_vector_resize(int_vector, int_vector->size + 1);
         int_vector->items[int_vector->size - 1] = item;
     }
@@ -87,8 +88,8 @@ void int_vector_push(IntVector * restrict int_vector, const int item) {
  * @param index The index of the item to be removed. If index > int_vector.size, the process will 
  * fail.
  */
-void int_vector_delete(IntVector * restrict int_vector, const unsigned index) {
-    if (int_vector != NULL) {
+void int_vector_delete(IntVector * const int_vector, const unsigned index) {
+    if (int_vector) {
         if (int_vector->size > index) {
             unsigned int i;
             for (i = index; i < int_vector->size - 1; ++i) {
@@ -108,8 +109,8 @@ void int_vector_delete(IntVector * restrict int_vector, const unsigned index) {
  * @param index The index of the required item. If index > int_vector.size, the process will fail.
  * @return The item (int) at the given index, or the index if out of bounds or int_vector is NULL.
  */
-int int_vector_get(const IntVector * restrict int_vector, const unsigned int index) {
-    if (int_vector != NULL) {
+int int_vector_get(const IntVector * const int_vector, const unsigned int index) {
+    if (int_vector) {
         if (int_vector->size > index) {
             return int_vector->items[index];
         }
@@ -128,8 +129,8 @@ int int_vector_get(const IntVector * restrict int_vector, const unsigned int ind
  * @param new_item The new item to be set at the given index.
  * @return 1 if successful, 0 if out of bounds, or -1 if int_vector is NULL.
  */
-int int_vector_set(IntVector * restrict int_vector, const unsigned int index, const int new_item) {
-    if (int_vector != NULL) {
+int int_vector_set(IntVector * const int_vector, const unsigned int index, const int new_item) {
+    if (int_vector) {
         if (int_vector->size > index) {
             int_vector->items[index] = new_item; 
             return 1;
