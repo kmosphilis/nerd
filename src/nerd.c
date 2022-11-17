@@ -20,10 +20,13 @@
  * @param epochs The number of epochs the algorithm should learn for.
  * @param promotion_weight The amount that a Rule should be promoted with. It should be > 0.
  * @param demotion_weight The amount that a Rule should be demoted with. It should be > 0.
+ * @param partial_observation If partial_observation is > 0, the initial observation will be saved 
+ * here. If NULL is given, it will not be saved.
  */
 void nerd_constructor(Nerd * const nerd, const char * const filepath, unsigned short reuse,
 const float activation_threshold, const unsigned int breadth, const unsigned int depth,
-const unsigned int epochs, const float promotion_weight, const float demotion_weight) {
+const unsigned int epochs, const float promotion_weight, const float demotion_weight,
+const unsigned short partial_observation) {
     if (nerd && filepath) {
         sensor_constructor_from_file(&(nerd->sensor), filepath, reuse);
         nerd->breadth = breadth;
@@ -32,6 +35,7 @@ const unsigned int epochs, const float promotion_weight, const float demotion_we
         nerd->promotion_weight = promotion_weight;
         nerd->demotion_weight = demotion_weight;
         knowledge_base_constructor(&(nerd->knowledge_base), activation_threshold);
+        nerd->partial_observation = partial_observation;
     }
 }
 
@@ -49,6 +53,7 @@ void nerd_destructor(Nerd * const nerd) {
         nerd->demotion_weight = INFINITY;
         sensor_destructor(&(nerd->sensor));
         knowledge_base_destructor(&(nerd->knowledge_base));
+        nerd->partial_observation = 0;
     }
 }
 
@@ -174,7 +179,7 @@ void nerd_start_learning(Nerd * const nerd) {
     for (epoch = 0; epoch < nerd->epochs; ++epoch) {
         printf("Epoch %d of %d\n", epoch + 1, nerd->epochs);
 
-        sensor_get_next_scene(&(nerd->sensor), &observation, 0, NULL);
+        sensor_get_next_scene(&(nerd->sensor), &observation, nerd->partial_observation, NULL);
 
         prudensjs_inference(&(nerd->knowledge_base), &observation, &inferred, &inferred_literals,
         &inferred_literals_rule_numbers, &inferred_literals_rule_indices);
