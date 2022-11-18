@@ -4,27 +4,27 @@
 #include "../src/context.h"
 
 START_TEST(to_prudensjs_test) {
-    Context context, *context_ptr = NULL;
-    Literal literal;
+    Context *context = NULL;
+    Literal *literal = NULL;
 
-    context_constructor(&context);
-    literal_constructor(&literal, "Penguin", 1);
-    context_add_literal(&context, &literal);
+    context = context_constructor();
+    literal = literal_constructor("Penguin", 1);
+    context_add_literal(context, literal);
     literal_destructor(&literal);
 
-    literal_constructor(&literal, "Antarctica", 1);
-    context_add_literal(&context, &literal);
+    literal = literal_constructor("Antarctica", 1);
+    context_add_literal(context, literal);
     literal_destructor(&literal);
 
-    literal_constructor(&literal, "Bird", 1);
-    context_add_literal(&context, &literal);
+    literal = literal_constructor("Bird", 1);
+    context_add_literal(context, literal);
     literal_destructor(&literal);
 
-    literal_constructor(&literal, "Fly", 0);
-    context_add_literal(&context, &literal);
+    literal = literal_constructor("Fly", 0);
+    context_add_literal(context, literal);
     literal_destructor(&literal);
 
-    char *context_prudensjs_string = context_to_prudensjs(&context);
+    char *context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
     "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": "
     "false, \"isInEquality\": false, \"isAction\": false, \"arity\": "
@@ -37,9 +37,9 @@ START_TEST(to_prudensjs_test) {
     "false, \"isAction\": false, \"arity\": 0}]}");
     free(context_prudensjs_string);
 
-    scene_remove_literal(&context, 1);
-    scene_remove_literal(&context, 2);
-    context_prudensjs_string = context_to_prudensjs(&context);
+    scene_remove_literal(context, 1);
+    scene_remove_literal(context, 2);
+    context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
     "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": "
     "false, \"isInEquality\": false, \"isAction\": false, \"arity\": "
@@ -47,11 +47,10 @@ START_TEST(to_prudensjs_test) {
     "\"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
     "\"arity\": 0}]}");
     free(context_prudensjs_string);
-
-    context_prudensjs_string = context_to_prudensjs(context_ptr);
-    ck_assert_pstr_eq(context_prudensjs_string, NULL);
-
     context_destructor(&context);
+
+    context_prudensjs_string = context_to_prudensjs(context);
+    ck_assert_pstr_eq(context_prudensjs_string, NULL);
 }
 END_TEST
 
