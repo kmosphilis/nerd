@@ -1,3 +1,5 @@
+#include <check.h>
+
 #ifndef __INT_VECTOR_HELPER_H__
 #define __INT_VECTOR_HELPER_H__
 

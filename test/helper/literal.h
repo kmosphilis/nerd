@@ -1,4 +1,4 @@
-#include "../../src/literal.h"
+#include <check.h>
 
 #ifndef __LITERAL_HELPER_H__
 #define __LITERAL_HELPER_H__

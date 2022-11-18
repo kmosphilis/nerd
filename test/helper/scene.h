@@ -1,4 +1,6 @@
-#include "../../src/scene.h"
+#include <check.h>
+
+#include "literal.h"
 
 #ifndef __SCENE_HELPER_H__
 #define __SCENE_HELPER_H__
