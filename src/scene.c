@@ -7,7 +7,7 @@
 /**
  * @brief Constructs a Scene.
  * 
- * @return A new Scene object *. Use scene_destructor to deallocate.
+ * @return A new Scene *. Use scene_destructor to deallocate.
  */
 Scene *scene_constructor() {
     Scene *scene = (Scene *) malloc(sizeof(Scene));

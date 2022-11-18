@@ -7,7 +7,7 @@
 /**
  * @brief Constructs a Context. Alias for scene_constructor.
  * 
- * @return A new Context object *. Use context_destructor to deallocate.
+ * @return A new Context *. Use context_destructor to deallocate.
  */
 Context *context_constructor() {
     Context *context = NULL;

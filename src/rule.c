@@ -12,7 +12,7 @@
  * @param head The head when the rule gets activated.
  * @param weight The weight of the rule.
  * 
- * @return A new Rule object *. Use rule_destructor to deallocate. Returnes NULL, if the body is 
+ * @return A new Rule *. Use rule_destructor to deallocate. Returnes NULL, if the body is 
  * NULL, the body_size is > 0 or the head's atom is empty.
  */
 Rule *rule_constructor(const unsigned int body_size, Literal ** const body,

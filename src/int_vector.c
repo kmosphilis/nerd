@@ -6,7 +6,7 @@
 /**
  * @brief Constructs an IntVector.
  * 
- * @return A new IntVector object *. Use int_vector_destructor to deallocate.
+ * @return A new IntVector *. Use int_vector_destructor to deallocate.
  */
 IntVector *int_vector_constructor() {
     IntVector *int_vector = (IntVector *) malloc(sizeof(IntVector));
