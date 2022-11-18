@@ -7,7 +7,7 @@
 /**
  * @brief Constructs a Scene.
  * 
- * @return A new Literal object *. Use literal_destruct to deallocate.
+ * @return A new Scene object *. Use scene_destructor to deallocate.
  */
 Scene *scene_constructor() {
     Scene *scene = (Scene *) malloc(sizeof(Scene));
@@ -272,7 +272,7 @@ char *scene_to_string(const Scene * const scene) {
 
         unsigned int i;
         for (i = 0; i < scene->size - 1; ++i) {
-            literal_string = literal_to_string((scene->observations[i]));
+            literal_string = literal_to_string(scene->observations[i]);
             temp = strdup(result);
             result_size += strlen(literal_string) + 3;
             result = (char *) realloc(result, result_size);
@@ -282,7 +282,7 @@ char *scene_to_string(const Scene * const scene) {
             free(literal_string);
         }
 
-        literal_string = literal_to_string((scene->observations[i]));
+        literal_string = literal_to_string(scene->observations[i]);
         temp = strdup(result);
         result_size += strlen(literal_string) + 3;
         result = (char *) realloc(result, result_size);

@@ -13,7 +13,7 @@
  * @param atom The name of the atom to be used.
  * @param sign Indicates whether the atom is negated or not. > 0 is positive, 0 is negative.
  * 
- * @return A new Literal object *. Use literal_destruct to deallocate.
+ * @return A new Literal object *. Use literal_destructor to deallocate.
  */
 Literal *literal_constructor(const char * const atom, const uint_fast8_t sign) {
     // if (literal) {
