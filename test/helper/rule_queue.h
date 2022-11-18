@@ -3,6 +3,8 @@
 #ifndef __RULE_QUEUE_HELPER_H__
 #define __RULE_QUEUE_HELPER_H__
 
+#define RULES_TO_CREATE 3
+
 void create_rule_queue(RuleQueue * const rule_queue);
 Rule *create_rules();
 void destruct_rules(Rule * const rules);

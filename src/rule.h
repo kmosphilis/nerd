@@ -7,15 +7,15 @@
 typedef Context Body;
 
 typedef struct Rule {
-    Body body;
-    Literal head;
+    Body *body;
+    Literal *head;
     float weight;
 } Rule;
 
-void rule_constructor(Rule * const rule, const unsigned int body_size, Literal ** const body,
+Rule *rule_constructor(const unsigned int body_size, Literal ** const body,
 const Literal * const head, const float weight);
-void rule_destructor(Rule * const rule);
-void rule_copy(Rule * const restrict destination, const Rule * const restrict source);
+void rule_destructor(Rule **rule);
+void rule_copy(Rule ** restrict destination, const Rule * const restrict source);
 void rule_promote(Rule * const rule, const float amount);
 void rule_demote(Rule * const rule, const float amount);
 int rule_applicable(const Rule * const rule, const Context * const context);
