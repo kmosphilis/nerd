@@ -6,27 +6,30 @@
 /**
  * @brief Constructs an IntVector.
  * 
- * @param int_vector The IntVector to be constructed. If NULL the process will fail.
+ * @return A new IntVector object *. Use int_vector_destructor to deallocate.
  */
-void int_vector_constructor(IntVector * const int_vector) {
-    if (int_vector) {
-        int_vector->items = NULL;
-        int_vector->size = 0;
-    }
+IntVector *int_vector_constructor() {
+    IntVector *int_vector = (IntVector *) malloc(sizeof(IntVector));
+    int_vector->items = NULL;
+    int_vector->size = 0;
+    return int_vector;
 }
 
 /**
  * @brief Destructs an IntVector.
  * 
- * @param int_vector The IntVector to be destructed. If NULL the process will fail.
+ * @param int_vector The IntVector to be destructed. If NULL the process will fail. It should be a 
+ * reference to the object's pointer.
  */
-void int_vector_destructor(IntVector * const int_vector) {
-    if (int_vector) {
-        if (int_vector->items) {
-            free(int_vector->items);
-            int_vector->items = NULL;
+void int_vector_destructor(IntVector **int_vector) {
+    if (int_vector && (*int_vector)) {
+        if ((*int_vector)->items) {
+            free((*int_vector)->items);
+            (*int_vector)->items = NULL;
+            (*int_vector)->size = 0;
         }
-        int_vector->size = 0;
+        free(*int_vector);
+        *int_vector = NULL;
     }
 }
 
@@ -37,13 +40,13 @@ void int_vector_destructor(IntVector * const int_vector) {
  * @param source The IntVector to be copied. If NULL is given, the contents of the destination will 
  * not be changed.
  */
-void int_vector_copy(IntVector * const restrict destination,
-const IntVector * const restrict source) {
+void int_vector_copy(IntVector ** restrict destination, const IntVector * const restrict source) {
     if (destination && source) {
-        if (source) {
-            destination->items = (int *) malloc(source->size * sizeof(int));
-            memcpy(destination->items, source->items, source->size * sizeof(int));
-            destination->size = source->size;
+        *destination = int_vector_constructor();
+        if (source->items) {
+            (*destination)->items = (int *) malloc(source->size * sizeof(int));
+            memcpy((*destination)->items, source->items, source->size * sizeof(int));
+            (*destination)->size = source->size;
         }
     }
 }
@@ -107,6 +110,7 @@ void int_vector_delete(IntVector * const int_vector, const unsigned index) {
  * 
  * @param int_vector The IntVector to retrieve the item from. If NULL the process will fail.
  * @param index The index of the required item. If index > int_vector.size, the process will fail.
+ * 
  * @return The item (int) at the given index, or the index if out of bounds or int_vector is NULL.
  */
 int int_vector_get(const IntVector * const int_vector, const unsigned int index) {
@@ -127,6 +131,7 @@ int int_vector_get(const IntVector * const int_vector, const unsigned int index)
  * @param index The index of the item to be replaces. If index > int_vector.size, the process will 
  * fail.
  * @param new_item The new item to be set at the given index.
+ * 
  * @return 1 if successful, 0 if out of bounds, or -1 if int_vector is NULL.
  */
 int int_vector_set(IntVector * const int_vector, const unsigned int index, const int new_item) {
