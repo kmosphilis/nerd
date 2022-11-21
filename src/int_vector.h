@@ -7,8 +7,8 @@ typedef struct IntVector {
 } IntVector;
 
 IntVector *int_vector_constructor();
-void int_vector_destructor(IntVector **int_vector);
-void int_vector_copy(IntVector ** restrict destination, const IntVector * const restrict source);
+void int_vector_destructor(IntVector ** const int_vector);
+void int_vector_copy(IntVector ** const restrict destination, const IntVector * const restrict source);
 void int_vector_resize(IntVector * const int_vector, const unsigned int new_size);
 void int_vector_push(IntVector * const int_vector, const int element);
 void int_vector_delete(IntVector * const int_vector, unsigned int index);

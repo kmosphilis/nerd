@@ -21,7 +21,7 @@ IntVector *int_vector_constructor() {
  * @param int_vector The IntVector to be destructed. If NULL the process will fail. It should be a 
  * reference to the object's pointer.
  */
-void int_vector_destructor(IntVector **int_vector) {
+void int_vector_destructor(IntVector ** const int_vector) {
     if (int_vector && (*int_vector)) {
         if ((*int_vector)->items) {
             free((*int_vector)->items);
@@ -40,7 +40,8 @@ void int_vector_destructor(IntVector **int_vector) {
  * @param source The IntVector to be copied. If NULL is given, the contents of the destination will 
  * not be changed.
  */
-void int_vector_copy(IntVector ** restrict destination, const IntVector * const restrict source) {
+void int_vector_copy(IntVector ** const restrict destination,
+const IntVector * const restrict source) {
     if (destination && source) {
         *destination = int_vector_constructor();
         if (source->items) {

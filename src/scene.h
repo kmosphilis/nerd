@@ -9,8 +9,8 @@ typedef struct Scene {
 } Scene;
 
 Scene *scene_constructor();
-void scene_destructor(Scene **scene);
-void scene_copy(Scene ** restrict destination, const Scene * const restrict source);
+void scene_destructor(Scene ** const scene);
+void scene_copy(Scene ** const restrict destination, const Scene * const restrict source);
 void scene_add_literal(Scene * const scene, const Literal * const literal_to_add);
 void scene_remove_literal(Scene * const scene, const unsigned int literal_index);
 int scene_literal_index(const Scene * const scene, const Literal * const literal);

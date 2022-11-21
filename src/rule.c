@@ -39,7 +39,7 @@ const Literal * const head, const float weight) {
  * 
  * @param rule The Rule to be destructed. It should be a reference to the object's pointer.
  */
-void rule_destructor(Rule **rule) {
+void rule_destructor(Rule ** const rule) {
     if (rule && (*rule)) {
         literal_destructor(&((*rule)->head));
         context_destructor(&((*rule)->body));
@@ -56,7 +56,7 @@ void rule_destructor(Rule **rule) {
  * @param source The Rule to be copied. If the Rule, its body or the head's atom are NULL, the 
  * content of the destination will not be changed.
  */
-void rule_copy(Rule ** restrict destination, const Rule * const restrict source) {
+void rule_copy(Rule ** const restrict destination, const Rule * const restrict source) {
     if (destination && source) {
         *destination = (Rule *) malloc(sizeof(Rule));
         literal_copy(&((*destination)->head), source->head);

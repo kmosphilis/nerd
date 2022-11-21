@@ -38,7 +38,7 @@ Literal *literal_constructor(const char * const atom, const uint_fast8_t sign) {
  * 
  * @param literal The Literal to be destructed. It should be a reference to the object's pointer.
  */
-void literal_destructor(Literal **literal) {
+void literal_destructor(Literal ** const literal) {
     if (literal && (*literal)) {
         if ((*literal)->atom) {
             free((*literal)->atom);
@@ -58,7 +58,7 @@ void literal_destructor(Literal **literal) {
  * @param source The Literal to be copied. If the Literal or its atom are NULL, the content of the 
  * destination will not be changed.
  */
-void literal_copy(Literal ** restrict destination, const Literal * const restrict source) {
+void literal_copy(Literal ** const restrict destination, const Literal * const restrict source) {
     if (destination && source) {
         *destination = literal_constructor(source->atom, source->sign);
     }

@@ -20,7 +20,7 @@ Context *context_constructor() {
  * 
  * @param context The context to be destructed. It should be a reference to the object's pointer.
  */
-void context_destructor(Context **context) {
+void context_destructor(Context ** const context) {
     scene_destructor(context);
 }
 

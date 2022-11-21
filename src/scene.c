@@ -21,7 +21,7 @@ Scene *scene_constructor() {
  * 
  * @param scene The Scene to be destructed. It should be a reference to the object's pointer.
  */
-void scene_destructor(Scene **scene) {
+void scene_destructor(Scene ** const scene) {
     if (scene && (*scene)) {
         if ((*scene)->observations) {
             unsigned int i = 0;
@@ -45,7 +45,7 @@ void scene_destructor(Scene **scene) {
  * @param source The Scene to be copied. If Scene or its observations are NULL, the content of the 
  * destination will not be changed.
  */
-void scene_copy(Scene ** restrict destination, const Scene * const restrict source) {
+void scene_copy(Scene ** const restrict destination, const Scene * const restrict source) {
     if (destination && source) {
         *destination = scene_constructor();
 
