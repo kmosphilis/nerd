@@ -5,36 +5,34 @@
 #include "helper/rule_queue.h"
 
 START_TEST(construct_destruct_test) {
-    Nerd nerd;
-    KnowledgeBase knowledge_base, *knowledge_base_ptr = NULL;
-    RuleQueue rule_queue;
+    Nerd *nerd = NULL;
+    KnowledgeBase *knowledge_base = NULL;
+    RuleQueue *rule_queue = create_rule_queue();
 
-    create_rule_queue(&rule_queue);
-
-    unsigned int i, rule_queue_length = rule_queue.length;
+    unsigned int i, rule_queue_length = rule_queue->length;
     for (i = 0; i < rule_queue_length; ++i) {
-        Rule rule;
-        rule_copy(&rule, &(rule_queue.rules[i]));
-        rule_promote(&rule, 3.0);
-        rule_queue_enqueue(&rule_queue, &rule);
+        Rule *rule = NULL;
+        rule_copy(&rule, rule_queue->rules[i]);
+        rule_promote(rule, 3.0);
+        rule_queue_enqueue(rule_queue, rule);
         // rule_queue_enqueue(&rule_queue, &rule);
         rule_destructor(&rule);
     }
 
-    knowledge_base_constructor(&knowledge_base, 3.0);
+    knowledge_base = knowledge_base_constructor(3.0);
 
-    for (i = 0; i < rule_queue.length; ++i) {
-        knowledge_base_add_rule(&knowledge_base, &(rule_queue.rules[i]));
+    for (i = 0; i < rule_queue->length; ++i) {
+        knowledge_base_add_rule(knowledge_base, rule_queue->rules[i]);
     }
 
     rule_queue_destructor(&rule_queue);
 
-    nerd_constructor(&nerd,  "../data/test.txt", 1, 10.0, 3, 100, 1000, 0.5, 1.5, 1);
+    nerd = nerd_constructor("../data/test.txt", 1, 10.0, 3, 100, 1000, 0.5, 1.5, 0);
 
     // knowledge_base_copy(&(nerd.knowledge_base), &knowledge_base);
     knowledge_base_destructor(&knowledge_base);
 
-    nerd_start_learning(&nerd);
+    nerd_start_learning(nerd);
 
     nerd_destructor(&nerd);
 }
