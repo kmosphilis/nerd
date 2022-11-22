@@ -72,18 +72,19 @@ void destruct_rules(Rule **rules) {
 /**
  * @brief Creates a RuleQueue by constructing and filling it with values.
  * 
- * @param rule_queue The RuleQueue to be created.
+ * @return A * to the created RuleQueue.
  */
-void create_rule_queue(RuleQueue **rule_queue) {
+RuleQueue *create_rule_queue() {
     
-    *rule_queue = rule_queue_constructor();
+    RuleQueue *rule_queue = rule_queue_constructor();
 
     Rule **rules = create_rules();
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(*rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, rules[i]);
     }
 
     destruct_rules(rules);
+    return rule_queue;
 }

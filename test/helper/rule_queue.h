@@ -46,6 +46,6 @@
 
 Rule **create_rules();
 void destruct_rules(Rule **rules);
-void create_rule_queue(RuleQueue **rule_queue);
+RuleQueue *create_rule_queue();
 
 #endif
