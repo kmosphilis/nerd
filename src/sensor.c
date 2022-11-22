@@ -9,58 +9,61 @@
 
 /**
  * @brief Constructs a Sensor from a file.
- * 
- * @param sensor The Sensor to be constructed. If NULL is given, nothing will happen.
+ *
  * @param filepath The path to the file. If NULL is given, the sensor will not be constructed.
  * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF. 
  * Use > 0 to indicate yes, and 0 to indicate no.
+ *
+ * @return A new Sensor object *. Use sensor_destructor to deallocate.
  */
-void sensor_constructor_from_file(Sensor * const sensor, const char * const filepath,
-const unsigned short reuse) {
-    if (sensor) {
-        if (filepath) {
-            sensor->enviroment = fopen(filepath, "rb");
-            if (sensor->enviroment == NULL) {
-                sensor->reuse = 0;
-            } else {
-                sensor->reuse = reuse;
-            }
-        } else {
-            sensor->enviroment = NULL;
+Sensor *sensor_constructor_from_file(const char * const filepath, const uint_fast8_t reuse) {
+    Sensor *sensor = (Sensor *) malloc(sizeof(Sensor));
+    if (filepath) {
+        sensor->enviroment = fopen(filepath, "rb");
+        if (sensor->enviroment == NULL) {
             sensor->reuse = 0;
+        } else {
+            sensor->reuse = reuse;
         }
+    } else {
+        sensor->enviroment = NULL;
+        sensor->reuse = 0;
     }
+    return sensor;
 }
 
 /**
  * @brief Destructs a Sensor.
- * 
- * @param sensor The Sensor to be destructed.
+ *
+ * @param sensor The Sensor to be destructed. It should be a reference to the object's pointer.
  */
-void sensor_destructor(Sensor * const sensor) {
-    if (sensor) {
-        if (sensor->enviroment) {
-            fclose(sensor->enviroment);
-            sensor->enviroment = NULL;
-            sensor->reuse = 0;
+void sensor_destructor(Sensor ** const sensor) {
+    if (sensor && (*sensor)) {
+        if ((*sensor)->enviroment) {
+            fclose((*sensor)->enviroment);
+            (*sensor)->enviroment = NULL;
+            (*sensor)->reuse = 0;
         }
+        free(*sensor);
+        *sensor = NULL;
     }
 }
 
 /**
  * @brief Gets the next Scene from a Sensor.
- * 
+ *
  * @param sensor The Sensor to extract the next Scene. If NULL, nothing will happen.
  * @param output The Scene that will be extracted will be saved here. If NULL, nothing will happen.
- * @param partial_observation If > 0 is given, the output will contain a subset of the initial 
- * observation literals with a cardinality, |output| = (1, output.size). If 0 is given, the output 
+ * @param partial_observation If > 0 is given, the output will contain a subset of the initial
+ * observation literals with a cardinality, |output| = (1, output.size). If 0 is given, the output
  * will be the initial observation.
- * @param initial_observation If partial_observation is > 0, the initial observation will be saved 
+ * @param initial_observation If partial_observation is > 0, the initial observation will be saved
  * here. If NULL is given, it will not be saved.
  */
-void sensor_get_next_scene(const Sensor * const sensor, Scene * const restrict output,
-const unsigned short partial_observation, Scene * const restrict initial_observation) {
+void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output,
+const unsigned short partial_observation, Scene ** const restrict initial_observation) {
     if (sensor && output) {
+        *output = scene_constructor();
         if (sensor->enviroment) {
             int c = fgetc(sensor->enviroment);
 
@@ -76,19 +79,19 @@ const unsigned short partial_observation, Scene * const restrict initial_observa
             char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
             memset(buffer, 0, BUFFER_SIZE);
             unsigned int i = 0;
+            Literal *literal = NULL;
 
             while ((c != EOF) && (c != '\n')) {
                 if (!isspace((char) c)) {
                     buffer[i] = (char) c;
                     ++i;
                 } else {
-                    Literal literal;
                     if (buffer[0] == '-') {
-                        literal_constructor(&literal, buffer + 1, 0);
+                        literal = literal_constructor(buffer + 1, 0);
                     } else {
-                        literal_constructor(&literal, buffer, 1);
+                        literal = literal_constructor(buffer, 1);
                     }
-                    scene_add_literal(output, &literal);
+                    scene_add_literal(*output, literal);
                     literal_destructor(&literal);
                     memset(buffer, 0, BUFFER_SIZE);
                     i = 0;
@@ -97,28 +100,27 @@ const unsigned short partial_observation, Scene * const restrict initial_observa
                 c = fgetc(sensor->enviroment);
             }
 
-            Literal literal;
             if (buffer[0] == '-') {
-                literal_constructor(&literal, buffer + 1, 0);
+                literal = literal_constructor(buffer + 1, 0);
             } else {
-                literal_constructor(&literal, buffer, 1);
+                literal = literal_constructor(buffer, 1);
             }
-            scene_add_literal(output, &literal);
+            scene_add_literal(*output, literal);
 
             literal_destructor(&literal);
             free(buffer);
 
             if (partial_observation) {
                 if (initial_observation){
-                    scene_copy(initial_observation, output);
+                    scene_copy(initial_observation, *output);
                 }
                 srand(time(NULL));
-                size_t number_of_literals = output->size - (rand() % output->size);
+                size_t number_of_literals = (*output)->size - (rand() % (*output)->size);
 
-                if (number_of_literals == output->size) {
+                if (number_of_literals == (*output)->size) {
                     return;
                 } else if (number_of_literals == 1) {
-                    scene_remove_literal(output, rand() % output->size);
+                    scene_remove_literal(*output, rand() % (*output)->size);
                     return;
                 }
 
@@ -132,7 +134,7 @@ const unsigned short partial_observation, Scene * const restrict initial_observa
                 for (i = 0; i < number_of_literals; ++i) {
                     int index = rand() % number_of_literals;
                     --number_of_literals;
-                    scene_remove_literal(output, random_literals[index]);
+                    scene_remove_literal(*output, random_literals[index]);
                     random_literals[index] = random_literals[number_of_literals];
                 }
                 free(random_literals);
