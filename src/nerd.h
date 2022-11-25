@@ -18,6 +18,8 @@ const float activation_threshold, const unsigned int breadth, const unsigned int
 const unsigned int epochs, const float promotion_weight, const float demotion_weight,
 const unsigned short partial_observation);
 void nerd_destructor(Nerd * const nerd);
+void prudensjs_inference(const KnowledgeBase * const knowledge_base,
+const Scene * const restrict observation, Scene * restrict inferred);
 void nerd_start_learning(Nerd * const nerd);
 void nerd_to_string(const Nerd * const nerd);
 void nerd_to_file(const Nerd * const nerd, const char * const filepath);

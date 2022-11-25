@@ -29,7 +29,7 @@ START_TEST(construct_destruct_test) {
 
     rule_queue_destructor(&rule_queue);
 
-    nerd_constructor(&nerd,  "../data/test.txt", 1, 10.0, 3, 100, 1000, 0.5, 1.5, 1);
+    nerd_constructor(&nerd,  "../data/test.txt", 1, 10.0, 1, 100, 30, 0.5, 1.5, 0);
 
     // knowledge_base_copy(&(nerd.knowledge_base), &knowledge_base);
     knowledge_base_destructor(&knowledge_base);
