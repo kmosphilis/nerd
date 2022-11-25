@@ -20,6 +20,7 @@ void scene_difference(const Scene * const restrict scene1, const Scene * const r
 Scene * const restrict result);
 void scene_intersect(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene * const restrict result);
+int scene_number_of_similar_literals(const Scene * const restrict scene1, const Scene * const restrict scene2);
 void scene_opposed_literals(const Scene * const restrict scene1,
 const Scene * const restrict scene2, Scene * const restrict result);
 char *scene_to_string(const Scene * const scene);

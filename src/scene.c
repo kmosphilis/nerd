@@ -6,7 +6,7 @@
 
 /**
  * @brief Constructs a Scene. If NULL is given, nothing will happen.
- * 
+ *
  * @param scene The Scene to be constructed.
  */
 void scene_constructor(Scene * const scene) {
@@ -18,7 +18,7 @@ void scene_constructor(Scene * const scene) {
 
 /**
  * @brief Destructs a Scene. If NULL is given, nothing will happen.
- * 
+ *
  * @param scene The Scene to be destructed.
  */
 void scene_destructor(Scene * const scene) {
@@ -38,7 +38,7 @@ void scene_destructor(Scene * const scene) {
 
 /**
  * @brief Makes a copy of the given Scene.
- * 
+ *
  * @param destination The Scene to save the copy.
  * @param source The Scene to be copied. If Scene or its observations are NULL, the content of the 
  * destination will not be changed.
@@ -57,7 +57,7 @@ void scene_copy(Scene * const restrict destination, const Scene * const restrict
 
 /**
  * @brief Adds a Literal to a Scene.
- * 
+ *
  * @param scene The Scene to be expanded.
  * @param literal_to_add The Literal to add in the Scene.
  */
@@ -74,7 +74,7 @@ void scene_add_literal(Scene * const scene, const Literal * const literal_to_add
 
 /**
  * @brief Removes a Literal from a Scene.
- * 
+ *
  * @param scene The Scene to be reduced.
  * @param literal_index The index of the Literal to be removed.
  */
@@ -101,7 +101,7 @@ void scene_remove_literal(Scene * const scene, const unsigned int literal_index)
 
 /**
  * @brief Finds the index of the given Literal in the Scene.
- * 
+ *
  * @param scene The Scene to find the Literal.
  * @param literal The Literal to be found.
  * @return the index of the Literal in the Scene, -1 if it doesn't exist or -2 if the Literal, the 
@@ -122,7 +122,7 @@ int scene_literal_index(const Scene * const scene, const Literal * const literal
 
 /**
  * @brief Performs a set union operation on two Scenes (scene1 ∪ scene2).
- * 
+ *
  * @param scene1 The first Scene to be combined.
  * @param scene2 The second Scene to be combined.
  * @param result The output of the operation to be returned. If NULL, the operation will not be 
@@ -156,7 +156,7 @@ Scene * const restrict result) {
 
 /**
  * @brief Performs a set difference operation on two Scenes (scene1 ∖ scene2).
- * 
+ *
  * @param scene1 The Scene to remove elements from.
  * @param scene2 The Scene to compare with.
  * @param result The output of the operation to be returned. If NULL, the operation will not be 
@@ -191,13 +191,14 @@ Scene * const restrict result) {
 
 /**
  * @brief Performs a set intersection operation on two Scenes (scene1 ⋂ scene2).
- * 
+ *
  * @param scene1 The first Scene to compare.
  * @param scene2 The second Scene to compare.
  * @param result The output of the operation to be returned. If NULL, the operation will not be 
  * performed.
  */
-void scene_intersect(const Scene * const scene1, const Scene * const scene2, Scene * const result) {
+void scene_intersect(const Scene * const restrict scene1, const Scene * const restrict scene2,
+Scene * const restrict result) {
     if (scene1 && scene2 && result) {
         unsigned int i, j;
         for (i = 0; i < scene1->size; ++i) {
@@ -209,6 +210,56 @@ void scene_intersect(const Scene * const scene1, const Scene * const scene2, Sce
             }
         }
     }
+}
+
+// TODO Add implementation or remove.
+/**
+ * @brief Performs a set subset check on two Scenes (scene1 ⊆ scene2).
+ *
+ * @param scene1 The Scene to be checked.
+ * @param scene2 The Scene which scene1 is to be checked with.
+ *
+ * @return 1 if scene1 ⊆ scene2, 0 if scene1 ⊈ scene2, or -1 if one of the Scenes was NULL.
+*/
+void scene_subset() {
+
+}
+
+// TODO Add comment.
+int scene_number_of_similar_literals(const Scene * const restrict scene1, const Scene * const scene2) {
+    if (!(scene1 && scene2)) {
+        return -1;
+    }
+
+    unsigned int i, j, total_equals = 0;
+    for (i = 0; i < scene1->size; ++i) {
+        for (j = 0; j < scene2->size; ++j) {
+            if (literal_equals(&(scene1->observations[i]), &(scene2->observations[j])) == 1) {
+                ++total_equals;
+                break;
+            }
+        }
+    }
+
+    return total_equals;
+}
+
+int scene_number_of_opposed_literals(const Scene * const restrict scene1,
+const Scene * const restrict scene2) {
+    if (!(scene1 && scene2)) {
+        return -1;
+    }
+
+    unsigned int i, j, total_opposed = 0;
+    for (i = 0; i < scene1->size; ++i) {
+        for (j = 0; j <scene2->size; ++j) {
+            if (literal_opposed(&(scene1->observations[i]), &(scene2->observations[j])) == 1) {
+                ++total_opposed;
+                break;
+            } 
+        }
+    }
+    return total_opposed;
 }
 
 /**
