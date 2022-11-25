@@ -9,35 +9,66 @@ START_TEST(construct_destruct_test) {
     Sensor sensor, *sensor_ptr = NULL;
 
     sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 0);
-    ck_assert_ptr_nonnull(sensor.enviroment);
+    ck_assert_ptr_nonnull(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
     sensor_destructor(&sensor);
-    ck_assert_ptr_null(sensor.enviroment);
+    ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
 
     sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 1);
-    ck_assert_ptr_nonnull(sensor.enviroment);
+    ck_assert_ptr_nonnull(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 1);
     sensor_destructor(&sensor);
-    ck_assert_ptr_null(sensor.enviroment);
+    ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
 
     sensor_constructor_from_file(&sensor, "./data/filethatdoesntexist.txt", 0);
-    ck_assert_ptr_null(sensor.enviroment);
+    ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
     sensor_destructor(&sensor);
-    ck_assert_ptr_null(sensor.enviroment);
+    ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
 
     sensor_constructor_from_file(&sensor, NULL, 0);
-    ck_assert_ptr_null(sensor.enviroment);
+    ck_assert_ptr_null(sensor.environment);
     sensor_destructor(&sensor);
 
     sensor_constructor_from_file(sensor_ptr, SENSOR_TEST_DATA, 0);
     ck_assert_ptr_null(sensor_ptr);
-    ck_assert_ptr_null(sensor.enviroment);
+    ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
     sensor_destructor(sensor_ptr);
+}
+END_TEST
+
+START_TEST(get_total_observations_test) {
+    Sensor sensor, *sensor_ptr = NULL;
+    Scene scene;
+
+    sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 1);
+    scene_constructor(&scene);
+
+    sensor_get_next_scene(&sensor, &scene, 0, NULL);
+    ck_assert_int_eq(scene.size, 5);
+    scene_destructor(&scene);
+
+    sensor_get_next_scene(&sensor, &scene, 0, NULL);
+    ck_assert_int_eq(scene.size, 5);
+    scene_destructor(&scene);
+
+    sensor_get_next_scene(&sensor, &scene, 0, NULL);
+    ck_assert_int_eq(scene.size, 5);
+    scene_destructor(&scene);
+
+    ck_assert_int_eq(sensor_get_total_observations(&sensor), 4);
+
+    sensor_get_next_scene(&sensor, &scene, 0, NULL);
+    ck_assert_int_eq(scene.size, 2);
+    scene_destructor(&scene);
+    sensor_destructor(&sensor);
+
+    ck_assert_int_eq(sensor_get_total_observations(&sensor), -1);
+    ck_assert_int_eq(sensor_get_total_observations(sensor_ptr), -1);
 }
 END_TEST
 
@@ -143,11 +174,15 @@ END_TEST
 
 Suite *sensor_suite() {
     Suite *suite;
-    TCase *create_case, *get_scene_case;
+    TCase *create_case, *get_total_observations_case, *get_scene_case;
     suite = suite_create("Sensor");
     create_case = tcase_create("Create");
     tcase_add_test(create_case, construct_destruct_test);
     suite_add_tcase(suite, create_case);
+
+    get_total_observations_case = tcase_create("Total Observations");
+    tcase_add_test(get_total_observations_case, get_total_observations_test);
+    suite_add_tcase(suite, get_total_observations_case);
 
     get_scene_case = tcase_create("Get Scene");
     tcase_add_test(get_scene_case, get_scene_test);
