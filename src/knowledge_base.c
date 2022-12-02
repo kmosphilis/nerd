@@ -320,17 +320,18 @@ const unsigned int rule_index, const float promotion_weight) {
 }
 
 /**
- * @brief Demotes a rule in the given KnowledgeBase. If the Rule is active and its weight is lower 
- * than the activation_threshold, then the Rule will become inactive.
-  * 
+ * @brief Demotes a rule in the given KnowledgeBase. If the Rule is ACTIVE and its weight is lower
+ * than the activation_threshold, then the Rule will become INACTIVE. If the Rule is INACTIVE and
+ * its weight is 0, then it will get deleted.
+ *
  * @param knowledge_base The KnowledgeBase in which the the given Rule should be demoted.
  * @param type The type of the Rule to be demoted.
- * @param rule_index The index of the rule to be demoted. If the index is not within bounds, the 
+ * @param rule_index The index of the rule to be demoted. If the index is not within bounds, the
  * function will be ignored.
  * @param demotion_weight The amount that the Rule should be demoted with. If the amount is <= 0,
  * nothing will be changed.
- * @return 1 if Rule was ACTIVE and it was demoted to INACTIVE, 0 if a Rule was simply demoted, and 
- * -1 if the given KnowledgeBase is NULL.
+ * @return 1 if Rule was ACTIVE and it was demoted to INACTIVE, 2 if the Rule was INACTIVE and was
+ * deleted, 0 if a Rule was simply demoted, and -1 if the given KnowledgeBase is NULL.
  */
 int knowledge_base_demote_rule(KnowledgeBase * const knowledge_base, const RuleType type,
 const unsigned int rule_index, const float demotion_weight) {
@@ -349,6 +350,10 @@ const unsigned int rule_index, const float demotion_weight) {
                 return 1;
             }
         } else if ((type == INACTIVE) && (knowledge_base->inactive.length > rule_index)) {
+            if (knowledge_base->inactive.rules[rule_index].weight == 0) {
+                rule_queue_remove_rule(&(knowledge_base->inactive), rule_index, NULL);
+                return 2;
+            }
             rule_demote(&(knowledge_base->inactive.rules[rule_index]), demotion_weight);
         }
         return 0;
