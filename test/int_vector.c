@@ -12,6 +12,8 @@ START_TEST(construct_destruct_test) {
 
     int_vector_destructor(&int_vector);
     ck_assert_int_vector_empty(&int_vector);
+    int_vector_destructor(&int_vector);
+    ck_assert_int_vector_empty(&int_vector);
 
     int_vector_constructor(int_vector_ptr);
     ck_assert_ptr_null(int_vector_ptr);
