@@ -15,3 +15,7 @@ Bat Fly -Bird Mammal
 Human Mammal -Fly
 Mammal -Bird
 Bird -Mammal
+Flying_Squirrel Mammal Glide
+Glide -Fly
+Draco Reptile Glide
+Reptile -Mammal
