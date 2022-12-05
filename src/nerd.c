@@ -59,7 +59,7 @@ void nerd_destructor(Nerd * const nerd) {
     }
 }
 
-//TODO Add comment
+// TODO Add comment
 void prudensjs_inference(const KnowledgeBase * const knowledge_base,
 const Scene * const restrict observation, Scene * restrict inferred) {
     const char * const temp_filename = ".temp";
@@ -117,7 +117,7 @@ void nerd_start_learning(Nerd * const nerd) {
     */
 
     Scene observation, observed_and_inferred, inferred;
-    unsigned int epoch, iteration, index, i, k;
+    unsigned int epoch, iteration, index, k, j;
     const size_t total_observations = sensor_get_total_observations(&(nerd->sensor));
 
     scene_constructor(&observation);
@@ -154,9 +154,10 @@ void nerd_start_learning(Nerd * const nerd) {
             printf("Observed ∖ Inferred: %s\n", str);
             free(str);
 
-            unsigned int rules_demoted = 0, rules_promoted = 0;
-            IntVector rules_demoted_vector, applicable_rules;
-            int_vector_constructor(&rules_demoted_vector);
+            unsigned int rules_demoted = 0, rules_promoted = 0, rules_deleted = 0;
+            IntVector active_rules_to_demote, demoted_applicable_rules, applicable_rules;
+            int_vector_constructor(&active_rules_to_demote);
+            int_vector_constructor(&demoted_applicable_rules);
             int_vector_constructor(&applicable_rules);
 
             for (index = nerd->knowledge_base.active.length; index > 0; --index) {
@@ -166,13 +167,6 @@ void nerd_start_learning(Nerd * const nerd) {
                     int_vector_push(&applicable_rules, index - 1);
                 }
             }
-
-            printf("Applicable rule indices: ");
-            for (index = 0; index < applicable_rules.size; ++index) {
-                printf("%d ", applicable_rules.items[index]);
-            }
-            printf("\n");
-
 
             for (index = 0; index < applicable_rules.size; ++index) {
                 const unsigned int current_rule_index = int_vector_get(&applicable_rules, index);
@@ -210,20 +204,44 @@ void nerd_start_learning(Nerd * const nerd) {
                         }
                     }
                     if (!higher_positive) {
-                        str = rule_to_string(current_rule);
-                        if (knowledge_base_demote_rule(&(nerd->knowledge_base), ACTIVE,
-                        current_rule_index, nerd->demotion_weight)) {
-                            ++rules_demoted;
-                            int_vector_delete(&applicable_rules, index);
-                        }
-                        printf("Active Rule demoted: %s\n", str);
-                        free(str);
+                        int_vector_push(&active_rules_to_demote, index);
+                        // if (knowledge_base_demote_rule(&(nerd->knowledge_base), ACTIVE,
+                        // current_rule_index, nerd->demotion_weight)) {
+                        //     ++rules_demoted;
+                        //     int_vector_delete(&applicable_rules, index);
+                        // }
                     }
                 }
             }
 
+            int rules_to_demote_demoted = 0;
+
+            for (index = 0; index < active_rules_to_demote.size; ++index) {
+                int_vector_constructor(&demoted_applicable_rules);
+                if (knowledge_base_demote_chained_rules(&(nerd->knowledge_base), &inferred, 
+                &applicable_rules, ACTIVE, int_vector_get(&active_rules_to_demote, index) - 
+                rules_to_demote_demoted, nerd->demotion_weight, &demoted_applicable_rules) == 1) {
+                    ++rules_demoted;
+                }
+
+                rules_demoted += demoted_applicable_rules.size;
+
+                for (k = index; k < active_rules_to_demote.size; ++k) {
+                    for (j = 0; j < demoted_applicable_rules.size; ++j) {
+                        if (int_vector_get(&active_rules_to_demote, k) ==
+                        int_vector_get(&demoted_applicable_rules, j)) {
+                            int_vector_delete(&active_rules_to_demote, k);
+                            ++rules_to_demote_demoted;
+                            ++index;
+                        }
+                    }
+                }
+
+                int_vector_destructor(&demoted_applicable_rules);
+            }
+
             for (index = 0; index < nerd->knowledge_base.inactive.length - rules_demoted; ++index) {
-                const unsigned rule_index = index - rules_promoted;
+                const unsigned rule_index = index - rules_promoted - rules_deleted;
                 const Rule * const current_rule = &(nerd->knowledge_base.inactive.rules[rule_index]);
 
                 if (rule_applicable(current_rule, &observed_and_inferred)) {
@@ -235,7 +253,7 @@ void nerd_start_learning(Nerd * const nerd) {
                         }
                     } else if (rule_concurs_result == 0) {
                         int opposed_to_observation = 0;
-                        for (k = 0 ; k < uncovered.size; ++k) {
+                        for (k = 0; k < uncovered.size; ++k) {
                             if (literal_opposed(&(current_rule->head),
                             &(uncovered.observations[k])) == 1) {
                                 opposed_to_observation = 1;
@@ -245,11 +263,15 @@ void nerd_start_learning(Nerd * const nerd) {
                         if (!opposed_to_observation) {
                             continue;
                         }
-                        knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
-                        nerd->demotion_weight);
-                        str = rule_to_string(current_rule);
-                        printf("Inactive Rule demoted: %s\n", str);
-                        free(str);
+
+                        // if (knowledge_base_demote_chained_rules(&(nerd->knowledge_base), &inferred,
+                        // &applicable_rules, INACTIVE, rule_index, nerd->demotion_weight, NULL) == 2) {
+                        //     ++rules_deleted;
+                        // }
+                        if (knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
+                        nerd->demotion_weight) == 2) {
+                            ++rules_deleted;
+                        }
                     }
                 }
             }
@@ -258,7 +280,8 @@ void nerd_start_learning(Nerd * const nerd) {
             printf("%s\n", str);
             free(str);
 
-            int_vector_destructor(&rules_demoted_vector);
+            int_vector_destructor(&active_rules_to_demote);
+            int_vector_destructor(&demoted_applicable_rules);
             int_vector_destructor(&applicable_rules);
             scene_destructor(&uncovered);
 
@@ -267,16 +290,16 @@ void nerd_start_learning(Nerd * const nerd) {
             scene_destructor(&inferred);
         }
 
-        float total_accuracy = 0, accuracy;
+        // float total_accuracy = 0, accuracy;
 
-        for (i = 0; i < total_observations; ++i) {
-            sensor_get_next_scene(&(nerd->sensor), &observation, 0, NULL);
-            evaluate_all_literals(nerd, &observation, &accuracy);
-            total_accuracy += accuracy;
-            scene_destructor(&observation);
-        }
+        // for (i = 0; i < total_observations; ++i) {
+        //     sensor_get_next_scene(&(nerd->sensor), &observation, 0, NULL);
+        //     evaluate_all_literals(nerd, &observation, &accuracy);
+        //     total_accuracy += accuracy;
+        //     scene_destructor(&observation);
+        // }
 
-        printf("Epoch %d KnolwedgeBase accuracy: %f\n", epoch, total_accuracy / total_observations);
+        // printf("Epoch %d KnolwedgeBase accuracy: %f\n", epoch, total_accuracy / total_observations);
     }
     printf("Total time: %.f\n", difftime(time(NULL), start));
 }
