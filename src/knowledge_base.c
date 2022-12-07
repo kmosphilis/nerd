@@ -362,69 +362,80 @@ const unsigned int rule_index, const float demotion_weight) {
 }
 
 
-// TODO Required re-thinking using a better implementation.
 /**
  * @brief knowledge_base_demote_chained_rules helper.
  */ 
 void _knowledge_base_demote_chained_rules(KnowledgeBase * const knowledge_base,
 const Scene * const inferred, IntVector * const applicable_rules, const RuleType type,
 const unsigned int rule_to_demote, const float demotion_weight,
-float ** const applicable_rules_demotions,
-int recursion_number) {
+float * const applicable_rules_demotions) {
     if (!(knowledge_base || inferred || applicable_rules || (demotion_weight > 0))) {
         return;
     }
 
-    Context inferred_body_literals;
-    unsigned int i, j;
+    Context rule_to_demote_inferred_body_literals;
 
-    context_constructor(&inferred_body_literals);
+    context_constructor(&rule_to_demote_inferred_body_literals);
 
     switch (type) {
         case ACTIVE:
             scene_intersect(inferred, &(knowledge_base->active.rules[rule_to_demote].body),
-            &inferred_body_literals);
+            &rule_to_demote_inferred_body_literals);
             break;
         case INACTIVE:
             scene_intersect(inferred, &(knowledge_base->inactive.rules[rule_to_demote].body),
-            &inferred_body_literals);
+            &rule_to_demote_inferred_body_literals);
             break;
         default:
             return;
     }
 
-    for (i = 0; i < applicable_rules->size; ++i) {
-        unsigned int rule_index = int_vector_get(applicable_rules, i);
-        Rule *rule = &(knowledge_base->active.rules[rule_index]);
-        if (rule_concurs(rule, &inferred_body_literals)) {
-            *(applicable_rules_demotions[i]) += demotion_weight * (1/recursion_number);
+    unsigned int i = 0, current_rule_index = 0;
+    const Rule * current_rule = NULL;
+    Context current_body_literals;
+    IntVector track, current_applicables;
 
-            if (applicable_rules->size == 1) {
-                continue;
+    scene_copy(&current_body_literals, &rule_to_demote_inferred_body_literals);
+    int_vector_constructor(&track);
+    int_vector_copy(&current_applicables, applicable_rules);
+
+    do {
+        for (; i < current_applicables.size; ++i) {
+            current_rule_index = int_vector_get(&current_applicables, i);
+            current_rule = &(knowledge_base->active.rules[current_rule_index]);
+
+            if (rule_concurs(current_rule, &current_body_literals)) {
+                context_destructor(&current_body_literals);
+                scene_intersect(inferred, &(current_rule->body), &current_body_literals);
+                int_vector_push(&track, i);
+                int_vector_delete(&current_applicables, i);
+                i = 0;
+                break;
             }
-
-            IntVector new;
-            int_vector_copy(&new, applicable_rules);
-            int_vector_delete(&new, i);
-            float **remaining_applicable_demotions = (float **) malloc(sizeof(float *) * new.size);
-
-            for (j = 0; j < i; ++j) {
-                remaining_applicable_demotions[j] = applicable_rules_demotions[j];
-            }
-
-            for (j = i + 1; j < applicable_rules->size; ++j) {
-                remaining_applicable_demotions[j - 1] = applicable_rules_demotions[j];
-            }
-
-            _knowledge_base_demote_chained_rules(knowledge_base, inferred, &new, ACTIVE,
-            rule_index, demotion_weight, remaining_applicable_demotions,
-            recursion_number + 1);
-            free(remaining_applicable_demotions);
-            int_vector_destructor(&new);
         }
-    }
 
-    scene_destructor(&inferred_body_literals);
+        if ((i == current_applicables.size) && (track.size != 0)) {
+            applicable_rules_demotions[track.items[track.size - 1]] += demotion_weight *
+            (1.0/track.size);
+            i = track.items[track.size - 1];
+            int_vector_resize(&track, track.size - 1);
+            context_destructor(&current_body_literals);
+            if (track.size == 0) {
+                int_vector_destructor(&current_applicables);
+                int_vector_copy(&current_applicables, applicable_rules);
+                scene_copy(&current_body_literals, &rule_to_demote_inferred_body_literals);
+            } else {
+                int_vector_insert(&current_applicables, i, applicable_rules->items[i]);
+                scene_intersect(inferred,
+                &(knowledge_base->active.rules[track.items[track.size - 1]].body),
+                &current_body_literals);
+            }
+            ++i;
+        }
+    } while ((track.size != 0) || (i != applicable_rules->size));
+
+    int_vector_destructor(&current_applicables);
+    scene_destructor(&rule_to_demote_inferred_body_literals);
 }
 
 /**
@@ -455,7 +466,7 @@ IntVector * const demoted_applicable_rules) {
         return -1;
     }
 
-    float **applicable_rules_demotion = (float **) malloc(sizeof(float *) * applicable_rules->size);
+    float *applicable_rules_demotions = (float *) calloc(applicable_rules->size, sizeof(float));
     unsigned int active_rules_removed = 0;
     int i;
     unsigned int j;
@@ -463,19 +474,28 @@ IntVector * const demoted_applicable_rules) {
 
     int_vector_constructor(&deleted_applicables_rules);
 
-    for (j = 0; j < applicable_rules->size; ++j) {
-        applicable_rules_demotion[j] = (float *) malloc(sizeof(float));
-        *(applicable_rules_demotion[j]) = 0;
+    if (type == ACTIVE) {
+        IntVector filtered_applicable_rules;
+        int_vector_copy(&filtered_applicable_rules, applicable_rules);
+        for (j = 0; j < filtered_applicable_rules.size; ++j) {
+            if (((unsigned int) int_vector_get(&filtered_applicable_rules, j)) == rule_to_demote) {
+                int_vector_delete(&filtered_applicable_rules, j);
+                break;
+            }
+        }
+        _knowledge_base_demote_chained_rules(knowledge_base, inferred, &filtered_applicable_rules, type,
+        rule_to_demote, demotion_weight, applicable_rules_demotions);
+        int_vector_destructor(&filtered_applicable_rules);
+    } else {
+        _knowledge_base_demote_chained_rules(knowledge_base, inferred, applicable_rules, type,
+        rule_to_demote, demotion_weight, applicable_rules_demotions);
     }
-
-    _knowledge_base_demote_chained_rules(knowledge_base, inferred, applicable_rules, type,
-    rule_to_demote, demotion_weight, applicable_rules_demotion, 1);
 
     if (type == ACTIVE) {
         for (i = applicable_rules->size - 1; i >= 0; --i) {
             unsigned int rule_index = int_vector_get(applicable_rules, i);
             if (knowledge_base->active.rules[rule_index].weight <
-            *(applicable_rules_demotion[i])) {
+            applicable_rules_demotions[i]) {
                 if (rule_index < rule_to_demote) { 
                     ++active_rules_removed;
                 }
@@ -485,7 +505,7 @@ IntVector * const demoted_applicable_rules) {
                     --applicable_rules->items[j];
                 }
             } else if (knowledge_base_demote_rule(knowledge_base, ACTIVE, rule_index,
-            *(applicable_rules_demotion[i])) == 1) {
+            applicable_rules_demotions[i]) == 1) {
                 if (rule_index < rule_to_demote) {
                     ++active_rules_removed;
                 }
@@ -497,21 +517,21 @@ IntVector * const demoted_applicable_rules) {
                     --applicable_rules->items[j];
                 }
             }
-            free(applicable_rules_demotion[i]);
+            // free(applicable_rules_demotions[i]);
         }
-        free(applicable_rules_demotion);
+        free(applicable_rules_demotions);
     } else {
         for (i = applicable_rules->size - 1; i >= 0; --i) {
             unsigned int rule_index = int_vector_get(applicable_rules, i);
             if (knowledge_base->active.rules[rule_index].weight <
-            *(applicable_rules_demotion[i])) {
+            applicable_rules_demotions[i]) {
                 int_vector_delete(applicable_rules, i);
                 rule_queue_remove_rule(&(knowledge_base->active), rule_index, NULL);
                 for (j = 0; j < (unsigned int) i; ++j) {
                     --applicable_rules->items[j];
                 }
             } else if (knowledge_base_demote_rule(knowledge_base, ACTIVE, rule_index,
-            *(applicable_rules_demotion[i])) == 1) {
+            applicable_rules_demotions[i]) == 1) {
                 int_vector_delete(applicable_rules, i);
                 if (demoted_applicable_rules) {
                     int_vector_push(demoted_applicable_rules, rule_index);
@@ -520,9 +540,9 @@ IntVector * const demoted_applicable_rules) {
                     --applicable_rules->items[j];
                 }
             }
-            free(applicable_rules_demotion[i]);
+            // free(applicable_rules_demotions[i]);
         }
-        free(applicable_rules_demotion);
+        free(applicable_rules_demotions);
     }
 
     switch (type) {
