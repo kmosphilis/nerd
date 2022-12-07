@@ -82,6 +82,41 @@ void int_vector_push(IntVector * const int_vector, const int item) {
 }
 
 /**
+ * @brief Expands the IntVector by adding a new item at the given position. The item will be added
+ * to that position, and all subsequent values will have an index = old index + 1. If the given
+ * position is equal to the size of the vector, the element will function like int_vector_push().
+ * 
+ * @param int_vector The IntVector to add the new element in. If NULL the process will fail.
+ * @param position The position to add the item to.
+ * @param item The item to be added in the IntVector.
+ */
+void int_vector_insert(IntVector * const int_vector, const unsigned int position, const int item) {
+    if (int_vector) {
+        if (int_vector->size < position) {
+            if (position == int_vector->size) {
+                int_vector_push(int_vector, item);
+            }
+            return;
+        }
+
+        int *old_items = int_vector->items;
+        int_vector->items = (int *) malloc((int_vector->size + 1) * sizeof(int));
+
+        if (position == 0) {
+            int_vector->items[0] = item;
+            memcpy(int_vector->items + 1, old_items, int_vector->size * sizeof(int));
+        } else {
+            memcpy(int_vector->items, old_items, position * sizeof(int));
+            int_vector->items[position] = item;
+            memcpy(int_vector->items + position + 1, old_items + position,
+            (int_vector->size - position) * sizeof(int));
+        }
+        ++int_vector->size;
+        free(old_items);
+    }
+}
+
+/**
  * @brief Deletes the item at the given index and resize the vector.
  * 
  * @param int_vector The IntVector to delete the item from. If NULL the process will fail.
