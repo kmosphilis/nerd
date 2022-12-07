@@ -198,18 +198,13 @@ void nerd_start_learning(Nerd * const nerd) {
 
                         int opposed_result =
                         literal_opposed(&(current_rule->head), &(rule_to_compare->head));
-                        if (opposed_result >= 0) {
+                        if (opposed_result > 0) {
                             higher_positive = opposed_result == 1;
                             higher_similar = opposed_result == 0;
                         }
                     }
                     if (!higher_positive) {
-                        int_vector_push(&active_rules_to_demote, index);
-                        // if (knowledge_base_demote_rule(&(nerd->knowledge_base), ACTIVE,
-                        // current_rule_index, nerd->demotion_weight)) {
-                        //     ++rules_demoted;
-                        //     int_vector_delete(&applicable_rules, index);
-                        // }
+                        int_vector_push(&active_rules_to_demote, current_rule_index);
                     }
                 }
             }
@@ -226,13 +221,18 @@ void nerd_start_learning(Nerd * const nerd) {
 
                 rules_demoted += demoted_applicable_rules.size;
 
-                for (k = index; k < active_rules_to_demote.size; ++k) {
+                for (k = index + 1; k < active_rules_to_demote.size; ++k) {
+                    int active_rule_to_demote_subject_to_change =
+                    int_vector_get(&active_rules_to_demote, k);
                     for (j = 0; j < demoted_applicable_rules.size; ++j) {
-                        if (int_vector_get(&active_rules_to_demote, k) ==
-                        int_vector_get(&demoted_applicable_rules, j)) {
+                        int active_deleted_rule = int_vector_get(&demoted_applicable_rules, j);
+
+                        if (active_rule_to_demote_subject_to_change == active_deleted_rule) {
                             int_vector_delete(&active_rules_to_demote, k);
                             ++rules_to_demote_demoted;
                             ++index;
+                        } else if (active_rule_to_demote_subject_to_change > active_deleted_rule) {
+                            --active_rules_to_demote.items[k];
                         }
                     }
                 }
@@ -264,14 +264,14 @@ void nerd_start_learning(Nerd * const nerd) {
                             continue;
                         }
 
-                        // if (knowledge_base_demote_chained_rules(&(nerd->knowledge_base), &inferred,
-                        // &applicable_rules, INACTIVE, rule_index, nerd->demotion_weight, NULL) == 2) {
-                        //     ++rules_deleted;
-                        // }
-                        if (knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
-                        nerd->demotion_weight) == 2) {
+                        if (knowledge_base_demote_chained_rules(&(nerd->knowledge_base), &inferred,
+                        &applicable_rules, INACTIVE, rule_index, nerd->demotion_weight, NULL) == 2) {
                             ++rules_deleted;
                         }
+                        // if (knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
+                        // nerd->demotion_weight) == 2) {
+                        //     ++rules_deleted;
+                        // }
                     }
                 }
             }
