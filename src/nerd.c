@@ -209,13 +209,12 @@ void nerd_start_learning(Nerd * const nerd) {
                 }
             }
 
-            int rules_to_demote_demoted = 0;
 
             for (index = 0; index < active_rules_to_demote.size; ++index) {
                 int_vector_constructor(&demoted_applicable_rules);
                 if (knowledge_base_demote_chained_rules(&(nerd->knowledge_base), &inferred, 
-                &applicable_rules, ACTIVE, int_vector_get(&active_rules_to_demote, index) - 
-                rules_to_demote_demoted, nerd->demotion_weight, &demoted_applicable_rules) == 1) {
+                &applicable_rules, ACTIVE, int_vector_get(&active_rules_to_demote, index),
+                nerd->demotion_weight, &demoted_applicable_rules) == 1) {
                     ++rules_demoted;
                 }
 
@@ -229,7 +228,6 @@ void nerd_start_learning(Nerd * const nerd) {
 
                         if (active_rule_to_demote_subject_to_change == active_deleted_rule) {
                             int_vector_delete(&active_rules_to_demote, k);
-                            ++rules_to_demote_demoted;
                             ++index;
                         } else if (active_rule_to_demote_subject_to_change > active_deleted_rule) {
                             --active_rules_to_demote.items[k];
