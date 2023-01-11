@@ -6,7 +6,7 @@
 #define __RULE_QUEUE_H__
 
 typedef struct RuleQueue {
-    Rule * rules;
+    Rule *rules;
     unsigned int length;
 } RuleQueue;
 

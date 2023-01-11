@@ -8,7 +8,7 @@
 
 /**
  * @brief Constructs a KnowledgeBase.
- * 
+ *
  * @param knowledge_base The KnowledgeBase to be constructed. If NULL the process will fail.
  * @param activation_threshold The threshold which determines whether a rule should get activated or 
  * deactivated.
@@ -24,7 +24,7 @@ const float activation_threshold) {
 
 /**
  * @brief Destructs a KnowledgeBase.
- * 
+ *
  * @param knowledge_base The KnowledgeBase to be destructed. If NULL the process will fail.
  */
 void knowledge_base_destructor(KnowledgeBase * const knowledge_base) {
@@ -37,7 +37,7 @@ void knowledge_base_destructor(KnowledgeBase * const knowledge_base) {
 
 /**
  * @brief Makes a copy of the given KnowledgeBase.
- * 
+ *
  * @param destination The KnowledgeBase to save the copy.
  * @param source The KnowledgeBase to be copied. If the KnowledgeBase is NULL, the contents of the 
  * destination will not be changed.
@@ -55,7 +55,7 @@ const KnowledgeBase * const restrict source) {
  * @brief Adds a Rule in the KnowledgeBase. If the weight of the Rule is above the 
  * activation_threshold, the Rule will be added to the active RuleQueue, otherwise it will be added 
  * to the inactive RuleQueue.
- * 
+ *
  * @param knowledge_base The KnowledgeBase to be expanded.
  * @param rule The Rule to be added.
  */
@@ -72,7 +72,7 @@ void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * 
 /**
  * @brief Creates new Rules by finding uncovered Literals. Uncovered Literals, are Literals that 
  * have been observed, but have not been inferred.
- * 
+ *
  * @param knowledge_base The KnowledgeBase to be expanded.
  * @param observed The observed Scene.
  * @param inferred The inferred Scene.
@@ -156,9 +156,9 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
 
 /**
  * @brief Finds the applicable rules from the given Context/Scene (Literals). If any given parameter
- *  is NULL, the function will not be executed. An applicable Rule, is a Rule whose body is true. 
+ * is NULL, the function will not be executed. An applicable Rule, is a Rule whose body is true.
  * The head can be true or false.
- * 
+ *
  * @param knowledge_base The KnowledgeBase to find the Rules from.
  * @param context The context Context (Scene).
  * @param applicable_active_rules The IntVector to save the active applicable Rules.
@@ -179,9 +179,9 @@ IntVector * const restrict applicable_inactive_rules) {
 // rules whose head is true and bodu can be false or true.
 /**
  * @brief Finds the concurring Rules from the given Context/Scene (Literals). If any given parameter
- *  is NULL, the function will not be executed. A concurring Rule, is a Rule whose body and head are
- *  true.
- * 
+ * is NULL, the function will not be executed. A concurring Rule, is a Rule whose body and head are
+ * true.
+ *
  * @param knowledge_base The KnowledgeBase to find the Rules from.
  * @param context The context Context (Scene).
  * @param concurring_active_rules The IntVector to save the active concurring Rules.
@@ -200,7 +200,7 @@ IntVector * const restrict concurring_inactive_rules) {
 
 /**
  * @brief Promotes all the given Rules in the KnowledgeBase.
- * 
+ *
  * @param knowledge_base The KnowledgeBase in which the given Rules should be promoted.
  * @param rules_to_promote The RuleQueue containing the Rules to be promoted.
  * @param promotion_rate The amount that the Rules should be promoted with. If the given amount is 
@@ -242,7 +242,7 @@ const RuleQueue * const rules_to_promote, const float promotion_rate) {
 
 /**
  * @brief Demotes all the given Rules in the KnowledgeBase.
- * 
+ *
  * @param knowledge_base The KnowledgeBase in which the given Rules should be demoted.
  * @param rules_to_demote The RuleQueue containing the Rules to be demoted.
  * @param demotion_rate The amount that the Rules should be demoted with. If the given amount is 
@@ -285,7 +285,7 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
 /**
  * @brief Promotes a Rule in the given KnowledgeBase. If the Rule is inactive and its weight is 
  * higher or equal to the activation_threshold, then the Rule will become active.
- * 
+ *
  * @param knowledge_base The KnowledgeBase in which the the given Rule should be promoted.
  * @param type The type of the Rule to be promoted.
  * @param rule_index The index of the rule to be promoted. If the index is not within bounds, the 
@@ -360,7 +360,6 @@ const unsigned int rule_index, const float demotion_weight) {
     }
     return -1;
 }
-
 
 /**
  * @brief knowledge_base_demote_chained_rules helper.
@@ -517,7 +516,6 @@ IntVector * const demoted_applicable_rules) {
                     --applicable_rules->items[j];
                 }
             }
-            // free(applicable_rules_demotions[i]);
         }
         free(applicable_rules_demotions);
     } else {
@@ -540,7 +538,6 @@ IntVector * const demoted_applicable_rules) {
                     --applicable_rules->items[j];
                 }
             }
-            // free(applicable_rules_demotions[i]);
         }
         free(applicable_rules_demotions);
     }
@@ -575,7 +572,7 @@ IntVector * const demoted_applicable_rules) {
 
 /**
  * @brief Converts the KnowledgeBase to a string.
- * 
+ *
  * @param knowledge_base The KnowledgeBase to be converted.
  * @return The string format of the given KnowledgeBase. Use free() to deallocate this string. 
  * Returns NULL if the KnowledgeBase is NULL.
@@ -623,7 +620,7 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
  * @brief Converts a KnowledgeBase to a Prudens JS Knowledge base format. Note: It only returns the 
  * active rules of a KnowledgeBase, since the inactive should not be considered until their 
  * activation.
- * 
+ *
  * @param knowledge_base The KnowledgeBase to be converted.
  * @return The Prudens JS Knowledge base format (as a string) of the given KnowledgeBase. The rules 
  * will be in reverse order since younger rules in Prudens JS have higher priority unlike NERD, 
