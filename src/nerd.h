@@ -17,6 +17,8 @@ void nerd_constructor(Nerd * const nerd, const char * const filepath, unsigned s
 const float activation_threshold, const unsigned int breadth, const unsigned int depth,
 const unsigned int epochs, const float promotion_weight, const float demotion_weight,
 const unsigned short partial_observation);
+void nerd_constructor_from_file(Nerd * const nerd, const char * const filepath,
+const unsigned int epochs);
 void nerd_destructor(Nerd * const nerd);
 void prudensjs_inference(const KnowledgeBase * const knowledge_base,
 const Scene * const restrict observation, Scene * restrict inferred);

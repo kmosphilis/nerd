@@ -41,6 +41,100 @@ const unsigned short partial_observation) {
     }
 }
 
+// TODO Test case.
+/**
+ * @brief Constructs a Nerd structure (object) using an existing nerd file.
+ *
+ * @param nerd The Nerd structure to be constructed.
+ * @param filepath The path to the file that contains previous a Nerd structure parameters (except
+ * the number of epochs) and the learnt KnowledgeBase.
+ * @param epochs The number of epochs the algorithm should learn for.
+*/
+void nerd_constructor_from_file(Nerd * const nerd, const char * const filepath,
+const unsigned int epochs) {
+    if (nerd && filepath) {
+        FILE *file = fopen(filepath, "rb");
+        size_t buffer_size = BUFFER_SIZE;
+        char *buffer = (char *) malloc(buffer_size * sizeof(char));
+        unsigned short sensor_reuse;
+        float activation_threshold;
+
+        fscanf(file, "breadth: %d\n", &(nerd->breadth));
+        fscanf(file, "depth: %d\n", &(nerd->depth));
+        fscanf(file, "promotion_weight: %f\n", &(nerd->promotion_weight));
+        fscanf(file, "demotion_weight: %f\n", &(nerd->demotion_weight));
+        fscanf(file, "partial_observation: %hu\n", &(nerd->partial_observation));
+        fscanf(file, "sensor: %[^, ], %hu\n", buffer, &sensor_reuse);
+        sensor_constructor_from_file(&(nerd->sensor), buffer, sensor_reuse);
+        free(buffer);
+
+        fscanf(file, "knowledge_base:\n");
+        fscanf(file, "\tactivation_threshold: %f\n", &activation_threshold);
+        knowledge_base_constructor(&(nerd->knowledge_base), activation_threshold);
+
+        fscanf(file, "\trules:\n");
+
+        fpos_t position;
+        fgetpos(file, &position);
+        char *tokens;
+        Body body;
+        Literal literal;
+        Rule rule;
+        scene_constructor(&body);
+
+        buffer = (char *) malloc(buffer_size * sizeof(char));
+        memset(buffer, 0, buffer_size);
+
+
+        while(fgets(buffer, buffer_size, file) != NULL) {
+            if (strlen(buffer) == buffer_size) {
+                buffer_size <<= 1;
+                buffer = realloc(buffer, buffer_size * sizeof(char));
+                fsetpos(file, &position);
+                continue;
+            }
+
+            tokens = strtok(buffer, " (),\n");
+
+            while (tokens != NULL) {
+                tokens = strtok(NULL, " (),\n");
+                if (strcmp(tokens, "=>") == 0) {
+                    tokens = strtok(NULL, " (),\n");
+                    if (tokens[0] == '-') {
+                        literal_constructor(&literal, tokens + 1, 0);
+                    } else {
+                        literal_constructor(&literal, tokens, 1);
+                    }
+
+                    tokens = strtok(NULL, " (),\n");
+                    float weight = atof(tokens);
+
+                    rule_constructor(&rule, body.size, &(body.observations), &literal, weight);
+                    knowledge_base_add_rule(&(nerd->knowledge_base), &rule);
+
+                    tokens = strtok(NULL, " (),\n");
+                    literal_destructor(&literal);
+                    scene_destructor(&body);
+                    rule_destructor(&rule);
+                } else {
+                    if (tokens[0] == '-') {
+                        literal_constructor(&literal, tokens + 1, 0);
+                    } else {
+                        literal_constructor(&literal, tokens, 1);
+                    }
+                    scene_add_literal(&body, &literal);
+                    literal_destructor(&literal);
+                }
+            }
+            fgetpos(file, &position);
+        }
+        free(buffer);
+
+        fclose(file);
+        nerd->epochs = epochs;
+    }
+}
+
 /**
  * @brief Destructs a Nerd structure (object).
  *
@@ -307,4 +401,50 @@ void nerd_start_learning(Nerd * const nerd) {
         // total_accuracy / total_observations);
     }
     printf("Total time: %.f\n", difftime(time(NULL), start));
+}
+
+// TODO Test case.
+/**
+ * @brief Saves/Converts the Nerd structure to a file which all the parameters that were used and the learnt
+ * KnowledgeBase are saved, except the number of epochs.
+ *
+ * @param nerd The Nerd structure to be saved/converted to a file.
+ * @param filepath The path and the name of the file which the Nerd structure will be saved to.
+*/
+void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
+    if (!(nerd && filepath)) {
+        return;
+    }
+
+    FILE *file = fopen(filepath, "wb");
+    unsigned int i;
+    char *str = NULL;
+
+    fprintf(file, "breadth: %d\n", nerd->breadth);
+    fprintf(file, "depth: %d\n", nerd->depth);
+    fprintf(file, "promotion_weight: %f\n", nerd->promotion_weight);
+    fprintf(file, "demotion_weight: %f\n", nerd->demotion_weight);
+    fprintf(file, "partial_observation: %d\n", nerd->partial_observation);
+    fprintf(file, "sensor: %s, %d\n", nerd->sensor.filepath, nerd->sensor.reuse);
+
+    fprintf(file, "knowledge_base:\n");
+    fprintf(file, "\tactivation_threshold: %f\n", nerd->knowledge_base.activation_threshold);
+    fprintf(file, "\trules:\n");
+
+    for (i = 0; i < nerd->knowledge_base.active.length; ++i) {
+        str = rule_to_string(&(nerd->knowledge_base.active.rules[i]));
+        fprintf(file, "\t\t%s,\n", str);
+        free(str);
+    }
+
+    for (i = 0; i < nerd->knowledge_base.inactive.length - 1; ++i) {
+        str = rule_to_string(&(nerd->knowledge_base.inactive.rules[i]));
+        fprintf(file, "\t\t%s,\n", str);
+        free(str);
+    }
+    str = rule_to_string(&(nerd->knowledge_base.inactive.rules[i]));
+    fprintf(file, "\t\t%s", str);
+    free(str);
+
+    fclose(file);
 }
