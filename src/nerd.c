@@ -117,7 +117,7 @@ void nerd_start_learning(Nerd * const nerd) {
     */
 
     Scene observation, observed_and_inferred, inferred;
-    unsigned int epoch, iteration, index, k, j;
+    unsigned int epoch, iteration, index, k, j, number_of_demoted_rules;
     const size_t total_observations = sensor_get_total_observations(&(nerd->sensor));
 
     scene_constructor(&observation);
@@ -155,9 +155,9 @@ void nerd_start_learning(Nerd * const nerd) {
             free(str);
 
             unsigned int rules_demoted = 0, rules_promoted = 0, rules_deleted = 0;
-            IntVector active_rules_to_demote, demoted_applicable_rules, applicable_rules;
+            IntVector active_rules_to_demote, demoted_deleted_applicable_rules, applicable_rules;
             int_vector_constructor(&active_rules_to_demote);
-            int_vector_constructor(&demoted_applicable_rules);
+            int_vector_constructor(&demoted_deleted_applicable_rules);
             int_vector_constructor(&applicable_rules);
 
             for (index = nerd->knowledge_base.active.length; index > 0; --index) {
@@ -192,7 +192,8 @@ void nerd_start_learning(Nerd * const nerd) {
                     int higher_positive = 0;
                     int higher_similar = 0;
                     for (k = index + 1; k < applicable_rules.size; ++k) {
-                        const unsigned int rule_to_compare_index = int_vector_get(&applicable_rules, k);
+                        const unsigned int rule_to_compare_index =
+                        int_vector_get(&applicable_rules, k);
                         const Rule * const rule_to_compare = &(nerd->knowledge_base.active.
                         rules[rule_to_compare_index]);
 
@@ -211,20 +212,22 @@ void nerd_start_learning(Nerd * const nerd) {
 
 
             for (index = 0; index < active_rules_to_demote.size; ++index) {
-                int_vector_constructor(&demoted_applicable_rules);
+                number_of_demoted_rules = 0;
+                int_vector_constructor(&demoted_deleted_applicable_rules);
                 if (knowledge_base_demote_chained_rules(&(nerd->knowledge_base), &inferred, 
                 &applicable_rules, ACTIVE, int_vector_get(&active_rules_to_demote, index),
-                nerd->demotion_weight, &demoted_applicable_rules) == 1) {
+                nerd->demotion_weight, &demoted_deleted_applicable_rules,
+                &number_of_demoted_rules) == 1) {
                     ++rules_demoted;
                 }
 
-                rules_demoted += demoted_applicable_rules.size;
+                rules_demoted += number_of_demoted_rules;
 
                 for (k = index + 1; k < active_rules_to_demote.size; ++k) {
                     int active_rule_to_demote_subject_to_change =
                     int_vector_get(&active_rules_to_demote, k);
-                    for (j = 0; j < demoted_applicable_rules.size; ++j) {
-                        int active_deleted_rule = int_vector_get(&demoted_applicable_rules, j);
+                    for (j = 0; j < demoted_deleted_applicable_rules.size; ++j) {
+                        int active_deleted_rule = int_vector_get(&demoted_deleted_applicable_rules, j);
 
                         if (active_rule_to_demote_subject_to_change == active_deleted_rule) {
                             int_vector_delete(&active_rules_to_demote, k);
@@ -235,18 +238,19 @@ void nerd_start_learning(Nerd * const nerd) {
                     }
                 }
 
-                int_vector_destructor(&demoted_applicable_rules);
+                int_vector_destructor(&demoted_deleted_applicable_rules);
             }
 
             for (index = 0; index < nerd->knowledge_base.inactive.length - rules_demoted; ++index) {
                 const unsigned rule_index = index - rules_promoted - rules_deleted;
-                const Rule * const current_rule = &(nerd->knowledge_base.inactive.rules[rule_index]);
+                const Rule * const current_rule = &(nerd->knowledge_base.inactive.rules
+                [rule_index]);
 
                 if (rule_applicable(current_rule, &observed_and_inferred)) {
                     int rule_concurs_result = rule_concurs(current_rule, &observation);
                     if (rule_concurs_result) {
-                        if (knowledge_base_promote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
-                        nerd->promotion_weight)) {
+                        if (knowledge_base_promote_rule(&(nerd->knowledge_base), INACTIVE,
+                        rule_index, nerd->promotion_weight)) {
                             ++rules_promoted;
                         }
                     } else if (rule_concurs_result == 0) {
@@ -263,7 +267,8 @@ void nerd_start_learning(Nerd * const nerd) {
                         }
 
                         if (knowledge_base_demote_chained_rules(&(nerd->knowledge_base), &inferred,
-                        &applicable_rules, INACTIVE, rule_index, nerd->demotion_weight, NULL) == 2) {
+                        &applicable_rules, INACTIVE, rule_index, nerd->demotion_weight, NULL,
+                        NULL) == 2) {
                             ++rules_deleted;
                         }
                         // if (knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
@@ -279,7 +284,7 @@ void nerd_start_learning(Nerd * const nerd) {
             free(str);
 
             int_vector_destructor(&active_rules_to_demote);
-            int_vector_destructor(&demoted_applicable_rules);
+            int_vector_destructor(&demoted_deleted_applicable_rules);
             int_vector_destructor(&applicable_rules);
             scene_destructor(&uncovered);
 
@@ -290,14 +295,16 @@ void nerd_start_learning(Nerd * const nerd) {
 
         // float total_accuracy = 0, accuracy;
 
-        // for (i = 0; i < total_observations; ++i) {
+        // for (index = 0; index < total_observations; ++index) {
         //     sensor_get_next_scene(&(nerd->sensor), &observation, 0, NULL);
         //     evaluate_all_literals(nerd, &observation, &accuracy);
         //     total_accuracy += accuracy;
         //     scene_destructor(&observation);
         // }
 
-        // printf("Epoch %d KnolwedgeBase accuracy: %f\n", epoch, total_accuracy / total_observations);
+
+        // printf("Epoch %d KnolwedgeBase accuracy: %f\n", epoch + 1,
+        // total_accuracy / total_observations);
     }
     printf("Total time: %.f\n", difftime(time(NULL), start));
 }
