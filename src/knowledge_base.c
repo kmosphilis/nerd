@@ -365,7 +365,7 @@ const unsigned int rule_index, const float demotion_weight) {
  * @brief knowledge_base_demote_chained_rules helper.
  */ 
 void _knowledge_base_demote_chained_rules(KnowledgeBase * const knowledge_base,
-const Scene * const inferred, IntVector * const applicable_rules, const RuleType type,
+const Scene * const inferred, const IntVector * const applicable_rules, const RuleType type,
 const unsigned int rule_to_demote, const float demotion_weight,
 float * const applicable_rules_demotions) {
     if (!(knowledge_base || inferred || applicable_rules || (demotion_weight > 0))) {
