@@ -5,11 +5,12 @@
 #ifndef __SENSOR_H__
 #define __SENSOR_H__
 
-#define BUFFER_SIZE 255
+#define BUFFER_SIZE 256
 
 typedef struct Sensor {
     FILE *environment;
     unsigned short reuse;
+    char *filepath;
 } Sensor;
 
 void sensor_constructor_from_file(Sensor * const sensor, const char * const filepath,

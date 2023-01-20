@@ -7,10 +7,10 @@
 
 /**
  * @brief Constructs a Sensor from a file.
- * 
+ *
  * @param sensor The Sensor to be constructed. If NULL is given, nothing will happen.
  * @param filepath The path to the file. If NULL is given, the sensor will not be constructed.
- * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF. 
+ * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF.
  * Use > 0 to indicate yes, and 0 to indicate no.
  */
 void sensor_constructor_from_file(Sensor * const sensor, const char * const filepath,
@@ -18,21 +18,22 @@ const unsigned short reuse) {
     if (sensor) {
         if (filepath) {
             sensor->environment = fopen(filepath, "rb");
-            if (sensor->environment == NULL) {
-                sensor->reuse = 0;
-            } else {
+            if (sensor->environment) {
                 sensor->reuse = reuse;
+                sensor->filepath = strdup(filepath);
+                return;
             }
-        } else {
-            sensor->environment = NULL;
-            sensor->reuse = 0;
         }
+
+        sensor->environment = NULL;
+        sensor->reuse = 0;
+        sensor->filepath = NULL;
     }
 }
 
 /**
  * @brief Destructs a Sensor.
- * 
+ *
  * @param sensor The Sensor to be destructed.
  */
 void sensor_destructor(Sensor * const sensor) {
@@ -41,6 +42,8 @@ void sensor_destructor(Sensor * const sensor) {
             fclose(sensor->environment);
             sensor->environment = NULL;
             sensor->reuse = 0;
+            free(sensor->filepath);
+            sensor->filepath = NULL;
         }
     }
 }
@@ -75,13 +78,13 @@ size_t sensor_get_total_observations(const Sensor * const sensor) {
 
 /**
  * @brief Gets the next Scene from a Sensor.
- * 
+ *
  * @param sensor The Sensor to extract the next Scene. If NULL, nothing will happen.
  * @param output The Scene that will be extracted will be saved here. If NULL, nothing will happen.
- * @param partial_observation If > 0 is given, the output will contain a subset of the initial 
- * observation literals with a cardinality, |output| = (1, output.size). If 0 is given, the output 
+ * @param partial_observation If > 0 is given, the output will contain a subset of the initial
+ * observation literals with a cardinality, |output| = (1, output.size). If 0 is given, the output
  * will be the initial observation.
- * @param initial_observation If partial_observation is > 0, the initial observation will be saved 
+ * @param initial_observation If partial_observation is > 0, the initial observation will be saved
  * here. If NULL is given, it will not be saved.
  */
 void sensor_get_next_scene(const Sensor * const sensor, Scene * const restrict output,

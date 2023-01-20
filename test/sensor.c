@@ -11,32 +11,41 @@ START_TEST(construct_destruct_test) {
     sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 0);
     ck_assert_ptr_nonnull(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
+    ck_assert_str_eq(sensor.filepath, SENSOR_TEST_DATA);
     sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
+    ck_assert_pstr_eq(sensor.filepath, NULL);
 
     sensor_constructor_from_file(&sensor, SENSOR_TEST_DATA, 1);
     ck_assert_ptr_nonnull(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 1);
+    ck_assert_str_eq(sensor.filepath, SENSOR_TEST_DATA);
     sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
+    ck_assert_pstr_eq(sensor.filepath, NULL);
 
     sensor_constructor_from_file(&sensor, "./data/filethatdoesntexist.txt", 0);
     ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
+    ck_assert_pstr_eq(sensor.filepath, NULL);
     sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
+    ck_assert_pstr_eq(sensor.filepath, NULL);
 
     sensor_constructor_from_file(&sensor, NULL, 0);
     ck_assert_ptr_null(sensor.environment);
+    ck_assert_int_eq(sensor.reuse, 0);
+    ck_assert_pstr_eq(sensor.filepath, NULL);
     sensor_destructor(&sensor);
 
     sensor_constructor_from_file(sensor_ptr, SENSOR_TEST_DATA, 0);
     ck_assert_ptr_null(sensor_ptr);
     ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
+    ck_assert_pstr_eq(sensor.filepath, NULL);
     sensor_destructor(sensor_ptr);
 }
 END_TEST
