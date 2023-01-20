@@ -42,7 +42,7 @@ const unsigned int rule_index, const float demotion_weight);
 int knowledge_base_demote_chained_rules(KnowledgeBase * const knowledge_base,
 const Scene * const inferred, IntVector * const applicable_rules, const RuleType type,
 const unsigned int rule_to_demote, const float demotion_weight,
-IntVector * const demoted_applicable_rules);
+IntVector * const demoted_deleted_applicable_rules, unsigned int * const number_of_demoted_rules);
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base);
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base);
 

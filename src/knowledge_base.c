@@ -448,116 +448,121 @@ float * const applicable_rules_demotions) {
  * @param applicable_rules An IntVector containing all the applicable rules. If any of these rules
  * gets demoted or deleted during the process, it will removed from the list.
  * @param type The type of the Rule to be demoted.
- * @param rule_to_demote The index of the rule to be demoted. If the index is not within bounds, the
+ * @param rule_to_demote The index of the Rule to be demoted. If the index is not within bounds, the
  * function will be ignored.
  * @param demotion_weight The amount that the Rule should be demoted with. If the amount is <= 0,
  * nothing will be changed.
- * @param demoted_applicable_rules An IntVector to save all the Rules that were demoted from
- * applicable_rules.
+ * @param demoted_deleted_applicable_rules An IntVector to save all the Rules that were demoted or
+ * deleted from applicable_rules.
+ * @param number_of_demoted_rules Saves the number of Rules that got demoted during the process. It
+ * does not include the deleted Rules.
  * @return 1 if Rule was ACTIVE and it was demoted to INACTIVE, 2 if the Rule was INACTIVE and was
  * deleted, 0 if a Rule was simply demoted, and -1 if any of the parameters is NULL.
  */
 int knowledge_base_demote_chained_rules(KnowledgeBase * const knowledge_base,
 const Scene * const inferred, IntVector * const applicable_rules, const RuleType type,
 const unsigned int rule_to_demote, const float demotion_weight,
-IntVector * const demoted_applicable_rules) {
+IntVector * const demoted_deleted_applicable_rules, unsigned int * const number_of_demoted_rules) {
     if (!(knowledge_base && inferred && applicable_rules)) {
         return -1;
     }
 
     float *applicable_rules_demotions = (float *) calloc(applicable_rules->size, sizeof(float));
-    unsigned int active_rules_removed = 0;
+    unsigned int _number_of_demoted_rules = 0, number_of_prior_removed_rules = 0;
     int i;
     unsigned int j;
-    IntVector deleted_applicables_rules;
-
-    int_vector_constructor(&deleted_applicables_rules);
 
     if (type == ACTIVE) {
         IntVector filtered_applicable_rules;
+        int rule_to_remove = -1;
         int_vector_copy(&filtered_applicable_rules, applicable_rules);
         for (j = 0; j < filtered_applicable_rules.size; ++j) {
             if (((unsigned int) int_vector_get(&filtered_applicable_rules, j)) == rule_to_demote) {
                 int_vector_delete(&filtered_applicable_rules, j);
+                rule_to_remove = j;
                 break;
             }
         }
         _knowledge_base_demote_chained_rules(knowledge_base, inferred, &filtered_applicable_rules, type,
         rule_to_demote, demotion_weight, applicable_rules_demotions);
         int_vector_destructor(&filtered_applicable_rules);
+        if (rule_to_remove != -1) {
+            for (j = applicable_rules->size - 1; j > (unsigned int) rule_to_remove; --j) {
+                applicable_rules_demotions[j] = applicable_rules_demotions[j - 1];
+            }
+
+            applicable_rules_demotions[j] = 0;
+        }
     } else {
         _knowledge_base_demote_chained_rules(knowledge_base, inferred, applicable_rules, type,
         rule_to_demote, demotion_weight, applicable_rules_demotions);
     }
 
-    if (type == ACTIVE) {
-        for (i = applicable_rules->size - 1; i >= 0; --i) {
-            unsigned int rule_index = int_vector_get(applicable_rules, i);
-            if (knowledge_base->active.rules[rule_index].weight <
-            applicable_rules_demotions[i]) {
-                if (rule_index < rule_to_demote) { 
-                    ++active_rules_removed;
-                }
-                int_vector_delete(applicable_rules, i);
-                rule_queue_remove_rule(&(knowledge_base->active), rule_index, NULL);
-                for (j = 0; j < (unsigned int) i; ++j) {
-                    --applicable_rules->items[j];
-                }
-            } else if (knowledge_base_demote_rule(knowledge_base, ACTIVE, rule_index,
-            applicable_rules_demotions[i]) == 1) {
-                if (rule_index < rule_to_demote) {
-                    ++active_rules_removed;
-                }
-                int_vector_delete(applicable_rules, i);
-                if (demoted_applicable_rules) {
-                    int_vector_push(demoted_applicable_rules, rule_index);
-                }
-                for (j = 0; j < (unsigned int) i; ++j) {
-                    --applicable_rules->items[j];
-                }
+    for (i = applicable_rules->size - 1; i >= 0; --i) {
+        unsigned int rule_index = int_vector_get(applicable_rules, i);
+
+        if (knowledge_base->active.rules[rule_index].weight <
+        applicable_rules_demotions[i]) {
+            if (rule_index < (rule_to_demote - number_of_prior_removed_rules)) {
+                ++number_of_prior_removed_rules;
+            }
+
+            int_vector_delete(applicable_rules, i);
+            rule_queue_remove_rule(&(knowledge_base->active), rule_index, NULL);
+            int_vector_push(demoted_deleted_applicable_rules, rule_index);
+
+            for (j = 0; j < (unsigned int) i; ++j) {
+                --applicable_rules->items[j];
+            }
+        } else if (knowledge_base_demote_rule(knowledge_base, ACTIVE, rule_index,
+        applicable_rules_demotions[i]) == 1) {
+            if (rule_index < (rule_to_demote - number_of_prior_removed_rules)) {
+                ++number_of_prior_removed_rules;
+            }
+
+            ++_number_of_demoted_rules;
+            int_vector_delete(applicable_rules, i);
+            int_vector_push(demoted_deleted_applicable_rules, rule_index);
+
+            for (j = 0; j < (unsigned int) i; ++j) {
+                --applicable_rules->items[j];
             }
         }
-        free(applicable_rules_demotions);
-    } else {
-        for (i = applicable_rules->size - 1; i >= 0; --i) {
-            unsigned int rule_index = int_vector_get(applicable_rules, i);
-            if (knowledge_base->active.rules[rule_index].weight <
-            applicable_rules_demotions[i]) {
-                int_vector_delete(applicable_rules, i);
-                rule_queue_remove_rule(&(knowledge_base->active), rule_index, NULL);
-                for (j = 0; j < (unsigned int) i; ++j) {
-                    --applicable_rules->items[j];
-                }
-            } else if (knowledge_base_demote_rule(knowledge_base, ACTIVE, rule_index,
-            applicable_rules_demotions[i]) == 1) {
-                int_vector_delete(applicable_rules, i);
-                if (demoted_applicable_rules) {
-                    int_vector_push(demoted_applicable_rules, rule_index);
-                }
-                for (j = 0; j < (unsigned int) i; ++j) {
-                    --applicable_rules->items[j];
-                }
-            }
-        }
-        free(applicable_rules_demotions);
+    }
+    free(applicable_rules_demotions);
+
+    if (number_of_demoted_rules != NULL) {
+        *number_of_demoted_rules = _number_of_demoted_rules;
     }
 
     switch (type) {
         case ACTIVE:
+            unsigned int rule_to_demote_new_index =
+            rule_to_demote - number_of_prior_removed_rules;
+
             switch (knowledge_base_demote_rule(knowledge_base, ACTIVE,
-            rule_to_demote - active_rules_removed, demotion_weight)) {
+            rule_to_demote_new_index, demotion_weight)) {
                 case 1:
+                    if (number_of_demoted_rules != NULL) {
+                        ++(*number_of_demoted_rules);
+                    }
+                    int_vector_push(demoted_deleted_applicable_rules, rule_to_demote_new_index);
+
+                    unsigned int current_rule, k;
                     for (j = 0; j < applicable_rules->size; ++j) {
-                        if ((unsigned int) int_vector_get(applicable_rules, j) == 
-                        (rule_to_demote - active_rules_removed)) {
+                        current_rule = int_vector_get(applicable_rules, j);
+                        if (current_rule == rule_to_demote_new_index) {
                             int_vector_delete(applicable_rules, j);
 
-                            unsigned int k;
                             for (k = 0; k < j; ++k) {
                                 --applicable_rules->items[k];
                             }
-                            
-                            return 1;
+                            break;
+                        } else if (current_rule < rule_to_demote_new_index) {
+                            for (k = 0; k < j; ++k) {
+                                --applicable_rules->items[k];
+                            }
+                            break;
                         }
                     }
                     return 1;
