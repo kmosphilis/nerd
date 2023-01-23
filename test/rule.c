@@ -101,9 +101,9 @@ START_TEST(copy_test) {
 
     ck_assert_rule_empty(&rule1);
     ck_assert_rule_notempty(&rule2);
-    ck_assert_literal_ne(&rule1.head, &rule2.head);
-    ck_assert_literal_empty(&rule1.head);
-    ck_assert_literal_notempty(&rule2.head);
+    ck_assert_literal_ne(&(rule1.head), &(rule2.head));
+    ck_assert_literal_empty(&(rule1.head));
+    ck_assert_literal_notempty(&(rule2.head));
 
     rule_copy(rule_pointer1, rule_pointer2);
 
