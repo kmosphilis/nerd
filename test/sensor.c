@@ -3,7 +3,7 @@
 
 #include "../src/sensor.h"
 
-#define SENSOR_TEST_DATA "./data/sensor_test.txt"
+#define SENSOR_TEST_DATA "./test_data/sensor_test.txt"
 
 START_TEST(construct_destruct_test) {
     Sensor sensor, *sensor_ptr = NULL;
@@ -26,7 +26,7 @@ START_TEST(construct_destruct_test) {
     ck_assert_int_eq(sensor.reuse, 0);
     ck_assert_pstr_eq(sensor.filepath, NULL);
 
-    sensor_constructor_from_file(&sensor, "./data/filethatdoesntexist.txt", 0);
+    sensor_constructor_from_file(&sensor, "./test_data/filethatdoesntexist.txt", 0);
     ck_assert_ptr_null(sensor.environment);
     ck_assert_int_eq(sensor.reuse, 0);
     ck_assert_pstr_eq(sensor.filepath, NULL);
