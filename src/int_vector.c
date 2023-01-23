@@ -5,7 +5,7 @@
 
 /**
  * @brief Constructs an IntVector.
- * 
+ *
  * @param int_vector The IntVector to be constructed. If NULL the process will fail.
  */
 void int_vector_constructor(IntVector * const int_vector) {
@@ -17,7 +17,7 @@ void int_vector_constructor(IntVector * const int_vector) {
 
 /**
  * @brief Destructs an IntVector.
- * 
+ *
  * @param int_vector The IntVector to be destructed. If NULL the process will fail.
  */
 void int_vector_destructor(IntVector * const int_vector) {
@@ -32,7 +32,7 @@ void int_vector_destructor(IntVector * const int_vector) {
 
 /**
  * @brief Makes a copy of the given IntVector.
- * 
+ *
  * @param destination The IntVector to save the copy.
  * @param source The IntVector to be copied. If NULL is given, the contents of the destination will 
  * not be changed.
@@ -50,7 +50,7 @@ const IntVector * const restrict source) {
 
 /**
  * @brief Resizes an IntVector. If new_size > int_vector.size, the new elements will be set to 0;
- * 
+ *
  * @param int_vector The IntVector to be resized. If NULL the process will fail.
  * @param new_size The new size of the vector.
  */
@@ -70,7 +70,7 @@ void int_vector_resize(IntVector * const int_vector, const unsigned int new_size
 
 /**
  * @brief Pushes a new item at the back of the IntVector.
- * 
+ *
  * @param int_vector The IntVector to push the new element in. If NULL the process will fail.
  * @param item The item to be added in the IntVector.
  */
@@ -85,7 +85,7 @@ void int_vector_push(IntVector * const int_vector, const int item) {
  * @brief Expands the IntVector by adding a new item at the given position. The item will be added
  * to that position, and all subsequent values will have an index = old index + 1. If the given
  * position is equal to the size of the vector, the element will function like int_vector_push().
- * 
+ *
  * @param int_vector The IntVector to add the new element in. If NULL the process will fail.
  * @param position The position to add the item to.
  * @param item The item to be added in the IntVector.
@@ -118,12 +118,12 @@ void int_vector_insert(IntVector * const int_vector, const unsigned int position
 
 /**
  * @brief Deletes the item at the given index and resize the vector.
- * 
+ *
  * @param int_vector The IntVector to delete the item from. If NULL the process will fail.
  * @param index The index of the item to be removed. If index > int_vector.size, the process will 
  * fail.
  */
-void int_vector_delete(IntVector * const int_vector, const unsigned index) {
+void int_vector_delete(IntVector * const int_vector, const unsigned int index) {
     if (int_vector) {
         if (int_vector->size > index) {
             unsigned int i;
@@ -139,7 +139,7 @@ void int_vector_delete(IntVector * const int_vector, const unsigned index) {
 /**
  * @brief Retrieves the item from the given index position. Equivalent to int_vector.items[index] 
  * but with checks.
- * 
+ *
  * @param int_vector The IntVector to retrieve the item from. If NULL the process will fail.
  * @param index The index of the required item. If index > int_vector.size, the process will fail.
  * @return The item (int) at the given index, or the index if out of bounds or int_vector is NULL.
@@ -157,7 +157,7 @@ int int_vector_get(const IntVector * const int_vector, const unsigned int index)
 /**
  * @brief Sets a the given item (int) to the given index. Equivalent to int_vector.items[index] = 
  * new_item but with checks.
- * 
+ *
  * @param int_vector The IntVector to set the new item to. If NULL the process will fail.
  * @param index The index of the item to be replaces. If index > int_vector.size, the process will 
  * fail.
