@@ -6,14 +6,15 @@
 #include "literal.h"
 
 /**
- * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form. If 
+ * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form. If
  * the atom is NULL, the Literal that will be created will be in a destructed, unusable form.
- * 
+ *
  * @param literal The Literal to be constructed.
  * @param atom The name of the atom to be used.
  * @param sign Indicates whether the atom is negated or not. > 0 is positive, 0 is negative.
  */
-void literal_constructor(Literal * const literal, const char * const atom, const int sign) {
+void literal_constructor(Literal * const literal, const char * const atom,
+const unsigned short sign) {
     if (literal) {
         if (atom) {
             literal->atom = strdup(atom);
@@ -24,14 +25,14 @@ void literal_constructor(Literal * const literal, const char * const atom, const
             literal->sign = sign > 0;
         } else {
             literal->atom = NULL;
-            literal->sign = -1;
+            literal->sign = 0;
         }
     }
 }
 
 /**
  * @brief Destructs the given Literal.
- * 
+ *
  * @param literal The Literal to be destructed.
  */
 void literal_destructor(Literal * const literal) {
@@ -40,15 +41,15 @@ void literal_destructor(Literal * const literal) {
             free(literal->atom);
             literal->atom = NULL;
         }
-        literal->sign = -1;
+        literal->sign = 0;
     }
 }
 
 /**
  * @brief Makes a copy of the given Literal.
- * 
+ *
  * @param destination The Literal to save the copy.
- * @param source The Literal to be copied. If the Literal or its atom are NULL, the content of the 
+ * @param source The Literal to be copied. If the Literal or its atom are NULL, the content of the
  * destination will not be changed.
  */
 void literal_copy(Literal * const restrict destination, const Literal * const restrict source) {
@@ -62,7 +63,7 @@ void literal_copy(Literal * const restrict destination, const Literal * const re
 
 /**
  * @brief Negates the given Literal. If it is positive it will become negative, and vice versa.
- * 
+ *
  * @param literal The Literal to negate. If NULL, nothing will happen.
  */
 void literal_negate(Literal * const literal) {
@@ -77,7 +78,7 @@ void literal_negate(Literal * const literal) {
 
 /**
  * @brief Check two Literals to see if they are equal (literal1 == literal2).
- * 
+ *
  * @param literal1 The first literal to be checked.
  * @param literal2 The second literal to be checked.
  * @return 1 if they are equal, 0 if they are not and -1 if one the Literals is NULL.
@@ -94,12 +95,12 @@ const Literal * const restrict literal2) {
 }
 
 /**
- * @brief Check two Literals to see if their atoms are equal, and their signs are opposed. If they 
+ * @brief Check two Literals to see if their atoms are equal, and their signs are opposed. If they
  * are not opposed, it does not imply that they are equal.
- * 
+ *
  * @param literal1 The first Literal to be checked.
  * @param literal2 The second Literal to be checked.
- * @return 1 if they are opposed, 0 if they are not opposed, -1 if the atoms are different, and -2 
+ * @return 1 if they are opposed, 0 if they are not opposed, -1 if the atoms are different, and -2
  * if at least one of the Literals is NULL.
  */
 int literal_opposed(const Literal * const restrict literal1,
@@ -115,9 +116,9 @@ const Literal * const restrict literal2) {
 
 /**
  * @brief Converts the Literal to a string format with it's sign (positive or negative).
- * 
+ *
  * @param literal The Literal to be converted.
- * @return The string format of the given Literal. Use free() to deallocate this string. Returns 
+ * @return The string format of the given Literal. Use free() to deallocate this string. Returns
  * NULL if the Literal or its atom are NULL.
  */
 char *literal_to_string(const Literal * const literal) {
@@ -137,9 +138,10 @@ char *literal_to_string(const Literal * const literal) {
 
 /**
  * @brief Converts a Literal to a Prudens JS Literal format.
- * 
+ *
  * @param literal The Literal to be converted.
- * @return The Prudens JS Literal format (as a string) of the given Literal. Use free() to deallocate the result. 
+ * @return The Prudens JS Literal format (as a string) of the given Literal. Use free() to
+ * deallocate the result.
  * Returns NULL if the Literal or its atom are NULL.
  */
 char *literal_to_prudensjs(const Literal * const literal) {

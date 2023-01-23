@@ -3,10 +3,11 @@
 
 typedef struct Literal {
     char *atom;
-    int sign;
+    unsigned short sign;
 } Literal;
 
-void literal_constructor(Literal *literal, const char * const atom, const int sign);
+void literal_constructor(Literal * const literal, const char * const atom,
+const unsigned short sign);
 void literal_destructor(Literal * const literal);
 void literal_copy(Literal * const restrict destination, const Literal * const restrict source);
 void literal_negate(Literal * const literal);

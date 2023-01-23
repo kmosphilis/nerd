@@ -8,48 +8,30 @@ START_TEST(construct_destruct_test) {
     Literal literal, *literal_pointer = NULL;
     
     literal_constructor(&literal, "Penguin", 1);
-
     ck_assert_str_eq(literal.atom, "penguin");
     ck_assert_int_eq(literal.sign, 1);
-
     literal_destructor(&literal);
     ck_assert_literal_empty(&literal);
 
     literal_constructor(&literal, "Penguin", 0);
     ck_assert_str_eq(literal.atom, "penguin");
     ck_assert_int_eq(literal.sign, 0);
-
     literal_destructor(&literal);
     ck_assert_literal_empty(&literal);
 
     literal_constructor(&literal, "Penguin", 9);
-
     ck_assert_literal_notempty(&literal);
-
     ck_assert_str_eq(literal.atom, "penguin");
     ck_assert_int_eq(literal.sign, 1);
-
-    literal_destructor(&literal);
-
-    literal_constructor(&literal, "Penguin", -9);
-
-    ck_assert_str_eq(literal.atom, "penguin");
-    ck_assert_int_eq(literal.sign, 0);
-
     literal_destructor(&literal);
 
     literal_constructor(literal_pointer, "Penguin", 0);
-
     ck_assert_ptr_null(literal_pointer);
-
     literal_destructor(literal_pointer);
 
     literal_pointer = &literal;
-
     literal_constructor(literal_pointer, NULL, 1);
-
     ck_assert_literal_empty(literal_pointer);
-
     literal_destructor(literal_pointer);
 }
 END_TEST
@@ -60,36 +42,28 @@ START_TEST(copy_test) {
     literal_constructor(&literal1, "Penguin", 1);
 
     literal_copy(&literal2, &literal1);
-
     ck_assert_ptr_ne(&literal1, &literal2);
     ck_assert_literal_eq(&literal1, &literal2);
 
     literal_destructor(&literal1);
-
     ck_assert_ptr_null(literal1.atom);
     ck_assert_literal_empty(&literal1);
     ck_assert_literal_notempty(&literal2);
 
     literal_destructor(&literal2);
-
     ck_assert_literal_empty(&literal2);
 
     literal_copy(literal_pointer2, literal_pointer1);
-
     ck_assert_ptr_null(literal_pointer1);
     ck_assert_ptr_null(literal_pointer2);
 
     literal_pointer1 = &literal1;
-
     literal_constructor(literal_pointer1, "Penguin", 1);
-
     literal_copy(literal_pointer2, literal_pointer1);
-
     ck_assert_ptr_null(literal_pointer2);
     ck_assert_literal_notempty(literal_pointer1);
 
     literal_copy(literal_pointer1, literal_pointer2);
-
     ck_assert_literal_notempty(literal_pointer1);
     
     literal_destructor(literal_pointer1);
@@ -106,21 +80,18 @@ START_TEST(negate_test) {
     free(literal_string);
 
     literal_negate(&literal);
-
     ck_assert_int_eq(literal.sign, 0);
     literal_string = literal_to_string(&literal);
     ck_assert_str_eq(literal_string, "-penguin");
     free(literal_string);
 
     literal_negate(&literal);
-
     ck_assert_int_eq(literal.sign, 1);
     literal_string = literal_to_string(&literal);
     ck_assert_str_eq(literal_string, "penguin");
     free(literal_string);
 
     literal_negate(literal_pointer);
-
     ck_assert_ptr_null(literal_pointer);
 
     literal_destructor(&literal);
