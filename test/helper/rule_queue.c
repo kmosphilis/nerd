@@ -6,7 +6,7 @@
 
 /**
  * @brief Creates a dynamic Rule array.
- * 
+ *
  * @return The Rule array. Use destruct_rules() to deallocate this array.
  */
 Rule *create_rules() {
@@ -14,7 +14,7 @@ Rule *create_rules() {
     unsigned int j;
 
     const size_t body_size[3] = {3, 2, 4};
-    
+
     char *body_literal_atoms[3][4] = {
         {"Penguin", "Bird", "Antarctica"},
         {"Albatross", "Bird"},
@@ -40,7 +40,7 @@ Rule *create_rules() {
             literal_constructor(&l, body_literal_atoms[j][i], body_literal_signs[j][i]);
             body[i] = l;
         }
-        
+
         literal_constructor(&head, "Fly", head_sign[j]);
 
         rule_constructor(&rule, body_size[j], &body, &head, starting_weight);
@@ -61,7 +61,7 @@ Rule *create_rules() {
 
 /**
  * @brief Destructs the dynamic Rule array created from create_rules().
- * 
+ *
  * @param rules The dynamic Rule array.
  */
 void destruct_rules(Rule * const rules) {
@@ -74,7 +74,7 @@ void destruct_rules(Rule * const rules) {
 
 /**
  * @brief Creates a RuleQueue by constructing and filling it with values.
- * 
+ *
  * @param rule_queue The RuleQueue to be created.
  */
 void create_rule_queue(RuleQueue * const rule_queue) {
@@ -89,41 +89,4 @@ void create_rule_queue(RuleQueue * const rule_queue) {
     }
 
     destruct_rules(rules);
-}
-
-/**
- * @brief Check two RuleQueues to determine if they are equal (rule_queue1 == rule_queue2).
- * 
- * @param rule_queue1 The first RuleQueue to compare.
- * @param rule_queue2 The second RuleQueue to compare.
- */
-void ck_assert_rule_queue_eq(const RuleQueue * const rule_queue1,
-const RuleQueue * const rule_queue2) {
-    ck_assert_int_eq(rule_queue1->length, rule_queue2->length);
-
-    unsigned int i;
-
-    for (i = 0; i < rule_queue1->length; ++i) {
-        ck_assert_rule_eq(&(rule_queue1->rules[i]), &(rule_queue2->rules[i]));
-    }
-}
-
-/**
- * @brief Check if a RuleQueue is not empty.
- * 
- * @param rule_queue The RuleQueue to check.
- */
-void ck_assert_rule_queue_notempty(const RuleQueue * const rule_queue) {
-    ck_assert_int_ne(rule_queue->length, 0);
-    ck_assert_ptr_nonnull(rule_queue->rules);
-}
-
-/**
- * @brief Check if a RuleQueue is empty.
- * 
- * @param rule_queue The RuleQueue to check.
- */
-void ck_assert_rule_queue_empty(const RuleQueue * const rule_queue) {
-    ck_assert_int_eq(rule_queue->length, 0);
-    ck_assert_ptr_null(rule_queue->rules);
 }
