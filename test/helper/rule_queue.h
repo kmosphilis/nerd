@@ -20,12 +20,12 @@
     const RuleQueue * const rq2 = (Y); \
     ck_assert_ptr_nonnull(rq1); \
     ck_assert_ptr_nonnull(rq2); \
-    ck_assert_ptr_ne(rq1->rules, rq2->rules); \
     ck_assert_int_eq(rq1->length, rq2->length); \
     if (rq1->length == 0) { \
-       ck_assert_ptr_null(rq1->rules); \
-       ck_assert_ptr_null(rq2->rules); \
+        ck_assert_ptr_null(rq1->rules); \
+        ck_assert_ptr_null(rq2->rules); \
     } else { \
+        ck_assert_ptr_ne(rq1->rules, rq2->rules); \
         unsigned int i; \
         for (i = 0; i < rq1->length; ++i) { \
             ck_assert_rule_eq(&(rq1->rules[i]), &(rq2->rules[i])); \

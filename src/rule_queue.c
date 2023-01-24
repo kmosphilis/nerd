@@ -43,8 +43,14 @@ void rule_queue_destructor(RuleQueue * const rule_queue) {
  * @param source The RuleQueue to be copied. If the RuleQueue is NULL, the contents of the
  * destination will not be changed.
  */
-void rule_queue_copy(RuleQueue * const destination, const RuleQueue * const source) {
+void rule_queue_copy(RuleQueue * const restrict destination,
+const RuleQueue * const restrict source) {
     if (destination && source) {
+        if (source->length == 0) {
+            destination->rules = NULL;
+            destination->length = 0;
+            return;
+        }
         destination->length = source->length;
         destination->rules = (Rule *) malloc(source->length * sizeof(Rule));
 

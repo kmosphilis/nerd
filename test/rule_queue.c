@@ -183,6 +183,12 @@ START_TEST(copy_test) {
     rule_queue_destructor(rule_queue_pointer1);
     rule_queue_destructor(&rule_queue2);
 
+    rule_queue_copy(&rule_queue1, &rule_queue2);
+
+    ck_assert_rule_queue_empty(&rule_queue2);
+    ck_assert_rule_queue_empty(&rule_queue1);
+    ck_assert_rule_queue_eq(&rule_queue1, &rule_queue2);
+
     destruct_rules(rules);
 }
 END_TEST
