@@ -10,7 +10,7 @@
  * @brief Constructs a KnowledgeBase.
  *
  * @param knowledge_base The KnowledgeBase to be constructed. If NULL the process will fail.
- * @param activation_threshold The threshold which determines whether a rule should get activated or 
+ * @param activation_threshold The threshold which determines whether a rule should get activated or
  * deactivated.
  */
 void knowledge_base_constructor(KnowledgeBase * const knowledge_base,
@@ -39,7 +39,7 @@ void knowledge_base_destructor(KnowledgeBase * const knowledge_base) {
  * @brief Makes a copy of the given KnowledgeBase.
  *
  * @param destination The KnowledgeBase to save the copy.
- * @param source The KnowledgeBase to be copied. If the KnowledgeBase is NULL, the contents of the 
+ * @param source The KnowledgeBase to be copied. If the KnowledgeBase is NULL, the contents of the
  * destination will not be changed.
  */
 void knowledge_base_copy(KnowledgeBase * const restrict destination,
@@ -52,8 +52,8 @@ const KnowledgeBase * const restrict source) {
 }
 
 /**
- * @brief Adds a Rule in the KnowledgeBase. If the weight of the Rule is above the 
- * activation_threshold, the Rule will be added to the active RuleQueue, otherwise it will be added 
+ * @brief Adds a Rule in the KnowledgeBase. If the weight of the Rule is above the
+ * activation_threshold, the Rule will be added to the active RuleQueue, otherwise it will be added
  * to the inactive RuleQueue.
  *
  * @param knowledge_base The KnowledgeBase to be expanded.
@@ -70,7 +70,7 @@ void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * 
 }
 
 /**
- * @brief Creates new Rules by finding uncovered Literals. Uncovered Literals, are Literals that 
+ * @brief Creates new Rules by finding uncovered Literals. Uncovered Literals, are Literals that
  * have been observed, but have not been inferred.
  *
  * @param knowledge_base The KnowledgeBase to be expanded.
@@ -203,7 +203,7 @@ IntVector * const restrict concurring_inactive_rules) {
  *
  * @param knowledge_base The KnowledgeBase in which the given Rules should be promoted.
  * @param rules_to_promote The RuleQueue containing the Rules to be promoted.
- * @param promotion_rate The amount that the Rules should be promoted with. If the given amount is 
+ * @param promotion_rate The amount that the Rules should be promoted with. If the given amount is
  * <= 0, nothing will be changed.
  */
 void knowledge_base_promote_rules(KnowledgeBase * const knowledge_base,
@@ -245,7 +245,7 @@ const RuleQueue * const rules_to_promote, const float promotion_rate) {
  *
  * @param knowledge_base The KnowledgeBase in which the given Rules should be demoted.
  * @param rules_to_demote The RuleQueue containing the Rules to be demoted.
- * @param demotion_rate The amount that the Rules should be demoted with. If the given amount is 
+ * @param demotion_rate The amount that the Rules should be demoted with. If the given amount is
  * <= 0, nothing will be changed.
  */
 void knowledge_base_demote_rules(KnowledgeBase * const knowledge_base,
@@ -363,7 +363,7 @@ const unsigned int rule_index, const float demotion_weight) {
 
 /**
  * @brief knowledge_base_demote_chained_rules helper.
- */ 
+ */
 void _knowledge_base_demote_chained_rules(KnowledgeBase * const knowledge_base,
 const Scene * const inferred, const IntVector * const applicable_rules, const RuleType type,
 const unsigned int rule_to_demote, const float demotion_weight,
@@ -579,7 +579,7 @@ IntVector * const demoted_deleted_applicable_rules, unsigned int * const number_
  * @brief Converts the KnowledgeBase to a string.
  *
  * @param knowledge_base The KnowledgeBase to be converted.
- * @return The string format of the given KnowledgeBase. Use free() to deallocate this string. 
+ * @return The string format of the given KnowledgeBase. Use free() to deallocate this string.
  * Returns NULL if the KnowledgeBase is NULL.
  */
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
@@ -622,14 +622,14 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
 }
 
 /**
- * @brief Converts a KnowledgeBase to a Prudens JS Knowledge base format. Note: It only returns the 
- * active rules of a KnowledgeBase, since the inactive should not be considered until their 
+ * @brief Converts a KnowledgeBase to a Prudens JS Knowledge base format. Note: It only returns the
+ * active rules of a KnowledgeBase, since the inactive should not be considered until their
  * activation.
  *
  * @param knowledge_base The KnowledgeBase to be converted.
- * @return The Prudens JS Knowledge base format (as a string) of the given KnowledgeBase. The rules 
+ * @return The Prudens JS Knowledge base format (as a string) of the given KnowledgeBase. The rules
  * will be in reverse order since younger rules in Prudens JS have higher priority unlike NERD, 
- * where older rules have higher priority. Use free() to deallocate the result. Returns NULL if the 
+ * where older rules have higher priority. Use free() to deallocate the result. Returns NULL if the
  * given KnowledgeBase * is NULL.
  */
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
