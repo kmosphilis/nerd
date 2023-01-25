@@ -6,7 +6,7 @@
  * @brief Evaluates whether Nerd's KnowledgeBase can predict all the observed Literals when hidding
  * a Literal. If the given observation has 6 Literals, 6 different scenarios will be tested
  * accordingly.
- * 
+ *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param scene The scene to evaluate the learnt KnowledgeBase with.
  * @param overall_success Pointer to save the overall success of KnowledbeBase to predict the
