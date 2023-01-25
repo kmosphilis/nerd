@@ -70,7 +70,7 @@ size_t sensor_get_total_observations(const Sensor * const sensor) {
         }
         fsetpos(sensor->environment, &current_possition);
 
-        return ++total_observations;
+        return total_observations;
     }
 
     return -1;
