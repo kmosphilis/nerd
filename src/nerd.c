@@ -29,7 +29,13 @@ void nerd_constructor(Nerd * const nerd, const char * const filepath, unsigned s
 const float activation_threshold, const unsigned int breadth, const unsigned int depth,
 const unsigned int epochs, const float promotion_weight, const float demotion_weight,
 const unsigned short partial_observation) {
-    if (nerd && filepath) {
+    if (nerd) {
+        if (!filepath) {
+            sensor_constructor_from_file(&(nerd->sensor), NULL, 0);
+            knowledge_base_constructor(&(nerd->knowledge_base), INFINITY);
+            nerd_destructor(nerd);
+            return;
+        }
         sensor_constructor_from_file(&(nerd->sensor), filepath, reuse);
         nerd->breadth = breadth;
         nerd->depth = depth;
@@ -41,7 +47,6 @@ const unsigned short partial_observation) {
     }
 }
 
-// TODO Test case.
 /**
  * @brief Constructs a Nerd structure (object) using an existing nerd file.
  *
@@ -54,6 +59,12 @@ void nerd_constructor_from_file(Nerd * const nerd, const char * const filepath,
 const unsigned int epochs) {
     if (nerd && filepath) {
         FILE *file = fopen(filepath, "rb");
+        if (!file) {
+            sensor_constructor_from_file(&(nerd->sensor), NULL, 0);
+            knowledge_base_constructor(&(nerd->knowledge_base), INFINITY);
+            nerd_destructor(nerd);
+            return;
+        }
         size_t buffer_size = BUFFER_SIZE;
         char *buffer = (char *) malloc(buffer_size * sizeof(char));
         unsigned short sensor_reuse;
@@ -97,7 +108,6 @@ const unsigned int epochs) {
             tokens = strtok(buffer, " (),\n");
 
             while (tokens != NULL) {
-                tokens = strtok(NULL, " (),\n");
                 if (strcmp(tokens, "=>") == 0) {
                     tokens = strtok(NULL, " (),\n");
                     if (tokens[0] == '-') {
@@ -125,6 +135,7 @@ const unsigned int epochs) {
                     scene_add_literal(&body, &literal);
                     literal_destructor(&literal);
                 }
+                tokens = strtok(NULL, " (),\n");
             }
             fgetpos(file, &position);
         }
@@ -153,7 +164,14 @@ void nerd_destructor(Nerd * const nerd) {
     }
 }
 
-// TODO Add comment
+/**
+ * @brief Calls prudens-js using node-js. It create a file with a converted KnowledgeBase and a
+ * Scene/Context, which holds an observation and saves the inferred Literals.
+ *
+ * @param knowledge_base The KnowledgeBase to be used in prudens-js.
+ * @param observation A Scene/Context, which includes all the observed Literals.
+ * @param inferred A Scene to save the inferred Literals by prudens-js.
+*/
 void prudensjs_inference(const KnowledgeBase * const knowledge_base,
 const Scene * const restrict observation, Scene * restrict inferred) {
     const char * const temp_filename = ".temp";
@@ -284,7 +302,6 @@ void nerd_start_learning(Nerd * const nerd) {
                         continue;
                     }
                     int higher_positive = 0;
-                    int higher_similar = 0;
                     for (k = index + 1; k < applicable_rules.size; ++k) {
                         const unsigned int rule_to_compare_index =
                         int_vector_get(&applicable_rules, k);
@@ -295,7 +312,6 @@ void nerd_start_learning(Nerd * const nerd) {
                         literal_opposed(&(current_rule->head), &(rule_to_compare->head));
                         if (opposed_result > 0) {
                             higher_positive = opposed_result == 1;
-                            higher_similar = opposed_result == 0;
                         }
                     }
                     if (!higher_positive) {
@@ -380,8 +396,8 @@ void nerd_start_learning(Nerd * const nerd) {
             int_vector_destructor(&active_rules_to_demote);
             int_vector_destructor(&demoted_deleted_applicable_rules);
             int_vector_destructor(&applicable_rules);
-            scene_destructor(&uncovered);
 
+            scene_destructor(&uncovered);
             scene_destructor(&observation);
             scene_destructor(&observed_and_inferred);
             scene_destructor(&inferred);
@@ -403,7 +419,6 @@ void nerd_start_learning(Nerd * const nerd) {
     printf("Total time: %.f\n", difftime(time(NULL), start));
 }
 
-// TODO Test case.
 /**
  * @brief Saves/Converts the Nerd structure to a file which all the parameters that were used and the learnt
  * KnowledgeBase are saved, except the number of epochs.
@@ -424,27 +439,24 @@ void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
     fprintf(file, "depth: %d\n", nerd->depth);
     fprintf(file, "promotion_weight: %f\n", nerd->promotion_weight);
     fprintf(file, "demotion_weight: %f\n", nerd->demotion_weight);
-    fprintf(file, "partial_observation: %d\n", nerd->partial_observation);
-    fprintf(file, "sensor: %s, %d\n", nerd->sensor.filepath, nerd->sensor.reuse);
+    fprintf(file, "partial_observation: %hu\n", nerd->partial_observation);
+    fprintf(file, "sensor: %s, %hu\n", nerd->sensor.filepath, nerd->sensor.reuse);
 
     fprintf(file, "knowledge_base:\n");
-    fprintf(file, "\tactivation_threshold: %f\n", nerd->knowledge_base.activation_threshold);
-    fprintf(file, "\trules:\n");
+    fprintf(file, "  activation_threshold: %f\n", nerd->knowledge_base.activation_threshold);
+    fprintf(file, "  rules:\n");
 
     for (i = 0; i < nerd->knowledge_base.active.length; ++i) {
         str = rule_to_string(&(nerd->knowledge_base.active.rules[i]));
-        fprintf(file, "\t\t%s,\n", str);
+        fprintf(file, "    %s,\n", str);
         free(str);
     }
 
-    for (i = 0; i < nerd->knowledge_base.inactive.length - 1; ++i) {
+    for (i = 0; i < nerd->knowledge_base.inactive.length; ++i) {
         str = rule_to_string(&(nerd->knowledge_base.inactive.rules[i]));
-        fprintf(file, "\t\t%s,\n", str);
+        fprintf(file, "    %s,\n", str);
         free(str);
     }
-    str = rule_to_string(&(nerd->knowledge_base.inactive.rules[i]));
-    fprintf(file, "\t\t%s", str);
-    free(str);
 
     fclose(file);
 }

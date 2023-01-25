@@ -1,0 +1,14 @@
+breadth: 3
+depth: 100
+promotion_weight: 0.500000
+demotion_weight: 1.500000
+partial_observation: 0
+sensor: ../data/test.txt, 1
+knowledge_base:
+  activation_threshold: 10.000000
+  rules:
+    (penguin) => -fly (21.1234),
+    (bird, chicken) => -fly (16.000),
+    (bird) => fly (15.0055),
+    (turkey) => -fly (9.0000),
+    (feathers) => fly (1.1515)
