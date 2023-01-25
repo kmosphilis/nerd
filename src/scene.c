@@ -45,6 +45,12 @@ void scene_destructor(Scene * const scene) {
  */
 void scene_copy(Scene * const restrict destination, const Scene * const restrict source) {
     if (destination && source) {
+        if (source->size == 0) {
+            destination->size = 0;
+            destination->observations = NULL;
+            return;
+        }
+
         destination->size = source->size;
         destination->observations = (Literal *) malloc(source->size * sizeof(Literal));
         

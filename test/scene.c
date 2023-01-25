@@ -221,6 +221,10 @@ START_TEST(copy_test) {
     ck_assert_scene_notempty(scene_ptr2);
 
     scene_destructor(&scene2);
+
+    scene_copy(&scene1, &scene2);
+    ck_assert_scene_empty(&scene2);
+    ck_assert_scene_empty(&scene1);
 }
 END_TEST
 
