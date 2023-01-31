@@ -16,11 +16,11 @@
     const Scene * const s2 = (Y); \
     ck_assert_ptr_nonnull(s1); \
     ck_assert_ptr_nonnull(s2); \
-    ck_assert_ptr_ne(s1->observations, s2->observations); \
+    ck_assert_ptr_ne(s1->literals, s2->literals); \
     unsigned int i; \
     ck_assert_int_eq(s1->size, s2->size); \
     for (i = 0; i < s1->size; ++i) { \
-        ck_assert_literal_eq(&(s1->observations[i]), &(s2->observations[i])); \
+        ck_assert_literal_eq(&(s1->literals[i]), &(s2->literals[i])); \
     } \
 } while (0)
 
@@ -28,7 +28,7 @@
     const Scene * const s = (X); \
     ck_assert_ptr_nonnull(s); \
     _ck_assert_int(s->size, OP, 0); \
-    _ck_assert_ptr_null(s->observations, OP); \
+    _ck_assert_ptr_null(s->literals, OP); \
 } while (0)
 
 /**

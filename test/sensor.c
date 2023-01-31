@@ -95,41 +95,41 @@ START_TEST(get_scene_test) {
 
     char *string;
 
-    string = literal_to_string(&(scene.observations[0]));
+    string = literal_to_string(&(scene.literals[0]));
     ck_assert_str_eq(string, "penguin");
     free(string);
 
-    string = literal_to_string(&(scene.observations[1]));
+    string = literal_to_string(&(scene.literals[1]));
     ck_assert_str_eq(string, "antarctica");
     free(string);
 
-    string = literal_to_string(&(scene.observations[2]));
+    string = literal_to_string(&(scene.literals[2]));
     ck_assert_str_eq(string, "wings");
     free(string);
 
-    string = literal_to_string(&(scene.observations[3]));
+    string = literal_to_string(&(scene.literals[3]));
     ck_assert_str_eq(string, "bird");
     free(string);
 
-    string = literal_to_string(&(scene.observations[4]));
+    string = literal_to_string(&(scene.literals[4]));
     ck_assert_str_eq(string, "-fly");
     free(string);
 
     scene_destructor(&scene);
     sensor_get_next_scene(&sensor, &scene, 0, NULL);
     ck_assert_int_eq(scene.size, 5);
-    string = literal_to_string(&(scene.observations[0]));
+    string = literal_to_string(&(scene.literals[0]));
     ck_assert_str_eq(string, "albatross");
     free(string);
 
-    string = literal_to_string(&(scene.observations[3]));
+    string = literal_to_string(&(scene.literals[3]));
     ck_assert_str_eq(string, "wings");
     free(string);
 
     scene_destructor(&scene);
     sensor_get_next_scene(&sensor, &scene, 0, NULL);
     ck_assert_int_eq(scene.size, 5);
-    string = literal_to_string(&(scene.observations[1]));
+    string = literal_to_string(&(scene.literals[1]));
     ck_assert_str_eq(string, "ocean");
     free(string);
 
@@ -140,7 +140,7 @@ START_TEST(get_scene_test) {
     scene_destructor(&scene);
     sensor_get_next_scene(&sensor, &scene, 0, NULL);
     ck_assert_int_eq(scene.size, 0);
-    ck_assert_ptr_null(scene.observations);
+    ck_assert_ptr_null(scene.literals);
 
     scene_destructor(&scene);
     sensor_get_next_scene(&sensor, NULL, 0, NULL);
@@ -148,7 +148,7 @@ START_TEST(get_scene_test) {
     sensor.reuse = 1;
     sensor_get_next_scene(&sensor, &scene, 1, &original_scene);
     ck_assert_int_eq(original_scene.size, 5);
-    string = literal_to_string(&(original_scene.observations[0]));
+    string = literal_to_string(&(original_scene.literals[0]));
     ck_assert_str_eq(string, "penguin");
     free(string);
     ck_assert_int_le(scene.size, original_scene.size);
@@ -176,7 +176,7 @@ START_TEST(get_scene_test) {
     sensor_destructor(&sensor);
     sensor_get_next_scene(sensor_ptr, &scene, 0, NULL);
     ck_assert_ptr_null(sensor_ptr);
-    ck_assert_ptr_null(scene.observations);
+    ck_assert_ptr_null(scene.literals);
     ck_assert_int_eq(scene.size, 0);
 }
 END_TEST

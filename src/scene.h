@@ -4,7 +4,7 @@
 #define __SCENE_H__
 
 typedef struct Scene {
-    Literal *observations;
+    Literal *literals;
     unsigned int size;
 } Scene;
 

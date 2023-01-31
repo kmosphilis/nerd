@@ -119,7 +119,7 @@ const unsigned int epochs) {
                     tokens = strtok(NULL, " (),\n");
                     float weight = atof(tokens);
 
-                    rule_constructor(&rule, body.size, &(body.observations), &literal, weight);
+                    rule_constructor(&rule, body.size, &(body.literals), &literal, weight);
                     knowledge_base_add_rule(&(nerd->knowledge_base), &rule);
 
                     tokens = strtok(NULL, " (),\n");
@@ -293,7 +293,7 @@ void nerd_start_learning(Nerd * const nerd) {
                     int opposed_to_observation = 0;
                     for (k = 0 ; k < uncovered.size; ++k) {
                         if (literal_opposed(&(current_rule->head),
-                        &(uncovered.observations[k])) == 1) {
+                        &(uncovered.literals[k])) == 1) {
                             opposed_to_observation = 1;
                             break;
                         }
@@ -367,7 +367,7 @@ void nerd_start_learning(Nerd * const nerd) {
                         int opposed_to_observation = 0;
                         for (k = 0; k < uncovered.size; ++k) {
                             if (literal_opposed(&(current_rule->head),
-                            &(uncovered.observations[k])) == 1) {
+                            &(uncovered.literals[k])) == 1) {
                                 opposed_to_observation = 1;
                                 break;
                             }

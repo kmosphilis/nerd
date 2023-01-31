@@ -29,7 +29,7 @@ START_TEST(construct_destruct_test) {
     ck_assert_int_eq(rule.body.size, body_size);
     ck_assert_literal_eq(&rule.head, &head);
     for(i = 0; i < body_size; ++i) {
-        ck_assert_literal_eq(&rule.body.observations[i], &body[i]);
+        ck_assert_literal_eq(&rule.body.literals[i], &body[i]);
     }
     ck_assert_float_eq(rule.weight, starting_weight);
     

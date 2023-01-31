@@ -49,11 +49,11 @@ void sensor_destructor(Sensor * const sensor) {
 }
 
 /**
- * @brief Finds the total observations in the environment.
+ * @brief Finds the total literals in the environment.
  *
- * @param sensor The sensor to get the total observations from.
+ * @param sensor The sensor to get the total literals from.
  *
- * @return The number of total observations, or -1 if the sensor is NULL.
+ * @return The number of total literals, or -1 if the sensor is NULL.
 */
 size_t sensor_get_total_observations(const Sensor * const sensor) {
     if (sensor && sensor->environment) {

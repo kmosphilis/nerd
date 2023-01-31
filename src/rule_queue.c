@@ -212,7 +212,7 @@ const Context * const context, IntVector * const rule_indices) {
         unsigned int i, j;
         for (i = 0; i < rule_queue->length; ++i) {
             for (j = 0; j < context->size; ++j) {
-                if (literal_equals(&(rule_queue->rules[i].head), &(context->observations[j]))) {
+                if (literal_equals(&(rule_queue->rules[i].head), &(context->literals[j]))) {
                     if (rule_applicable(&(rule_queue->rules[i]), context)) {
                         int_vector_push(rule_indices, i);
                     }

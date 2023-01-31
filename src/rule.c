@@ -101,7 +101,7 @@ int rule_applicable(const Rule * const rule, const Context * const context) {
         unsigned int i, j, applicable_literals = 0;
         for (i = 0; i < context->size; ++i) {
             for (j = 0; j < rule->body.size; ++j) {
-                if (literal_equals(&(context->observations[i]), &(rule->body.observations[j]))) {
+                if (literal_equals(&(context->literals[i]), &(rule->body.literals[j]))) {
                     ++applicable_literals;
                     if (applicable_literals == rule->body.size) {
                         return 1;
@@ -127,7 +127,7 @@ int rule_concurs(const Rule * const rule, const Context * const context) {
     if (rule && context) {
         unsigned int i;
         for (i = 0; i < context->size; ++i) {
-            if (literal_equals(&(rule->head), &(context->observations[i]))) {
+            if (literal_equals(&(rule->head), &(context->literals[i]))) {
                 return 1;
             }
         }
@@ -152,8 +152,8 @@ int rule_equals(const Rule * const restrict rule1, const Rule * const restrict r
                 unsigned short failed = 0;
                 for (i = 0; i < rule1->body.size; ++i) {
                     for (j = 0; j < rule2->body.size; ++j) {
-                        if (!literal_equals(&(rule1->body.observations[i]),
-                        &(rule2->body.observations[j]))) {
+                        if (!literal_equals(&(rule1->body.literals[i]),
+                        &(rule2->body.literals[j]))) {
                             ++failed;
                         }
                     }
@@ -181,12 +181,12 @@ int rule_equals(const Rule * const restrict rule1, const Rule * const restrict r
  */
 char *rule_to_string(const Rule * const rule) {
     if (rule) {
-        if (rule->body.observations && rule->head.atom) {
+        if (rule->body.literals && rule->head.atom) {
             unsigned int i;
             char *literal_string, *result = strdup("(");
             size_t result_size = strlen(result) + 1;
 
-            literal_string = literal_to_string(&(rule->body.observations[0]));
+            literal_string = literal_to_string(&(rule->body.literals[0]));
             result_size += strlen(literal_string);
             char *temp = strdup(result);
             result = (char *) realloc(result, result_size);
@@ -195,7 +195,7 @@ char *rule_to_string(const Rule * const rule) {
             free(literal_string);
 
             for (i = 1; i < rule->body.size; ++i) {
-                literal_string = literal_to_string(&(rule->body.observations[i]));
+                literal_string = literal_to_string(&(rule->body.literals[i]));
                 result_size += strlen(literal_string) + 2;
                 temp = strdup(result);
                 result = (char *) realloc(result, result_size);
@@ -229,7 +229,7 @@ char *rule_to_string(const Rule * const rule) {
  */
 char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number) {
     if (rule) {
-        if (rule->body.observations && rule->head.atom) {
+        if (rule->body.literals && rule->head.atom) {
             char temp_buffer[50];
             int rule_number_size = sprintf(temp_buffer, "%d", rule_number);
 
@@ -239,7 +239,7 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
 
             unsigned int i;
             for (i = 0; i < rule->body.size - 1; ++i) {
-                literal_prudensjs_string = literal_to_prudensjs(&(rule->body.observations[i]));
+                literal_prudensjs_string = literal_to_prudensjs(&(rule->body.literals[i]));
                 body_size += strlen(literal_prudensjs_string) + 2;
                 temp = strdup(body);
                 body = (char *) realloc(body, body_size);
@@ -248,7 +248,7 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
                 free(literal_prudensjs_string);
             }
 
-            literal_prudensjs_string = literal_to_prudensjs(&(rule->body.observations[i]));
+            literal_prudensjs_string = literal_to_prudensjs(&(rule->body.literals[i]));
             body_size += strlen(literal_prudensjs_string) + 11;
             temp = strdup(body);
             body = (char *) realloc(body, body_size);

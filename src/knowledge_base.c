@@ -105,7 +105,7 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
                 srand(time(NULL) + i);
                 context_constructor(&body);
                 int chosen_head_index = rand() % uncovered.size;
-                literal_copy(&head, &(uncovered.observations[chosen_head_index]));
+                literal_copy(&head, &(uncovered.literals[chosen_head_index]));
 
                 int head_index = scene_literal_index(&combined, &head);
                 if (head_index >= 0) {
@@ -130,10 +130,10 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
                     chosen_index = random_indices[random_chosen];
                     random_indices[random_chosen] = random_indices[remaining_randoms - 1];
                     remaining_randoms--;
-                    context_add_literal(&body, &(combined.observations[chosen_index]));
+                    context_add_literal(&body, &(combined.literals[chosen_index]));
                 }
 
-                rule_constructor(&new_rule, body.size, &(body.observations), &head, 0);
+                rule_constructor(&new_rule, body.size, &(body.literals), &head, 0);
 
                 if (rule_queue_find(&(knowledge_base->active), &new_rule) == -1) {
                     if (rule_queue_find(&(knowledge_base->inactive), &new_rule) == -1) {

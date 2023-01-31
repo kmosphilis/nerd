@@ -38,14 +38,14 @@ void context_add_literal(Context * const context, const Literal * const literal)
  */
 char *context_to_prudensjs(const Context * const context) {
     if (context) {
-        if (context->observations) {
+        if (context->literals) {
             char *result = strdup("{\"type\": \"output\", \"context\": ["), *temp,
             *literal_prudensjs_string;
             size_t result_size = strlen(result) + 1;
 
             unsigned int i;
             for (i = 0; i < context->size - 1; ++i) {
-                literal_prudensjs_string = literal_to_prudensjs(&(context->observations[i]));
+                literal_prudensjs_string = literal_to_prudensjs(&(context->literals[i]));
                 temp = strdup(result);
                 result_size += strlen(literal_prudensjs_string) + 2;
                 result = (char *) realloc(result, result_size);
@@ -54,7 +54,7 @@ char *context_to_prudensjs(const Context * const context) {
                 free(literal_prudensjs_string);
             }
 
-            literal_prudensjs_string = literal_to_prudensjs(&(context->observations[i]));
+            literal_prudensjs_string = literal_to_prudensjs(&(context->literals[i]));
             temp = strdup(result);
             result_size += strlen(literal_prudensjs_string) + 2;
             result = (char *) realloc(result, result_size);
