@@ -1,13 +1,14 @@
-#ifndef __LITERAL_H__
-#define __LITERAL_H__
+#include <stdbool.h>
+
+#ifndef LITERAL_H
+#define LITERAL_H
 
 typedef struct Literal {
     char *atom;
-    unsigned short sign;
+    bool sign;
 } Literal;
 
-void literal_constructor(Literal * const literal, const char * const atom,
-const unsigned short sign);
+void literal_constructor(Literal * const literal, const char * const atom, const bool sign);
 void literal_destructor(Literal * const literal);
 void literal_copy(Literal * const restrict destination, const Literal * const restrict source);
 void literal_negate(Literal * const literal);

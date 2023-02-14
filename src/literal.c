@@ -11,10 +11,10 @@
  *
  * @param literal The Literal to be constructed.
  * @param atom The name of the atom to be used.
- * @param sign Indicates whether the atom is negated or not. > 0 is positive, 0 is negative.
+ * @param sign Indicates whether the atom is negated or not. true or > 0 is positive, false or 0 is
+ * negative.
  */
-void literal_constructor(Literal * const literal, const char * const atom,
-const unsigned short sign) {
+void literal_constructor(Literal * const literal, const char * const atom, const bool sign) {
     if (literal) {
         if (atom) {
             literal->atom = strdup(atom);
@@ -25,7 +25,7 @@ const unsigned short sign) {
             literal->sign = sign > 0;
         } else {
             literal->atom = NULL;
-            literal->sign = 0;
+            literal->sign = false;
         }
     }
 }
@@ -41,7 +41,7 @@ void literal_destructor(Literal * const literal) {
             free(literal->atom);
             literal->atom = NULL;
         }
-        literal->sign = 0;
+        literal->sign = false;
     }
 }
 
@@ -69,9 +69,9 @@ void literal_copy(Literal * const restrict destination, const Literal * const re
 void literal_negate(Literal * const literal) {
     if (literal) {
         if (literal->sign) {
-            literal->sign = 0;
+            literal->sign = false;
         } else {
-            literal->sign = 1;
+            literal->sign = true;
         }
     }
 }
@@ -124,7 +124,7 @@ const Literal * const restrict literal2) {
 char *literal_to_string(const Literal * const literal) {
     if (literal) {
         if (literal->atom) {
-            if (literal->sign > 0) {
+            if (literal->sign) {
                 return strdup(literal->atom);
             }
 
