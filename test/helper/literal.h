@@ -6,16 +6,16 @@
 #define __LITERAL_HELPER_H__
 
 #define _ck_assert_literal(X, OP, Y) do { \
-    const Literal * const l1 = (X); \
-    const Literal * const l2 = (Y); \
-    ck_assert_ptr_nonnull(l1); \
-    ck_assert_ptr_nonnull(l2); \
-    ck_assert_ptr_ne(l1->atom, l2->atom); \
-    char l1_sign = l1->sign ? ' ' : '-'; \
-    char l2_sign = l2->sign ? ' ' : '-'; \
-    ck_assert_msg(((l1->sign OP l2->sign) || (!l1->atom) || (!l2->atom) || \
-    (0 OP strcmp(l1->atom, l2->atom))), "Assertion 'literal1%sliteral2' failed: literal1 = " \
-    "%c%s, literal2 = %c%s", " "#OP" ", l1_sign, l1->atom, l2_sign, l2->atom); \
+    const Literal * const _l1 = (X); \
+    const Literal * const _l2 = (Y); \
+    ck_assert_ptr_nonnull(_l1); \
+    ck_assert_ptr_nonnull(_l2); \
+    ck_assert_ptr_ne(_l1->atom, _l2->atom); \
+    char l1_sign = _l1->sign ? ' ' : '-'; \
+    char l2_sign = _l2->sign ? ' ' : '-'; \
+    ck_assert_msg(((_l1->sign OP _l2->sign) || (!_l1->atom) || (!_l2->atom) || \
+    (0 OP strcmp(_l1->atom, _l2->atom))), "Assertion 'literal1%sliteral2' failed: literal1 = " \
+    "%c%s, literal2 = %c%s", " "#OP" ", l1_sign, _l1->atom, l2_sign, _l2->atom); \
 } while (0)
 
 /**
@@ -35,9 +35,9 @@
 #define ck_assert_literal_ne(X, Y) _ck_assert_literal(X, !=, Y)
 
 #define _ck_assert_literal_empty(X, OP) do { \
-    const Literal * const l = (X); \
-    ck_assert_ptr_nonnull(l); \
-    _ck_assert_ptr_null(l->atom, OP); \
+    const Literal * const _l = (X); \
+    ck_assert_ptr_nonnull(_l); \
+    _ck_assert_ptr_null(_l->atom, OP); \
 } while (0)
 
 /**

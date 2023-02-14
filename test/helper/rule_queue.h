@@ -16,28 +16,28 @@
  * @param Y The second RuleQueue to compare.
  */
 #define ck_assert_rule_queue_eq(X, Y) do { \
-    const RuleQueue * const rq1 = (X); \
-    const RuleQueue * const rq2 = (Y); \
-    ck_assert_ptr_nonnull(rq1); \
-    ck_assert_ptr_nonnull(rq2); \
-    ck_assert_int_eq(rq1->length, rq2->length); \
-    if (rq1->length == 0) { \
-        ck_assert_ptr_null(rq1->rules); \
-        ck_assert_ptr_null(rq2->rules); \
+    const RuleQueue * const _rq1 = (X); \
+    const RuleQueue * const _rq2 = (Y); \
+    ck_assert_ptr_nonnull(_rq1); \
+    ck_assert_ptr_nonnull(_rq2); \
+    ck_assert_int_eq(_rq1->length, _rq2->length); \
+    if (_rq1->length == 0) { \
+        ck_assert_ptr_null(_rq1->rules); \
+        ck_assert_ptr_null(_rq2->rules); \
     } else { \
-        ck_assert_ptr_ne(rq1->rules, rq2->rules); \
+        ck_assert_ptr_ne(_rq1->rules, _rq2->rules); \
         unsigned int i; \
-        for (i = 0; i < rq1->length; ++i) { \
-            ck_assert_rule_eq(&(rq1->rules[i]), &(rq2->rules[i])); \
+        for (i = 0; i < _rq1->length; ++i) { \
+            ck_assert_rule_eq(&(_rq1->rules[i]), &(_rq2->rules[i])); \
         } \
     } \
 } while (0)
 
 #define _ck_assert_rule_queue_empty(X, OP) do { \
-    const RuleQueue * const rq = (X); \
-    ck_assert_ptr_nonnull(rq); \
-    _ck_assert_int(rq->length, OP, 0); \
-    _ck_assert_ptr_null(rq->rules, OP); \
+    const RuleQueue * const _rq = (X); \
+    ck_assert_ptr_nonnull(_rq); \
+    _ck_assert_int(_rq->length, OP, 0); \
+    _ck_assert_ptr_null(_rq->rules, OP); \
 } while (0)
 
 /**

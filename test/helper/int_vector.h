@@ -12,22 +12,22 @@
  * @param Y The second IntVector to compare.
  */
 #define ck_assert_int_vector_eq(X, Y) do { \
-    const IntVector * const v1 = (X); \
-    const IntVector * const v2 = (Y); \
-    ck_assert_ptr_nonnull(v1); \
-    ck_assert_ptr_nonnull(v2); \
-    ck_assert_int_eq(v1->size, v2->size); \
+    const IntVector * const _v1 = (X); \
+    const IntVector * const _v2 = (Y); \
+    ck_assert_ptr_nonnull(_v1); \
+    ck_assert_ptr_nonnull(_v2); \
+    ck_assert_int_eq(_v1->size, _v2->size); \
     unsigned int i; \
-    for (i = 0; i < v1->size; ++i) { \
-        ck_assert_int_eq(v1->items[i], v2->items[i]); \
+    for (i = 0; i < _v1->size; ++i) { \
+        ck_assert_int_eq(_v1->items[i], _v2->items[i]); \
     } \
 } while (0)
 
 #define _ck_assert_int_vector_empty(X, OP) do { \
-    const IntVector * const v = (X); \
-    ck_assert_ptr_nonnull(v); \
-    _ck_assert_int(v->size, OP, 0); \
-    _ck_assert_ptr_null(v->items, OP); \
+    const IntVector * const _v = (X); \
+    ck_assert_ptr_nonnull(_v); \
+    _ck_assert_int(_v->size, OP, 0); \
+    _ck_assert_ptr_null(_v->items, OP); \
 } while (0)
 
 /**

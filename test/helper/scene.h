@@ -12,23 +12,23 @@
  * @param Y The second Scene to compare.
  */
 #define ck_assert_scene_eq(X, Y) do { \
-    const Scene * const s1 = (X); \
-    const Scene * const s2 = (Y); \
-    ck_assert_ptr_nonnull(s1); \
-    ck_assert_ptr_nonnull(s2); \
-    ck_assert_ptr_ne(s1->literals, s2->literals); \
+    const Scene * const _s1 = (X); \
+    const Scene * const _s2 = (Y); \
+    ck_assert_ptr_nonnull(_s1); \
+    ck_assert_ptr_nonnull(_s2); \
+    ck_assert_ptr_ne(_s1->literals, _s2->literals); \
     unsigned int i; \
-    ck_assert_int_eq(s1->size, s2->size); \
-    for (i = 0; i < s1->size; ++i) { \
-        ck_assert_literal_eq(&(s1->literals[i]), &(s2->literals[i])); \
+    ck_assert_int_eq(_s1->size, _s2->size); \
+    for (i = 0; i < _s1->size; ++i) { \
+        ck_assert_literal_eq(&(_s1->literals[i]), &(_s2->literals[i])); \
     } \
 } while (0)
 
 #define _ck_assert_scene_empty(X, OP) do { \
-    const Scene * const s = (X); \
-    ck_assert_ptr_nonnull(s); \
-    _ck_assert_int(s->size, OP, 0); \
-    _ck_assert_ptr_null(s->literals, OP); \
+    const Scene * const _s = (X); \
+    ck_assert_ptr_nonnull(_s); \
+    _ck_assert_int(_s->size, OP, 0); \
+    _ck_assert_ptr_null(_s->literals, OP); \
 } while (0)
 
 /**
