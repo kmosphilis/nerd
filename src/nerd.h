@@ -1,9 +1,8 @@
 #include "sensor.h"
 #include "knowledge_base.h"
 
-
-#ifndef __NERD_H__
-#define __NERD_H__
+#ifndef NERD_H
+#define NERD_H
 
 typedef struct Nerd {
     Sensor sensor;

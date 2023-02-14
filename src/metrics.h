@@ -1,7 +1,7 @@
 #include "nerd.h"
 
-#ifndef __METRICS_H__
-#define __METRICS_H__
+#ifndef METRICS_H
+#define METRICS_H
 
 void evaluate_all_literals(const Nerd * const nerd, const Scene * const observation,
 float * const overall_success);

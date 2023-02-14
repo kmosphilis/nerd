@@ -2,8 +2,8 @@
 
 #include "../../src/literal.h"
 
-#ifndef __LITERAL_HELPER_H__
-#define __LITERAL_HELPER_H__
+#ifndef LITERAL_HELPER_H
+#define LITERAL_HELPER_H
 
 #define _ck_assert_literal(X, OP, Y) do { \
     const Literal * const _l1 = (X); \

@@ -1,8 +1,8 @@
 #include "literal.h"
 #include "context.h"
 
-#ifndef __RULE_H__
-#define __RULE_H__
+#ifndef RULE_H
+#define RULE_H
 
 typedef Context Body;
 

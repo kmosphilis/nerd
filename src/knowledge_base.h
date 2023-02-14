@@ -3,8 +3,8 @@
 #include "scene.h"
 #include "context.h"
 
-#ifndef __KNOWLEDGE_BASE_H__
-#define __KNOWLEDGE_BASE_H__
+#ifndef KNOWLEDGE_BASE_H
+#define KNOWLEDGE_BASE_H
 
 typedef struct KnowledgeBase {
     RuleQueue active, inactive;

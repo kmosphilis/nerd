@@ -2,8 +2,8 @@
 
 #include "../../src/int_vector.h"
 
-#ifndef __INT_VECTOR_HELPER_H__
-#define __INT_VECTOR_HELPER_H__
+#ifndef INT_VECTOR_HELPER_H
+#define INT_VECTOR_HELPER_H
 
 /**
  * @brief Check if two IntVectors are equal (int_vector1 == int_vector2).

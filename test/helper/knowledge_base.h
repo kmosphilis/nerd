@@ -3,8 +3,8 @@
 #include "../../src/knowledge_base.h"
 #include "rule_queue.h"
 
-#ifndef __KNOWLEDGE_BASE_HELPER_H__
-#define __KNOWLEDGE_BASE_HELPER_H__
+#ifndef KNOWLEDGE_BASE_HELPER_H
+#define KNOWLEDGE_BASE_HELPER_H
 
 /**
  * @brief Check two KnowledgeBases to determine if they are equal (X == Y).

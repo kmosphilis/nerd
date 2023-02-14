@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-#ifndef __INT_VECTOR__H__
-#define __INT_VECTOR__H__
+#ifndef INT_VECTOR__H
+#define INT_VECTOR__H
 
 typedef struct IntVector {
     int *items;

@@ -2,8 +2,8 @@
 
 #include "literal.h"
 
-#ifndef __SCENE_H__
-#define __SCENE_H__
+#ifndef SCENE_H
+#define SCENE_H
 
 typedef struct Scene {
     Literal *literals;

@@ -4,8 +4,8 @@
 #include "rule.h"
 #include "context.h"
 
-#ifndef __RULE_QUEUE_H__
-#define __RULE_QUEUE_H__
+#ifndef RULE_QUEUE_H
+#define RULE_QUEUE_H
 
 typedef struct RuleQueue {
     Rule *rules;

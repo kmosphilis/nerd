@@ -2,8 +2,8 @@
 
 #include "scene.h"
 
-#ifndef __SENSOR_H__
-#define __SENSOR_H__
+#ifndef SENSOR_H
+#define SENSOR_H
 
 #define BUFFER_SIZE 256
 
