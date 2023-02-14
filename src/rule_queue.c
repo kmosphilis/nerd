@@ -1,4 +1,3 @@
-#include <malloc.h>
 #include <string.h>
 
 #include "rule_queue.h"

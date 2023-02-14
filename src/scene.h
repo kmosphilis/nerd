@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "literal.h"
 
 #ifndef __SCENE_H__
@@ -5,7 +7,7 @@
 
 typedef struct Scene {
     Literal *literals;
-    unsigned int size;
+    size_t size;
 } Scene;
 
 void scene_constructor(Scene * const scene);

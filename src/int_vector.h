@@ -1,9 +1,11 @@
+#include <stdlib.h>
+
 #ifndef __INT_VECTOR__H__
 #define __INT_VECTOR__H__
 
 typedef struct IntVector {
     int *items;
-    unsigned int size;
+    size_t size;
 } IntVector;
 
 void int_vector_constructor(IntVector * const int_vector);

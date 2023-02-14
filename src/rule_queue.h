@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "int_vector.h"
 #include "rule.h"
 #include "context.h"
@@ -7,7 +9,7 @@
 
 typedef struct RuleQueue {
     Rule *rules;
-    unsigned int length;
+    size_t length;
 } RuleQueue;
 
 void rule_queue_constructor(RuleQueue * const rule_queue);
