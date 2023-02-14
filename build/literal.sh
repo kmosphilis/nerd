@@ -3,5 +3,5 @@ set -x
 cd "${0%/*}"
 mkdir -p ../bin
 rm -f ../bin/literal
-gcc -Wall -Wextra -o ../bin/literal ../src/literal.c ../test/literal.c -lcheck
+gcc -std=c2x -Wall -Wextra -o ../bin/literal ../src/literal.c ../test/literal.c -lcheck
 ../bin/literal

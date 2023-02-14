@@ -3,7 +3,7 @@ set -x
 cd "${0%/*}"
 mkdir -p ../bin
 rm -f ../bin/rule_queue
-gcc -Wall -Wextra -o ../bin/rule_queue ../src/int_vector.c ../src/literal.c ../src/rule.c \
+gcc -std=c2x -Wall -Wextra -o ../bin/rule_queue ../src/int_vector.c ../src/literal.c ../src/rule.c \
 ../src/scene.c ../src/context.c ../src/rule_queue.c ../test/helper/rule_queue.c \
 ../test/rule_queue.c -lcheck -lm
 ../bin/rule_queue
