@@ -24,6 +24,12 @@ typedef struct RuleHyperGraph {
     prb_table *literal_tree;
 } RuleHyperGraph;
 
+/**
+ * Destructs the given Edge.
+ *
+ * @param edge The Edge to be destructed. It should be a reference to the Edge's pointer (a pointer
+ * of an Edge pointer).
+*/
 void edge_destructor(Edge ** const edge) {
     if (edge && *edge) {
         free((*edge)->from);
@@ -32,6 +38,13 @@ void edge_destructor(Edge ** const edge) {
     }
 }
 
+/**
+ * Constructs a RuleHyperGraph Vertex.
+ *
+ * @param literal The Literal which the Vertex will be build for.
+ *
+ * @return A new Vertex *. Use vertex_destructor to deallocate it.
+*/
 Vertex *vertex_constructor(const Literal * const literal) {
     Vertex *vertex = (Vertex *) malloc(sizeof(Vertex));
     vertex->literal = literal;
@@ -39,6 +52,11 @@ Vertex *vertex_constructor(const Literal * const literal) {
     vertex->number_of_edges = 0;
 }
 
+/**
+ * Destructs the given Vertex.
+ *
+ * @param vertex The Vertex to be destructed. It should be a reference to the Vertex's pointer.
+*/
 void vertex_destructor(Vertex ** const vertex) {
     if (vertex && *vertex) {
         unsigned int i;
@@ -51,6 +69,15 @@ void vertex_destructor(Vertex ** const vertex) {
     }
 }
 
+/**
+ * Constructs a RuleHyperGraph Edge.
+ *
+ * @param rule_hypergraph The RuleHyperGraph to find the corresponding Vertices to be connected.
+ * @param rule The Rule to show which Literals should be connected. The Body of a rule has the
+ * origin Vertices, and the head has the destination Vertex.
+ *
+ * @return A new Edge *. Use edge_destructor to deallocate it.
+*/
 Edge *edge_constructor(RuleHyperGraph * const rule_hypergraph, const Rule * const rule) {
     if (!rule) {
         return NULL;
@@ -77,6 +104,13 @@ Edge *edge_constructor(RuleHyperGraph * const rule_hypergraph, const Rule * cons
     return edge;
 }
 
+/**
+ * Adds an Edge to a Vertex. The Vertex is the head of the Rule, and the Edge contains the origin
+ * (body) of the Rule.
+ *
+ * @param vertex The Vertex to add the Edge to.
+ * @param edge The Edge to be added to the Vertex.
+*/
 void vertex_add_edge(Vertex * const vertex, Edge * const edge) {
     if (vertex && edge) {
         vertex->edges = (Edge **) realloc(vertex->edges,
@@ -85,14 +119,21 @@ void vertex_add_edge(Vertex * const vertex, Edge * const edge) {
     }
 }
 
+/**
+ * Function to be used with the RB-Tree to deallocate the Vertices and the Edges.
+*/
 void item_destructor(void *item, void *param) {
     Vertex *v = item;
     vertex_destructor(&v);
 }
 
-int compare_literals(const void *literal1, const void *literal2, void *extra) {
-    const Vertex *l1 = literal1, *l2 = literal2;
-    char *l1_string = literal_to_string(l1->literal), *l2_string = literal_to_string(l2->literal);
+/**
+ * Function to be used with the RB-Tree to find the appropriate location of a Vertex through
+ * comparison.
+*/
+int compare_literals(const void *vertex1, const void *vertex2, void *extra) {
+    const Vertex *v1 = vertex1, *v2 = vertex2;
+    char *l1_string = literal_to_string(v1->literal), *l2_string = literal_to_string(v2->literal);
     int result = strcmp(l1_string, l2_string);
 
     free(l1_string);
@@ -101,12 +142,22 @@ int compare_literals(const void *literal1, const void *literal2, void *extra) {
     return result;
 }
 
+/**
+ * Costructs an empty RuleHyperGraph with an empty RB-Tree.
+ *
+ * @param rule_hypergraph The RuleHyperGraph to be constructed.
+*/
 void rule_hypergraph_empty_constructor(RuleHyperGraph * const rule_hypergraph) {
     if (rule_hypergraph) {
         rule_hypergraph->literal_tree = prb_create(compare_literals, NULL, NULL);
     }
 }
 
+/**
+ * Destructs a RuleHyperGraph.
+ *
+ * @param rule_hypergraph The RuleHyperGraph to be destructed.
+*/
 void rule_hypergraph_destructor(RuleHyperGraph * const rule_hypergraph) {
     if (rule_hypergraph && rule_hypergraph->literal_tree) {
         prb_destroy(rule_hypergraph->literal_tree, item_destructor);
@@ -114,6 +165,13 @@ void rule_hypergraph_destructor(RuleHyperGraph * const rule_hypergraph) {
     }
 }
 
+/**
+ * Adds a Rule to the given RuleHyperGraph. This process creates the appropriate Vertices and an
+ * Edge to connected them.
+ *
+ * @param rule_hypergraph The RuleHyperGraph to add the Rule.
+ * @param rule The Rule to be added to the RuleHyperGraph.
+*/
 void rule_hypergraph_add_rule(RuleHyperGraph * const rule_hypergraph, const Rule * const rule) {
     if (rule_hypergraph && rule) {
         Vertex *v = vertex_constructor(&(rule->head));
