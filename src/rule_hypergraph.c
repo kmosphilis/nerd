@@ -7,7 +7,7 @@
 typedef struct Vertex Vertex;
 
 typedef struct Edge {
-    const Rule *rule;
+    Rule *rule;
     Vertex **from;
     size_t number_of_vertices;
 } Edge;
@@ -23,6 +23,11 @@ typedef struct prb_table prb_table;
 struct RuleHyperGraph {
     prb_table *literal_tree;
 };
+
+
+// XXX Should we remove literals that are not used?
+// To do that we will need an additional field which will hold the vertices that a vertex is being
+// used because if we delete a vertex being used, we will run into segmentation faults.
 
 /**
  * Destructs the given Edge.
@@ -78,7 +83,7 @@ void vertex_destructor(Vertex ** const vertex) {
  *
  * @return A new Edge *. Use edge_destructor to deallocate it.
 */
-Edge *edge_constructor(RuleHyperGraph * const rule_hypergraph, const Rule * const rule) {
+Edge *edge_constructor(RuleHyperGraph * const rule_hypergraph, Rule * const rule) {
     if (!rule) {
         return NULL;
     }
@@ -116,6 +121,39 @@ void vertex_add_edge(Vertex * const vertex, Edge * const edge) {
         vertex->edges = (Edge **) realloc(vertex->edges,
         sizeof(Edge *) * ++vertex->number_of_edges);
         vertex->edges[vertex->number_of_edges - 1] = edge;
+    }
+}
+
+/**
+ * Removes an Edge from a Vertex.
+ *
+ * @param vertex The Vertex to remove the Edge from.
+ * @param index The index of the Edge to be removed. If > vertex.number_of_edges, it will fail.
+*/
+void vertex_remove_edge(Vertex * const vertex, unsigned int index) {
+    if (vertex && (index < vertex->number_of_edges)) {
+        edge_destructor(&(vertex->edges[index]));
+        --vertex->number_of_edges;
+        if (vertex->number_of_edges == 0) {
+            free(vertex->edges);
+            vertex->edges = NULL;
+            return;
+        }
+
+        Edge **old = vertex->edges;
+        vertex->edges = malloc(sizeof(Edge *) * vertex->number_of_edges);
+
+        if (index == 0) {
+            memcpy(vertex->edges, old + 1, sizeof(Edge *) * vertex->number_of_edges);
+        } else if (index == vertex->number_of_edges) {
+            memcpy(vertex->edges, old, sizeof(Edge *) * vertex->number_of_edges);
+        } else {
+            memcpy(vertex->edges, old, sizeof(Edge *) * index);
+            memcpy(vertex->edges + index, old + index + 1, sizeof(Edge *) *
+            (vertex->number_of_edges - index));
+        }
+
+        free(old);
     }
 }
 
@@ -175,7 +213,7 @@ void rule_hypergraph_destructor(RuleHyperGraph ** const rule_hypergraph) {
  * @param rule_hypergraph The RuleHyperGraph to add the Rule.
  * @param rule The Rule to be added to the RuleHyperGraph.
 */
-void rule_hypergraph_add_rule(RuleHyperGraph * const rule_hypergraph, const Rule * const rule) {
+void rule_hypergraph_add_rule(RuleHyperGraph * const rule_hypergraph, Rule * const rule) {
     if (rule_hypergraph && rule) {
         Vertex *v = vertex_constructor(&(rule->head));
         void *result = prb_insert(rule_hypergraph->literal_tree, v);
@@ -191,12 +229,38 @@ void rule_hypergraph_add_rule(RuleHyperGraph * const rule_hypergraph, const Rule
 }
 
 /**
+ * Removes a Rule from the given RuleHyperGraph. This process only deletes the connecting Edges, but
+ * leaves the Vertices involved unaffected (could change in the future).
+ *
+ * @param rule_hypergraph The RuleHyperGraph to remove the Rule from.
+ * @param rule The Rule to be removed.
+*/
+void rule_hypergraph_remove_rule(RuleHyperGraph * const rule_hypergraph, Rule * const rule) {
+    if (rule_hypergraph && rule) {
+        Vertex *v = vertex_constructor(&(rule->head));
+        void *result = prb_find(rule_hypergraph->literal_tree, v);
+
+        vertex_destructor(&v);
+        if (!result) {
+            return;
+        }
+        v = result;
+
+        unsigned int i;
+        for (i = 0; i < v->number_of_edges; ++i) {
+            if (v->edges[i]->rule == rule) {
+                vertex_remove_edge(v, i);
+            }
+        }
+    }
+}
+
+/**
  * Enables testing. Uncomment only for testing.
 */
 // #define RULE_HYPERGRAPH_TEST
 #ifdef RULE_HYPERGRAPH_TEST
 
-#include <stdio.h>
 #include <check.h>
 
 #include "../test/helper/literal.h"
@@ -499,9 +563,115 @@ START_TEST(adding_rules_test) {
 }
 END_TEST
 
+START_TEST(removing_rules_test) {
+RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
+    Literal l1, l2, l3, l4, l5, *l_ptr;
+    literal_constructor(&l1, "penguin", true);
+    literal_constructor(&l2, "fly", false);
+    literal_constructor(&l3, "bird", true);
+    literal_constructor(&l4, "fly", true);
+    literal_constructor(&l5, "wings", true);
+
+    Rule r1, r2, r3, r4, r5, r6;
+    l_ptr = &l1;
+    rule_constructor(&r1, 1, &l_ptr, &l2, 0);
+    l_ptr = &l3;
+    rule_constructor(&r2, 1, &l_ptr, &l4, 0);
+    l_ptr = &l5;
+    rule_constructor(&r3, 1, &l_ptr, &l4, 0);
+    rule_constructor(&r4, 1, &l_ptr, &l3, 0);
+    Literal *l_array = malloc(sizeof(Literal) * 2);
+    l_array[0] = l3;
+    l_array[1] = l5;
+    rule_constructor(&r5, 2, &l_array, &l4, 0);
+    l_array[1] = l1;
+    rule_constructor(&r6, 2, &l_array, &l2, 0);
+    free(l_array);
+
+    Vertex *v1 = vertex_constructor(&l1), *v2 = vertex_constructor(&l2),
+    *v3 = vertex_constructor(&l3), *v4 = vertex_constructor(&l4), *v5 = vertex_constructor(&l5),
+    *current_v1, *current_v2;
+
+    rule_hypergraph_add_rule(hypergraph, &r1);
+    rule_hypergraph_add_rule(hypergraph, &r2);
+    rule_hypergraph_add_rule(hypergraph, &r3);
+    rule_hypergraph_add_rule(hypergraph, &r4);
+    rule_hypergraph_add_rule(hypergraph, &r5);
+    rule_hypergraph_add_rule(hypergraph, &r6);
+
+    current_v1 = prb_find(hypergraph->literal_tree, v3);
+    ck_assert_literal_eq(current_v1->literal, &l3);
+    ck_assert_int_eq(current_v1->number_of_edges, 1);
+    ck_assert_ptr_eq(current_v1->edges[0]->rule, &r4);
+
+    rule_hypergraph_remove_rule(hypergraph, &r4);
+    ck_assert_literal_eq(current_v1->literal, &l3);
+    ck_assert_int_eq(current_v1->number_of_edges, 0);
+    ck_assert_ptr_null(current_v1->edges);
+
+    rule_hypergraph_remove_rule(hypergraph, &r4);
+
+    current_v1 = prb_find(hypergraph->literal_tree, v4);
+    ck_assert_int_eq(current_v1->number_of_edges, 3);
+    ck_assert_ptr_eq(current_v1->edges[0]->rule, &r2);
+    ck_assert_ptr_eq(current_v1->edges[1]->rule, &r3);
+    ck_assert_ptr_eq(current_v1->edges[2]->rule, &r5);
+
+    rule_hypergraph_remove_rule(hypergraph, &r3);
+    ck_assert_int_eq(current_v1->number_of_edges, 2);
+    ck_assert_ptr_eq(current_v1->edges[0]->rule, &r2);
+    ck_assert_ptr_eq(current_v1->edges[1]->rule, &r5);
+
+    rule_hypergraph_remove_rule(hypergraph, &r2);
+    ck_assert_int_eq(current_v1->number_of_edges, 1);
+    ck_assert_ptr_eq(current_v1->edges[0]->rule, &r5);
+
+    current_v2 = prb_find(hypergraph->literal_tree, v2);
+    ck_assert_int_eq(current_v2->number_of_edges, 2);
+    ck_assert_ptr_eq(current_v2->edges[0]->rule, &r1);
+    ck_assert_ptr_eq(current_v2->edges[1]->rule, &r6);
+
+    rule_hypergraph_remove_rule(hypergraph, &r1);
+    ck_assert_int_eq(current_v2->number_of_edges, 1);
+    ck_assert_ptr_eq(current_v2->edges[0]->rule, &r6);
+    ck_assert_int_eq(current_v1->number_of_edges, 1);
+    ck_assert_ptr_eq(current_v1->edges[0]->rule, &r5);
+
+    rule_hypergraph_remove_rule(hypergraph, &r5);
+    ck_assert_int_eq(current_v1->number_of_edges, 0);
+    ck_assert_ptr_null(current_v1->edges);
+    ck_assert_int_eq(current_v2->number_of_edges, 1);
+    ck_assert_ptr_eq(current_v2->edges[0]->rule, &r6);
+
+    rule_hypergraph_remove_rule(hypergraph, &r6);
+    ck_assert_int_eq(current_v2->number_of_edges, 0);
+    ck_assert_ptr_null(current_v2->edges);
+    ck_assert_int_eq(current_v1->number_of_edges, 0);
+    ck_assert_ptr_null(current_v1->edges);
+
+    vertex_destructor(&v1);
+    vertex_destructor(&v2);
+    vertex_destructor(&v3);
+    vertex_destructor(&v4);
+    vertex_destructor(&v5);
+    literal_destructor(&l1);
+    literal_destructor(&l2);
+    literal_destructor(&l3);
+    literal_destructor(&l4);
+    literal_destructor(&l5);
+    rule_destructor(&r1);
+    rule_destructor(&r2);
+    rule_destructor(&r3);
+    rule_destructor(&r4);
+    rule_destructor(&r5);
+    rule_destructor(&r6);
+    rule_hypergraph_destructor(&hypergraph);
+}
+END_TEST
+
 Suite *rule_hypergraph_suite() {
     Suite *suite;
-    TCase *create_case, *add_edges_case, *add_rules_case;
+    TCase *create_case, *add_edges_case, *rule_manipulation_case;
 
     suite = suite_create("Rule Hypergraph");
     create_case = tcase_create("Create");
@@ -514,9 +684,10 @@ Suite *rule_hypergraph_suite() {
     tcase_add_test(add_edges_case, adding_edges_test);
     suite_add_tcase(suite, add_edges_case);
 
-    add_rules_case = tcase_create("Add Rules");
-    tcase_add_test(add_rules_case, adding_rules_test);
-    suite_add_tcase(suite, add_rules_case);
+    rule_manipulation_case = tcase_create("Rule manipulation");
+    tcase_add_test(rule_manipulation_case, adding_rules_test);
+    tcase_add_test(rule_manipulation_case, removing_rules_test);
+    suite_add_tcase(suite, rule_manipulation_case);
 
     return suite;
 }
