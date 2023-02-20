@@ -13,9 +13,20 @@
     ck_assert_ptr_ne(_l1->atom, _l2->atom); \
     char l1_sign = _l1->sign ? ' ' : '-'; \
     char l2_sign = _l2->sign ? ' ' : '-'; \
-    ck_assert_msg(((_l1->sign OP _l2->sign) || (!_l1->atom) || (!_l2->atom) || \
-    (0 OP strcmp(_l1->atom, _l2->atom))), "Assertion 'literal1%sliteral2' failed: literal1 = " \
-    "%c%s, literal2 = %c%s", " "#OP" ", l1_sign, _l1->atom, l2_sign, _l2->atom); \
+    if (_l1->atom) { \
+        if (_l2->atom) { \
+            ck_assert_msg(((_l1->sign OP _l2->sign) && (0 OP strcmp(_l1->atom, _l2->atom))), \
+            "Assertion 'literal1%sliteral2' failed: literal1 = %c%s, literal2 = %c%s", " "#OP" ", \
+            l1_sign, _l1->atom, l2_sign, _l2->atom); \
+        } else { \
+            ck_assert_literal_empty(_l2); \
+        } \
+    } else { \
+        if (!_l2->atom) { \
+            ck_assert_literal_empty(_l2); \
+        } \
+        ck_assert_literal_empty(_l1); \
+    } \
 } while (0)
 
 /**
