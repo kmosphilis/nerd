@@ -423,7 +423,7 @@ START_TEST(adding_rules_test) {
 
     rule_hypergraph_add_rule(hypergraph, &r2);
     current_v1 = prb_find(hypergraph->literal_tree, v4);
-    ck_assert_literal_eq(current_v1->literal, &l5);
+    ck_assert_literal_eq(current_v1->literal, &l4);
     ck_assert_int_eq(current_v1->number_of_edges, 1);
     ck_assert_ptr_eq(current_v1->edges[0]->rule, &r2);
     ck_assert_ptr_eq(current_v2->edges[0]->from[0], current_v1->edges[0]->from[0]);
@@ -437,7 +437,7 @@ START_TEST(adding_rules_test) {
     ck_assert_ptr_eq(current_e->rule, &r3);
     ck_assert_int_eq(current_e->number_of_vertices, 1);
     ck_assert_ptr_nonnull(current_e->from);
-    ck_assert_literal_eq(current_e->from[0]->literal, &l1);
+    ck_assert_literal_eq(current_e->from[0]->literal, &l3);
 
     current_e = current_v1->edges[1];
     ck_assert_ptr_eq(current_e->rule, &r5);
