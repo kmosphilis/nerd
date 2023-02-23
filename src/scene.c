@@ -63,17 +63,35 @@ void scene_copy(Scene ** const destination, const Scene * const restrict source)
 }
 
 /**
- * @brief Adds a Literal to a Scene.
+ * @brief Adds a Literal to a Scene by taking its ownership. After the ownership has been transfer,
+ * there will be no need to used literal_destructor to deallocate the Literal since it was moved.
  *
  * @param scene The Scene to be expanded.
- * @param literal_to_add The Literal to add in the Scene.
+ * @param literal_to_add The Literal to add in the Scene. A reference to a Literal *, which will be
+ * moved permanently in the given Scene (the reference will lose its ownership).
  */
-void scene_add_literal(Scene * const scene, const Literal * const literal_to_add) {
+void scene_add_literal(Scene * const scene, Literal ** const literal_to_add) {
+    if (scene && literal_to_add && (*literal_to_add)) {
+        if (scene_literal_index(scene, *literal_to_add) == -1) {
+            ++scene->size;
+            scene->literals = (Literal **) realloc(scene->literals, scene->size * sizeof(Literal *));
+            scene->literals[scene->size - 1] = *literal_to_add;
+            *literal_to_add = NULL;
+        }
+    }
+}
+
+/**
+ * @brief Adds a Literal to a Scene by copying it.
+ *
+ * @param scene The Scene to be expanded.
+ * @param literal_to_add The Literal to be copied and added in the Scene.
+ */
+void scene_add_literal_copy(Scene * const scene, const Literal * const literal_to_add) {
     if (scene && literal_to_add) {
         if (scene_literal_index(scene, literal_to_add) == -1) {
             ++scene->size;
-            scene->literals = (Literal **) realloc(scene->literals,
-            scene->size * sizeof(Literal *));
+            scene->literals = (Literal **) realloc(scene->literals,scene->size * sizeof(Literal *));
             literal_copy(&(scene->literals[scene->size - 1]), literal_to_add);
         }
     }
@@ -151,7 +169,7 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene1->size) {
-                        scene_add_literal(*result, scene2->literals[i]);
+                        scene_add_literal_copy(*result, scene2->literals[i]);
                     }
                 }
             }
@@ -185,7 +203,7 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene2->size) {
-                        scene_add_literal(*result, scene1->literals[i]);
+                        scene_add_literal_copy(*result, scene1->literals[i]);
                     }
                 }
             } else {
@@ -214,7 +232,7 @@ Scene ** const restrict result) {
         for (i = 0; i < scene1->size; ++i) {
             for (j = 0; j < scene2->size; ++j) {
                 if (literal_equals(scene1->literals[i], scene2->literals[j])) {
-                    scene_add_literal(*result, scene1->literals[i]);
+                    scene_add_literal_copy(*result, scene1->literals[i]);
                     break;
                 }
             }
@@ -291,7 +309,7 @@ const Scene * const restrict scene2, Scene ** const restrict result) {
             for (j = 0; j < scene2->size; ++j) {
                 if (!literal_equals(scene1->literals[i], scene2->literals[j])) {
                     if (strcmp(scene1->literals[i]->atom, scene2->literals[j]->atom) == 0) {
-                        scene_add_literal(*result, scene2->literals[j]);
+                        scene_add_literal_copy(*result, scene2->literals[j]);
                         break;
                     }
                 } else {

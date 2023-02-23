@@ -4,25 +4,18 @@
 #include "../src/context.h"
 
 START_TEST(to_prudensjs_test) {
-    Context *context = NULL;
-    Literal *literal = NULL;
-
-    context = context_constructor();
-    literal = literal_constructor("Penguin", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    Context *context = context_constructor();
+    Literal *literal = literal_constructor("Penguin", 1);
+    context_add_literal(context, &literal);
 
     literal = literal_constructor("Antarctica", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     literal = literal_constructor("Bird", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     literal = literal_constructor("Fly", 0);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     char *context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
@@ -58,7 +51,7 @@ Suite *context_suite() {
     Suite *suite;
     TCase *to_prudensjs_case;
     suite = suite_create("Context");
-    
+
     to_prudensjs_case = tcase_create("To Prudens JS");
     tcase_add_test(to_prudensjs_case, to_prudensjs_test);
     suite_add_tcase(suite, to_prudensjs_case);
