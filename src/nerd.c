@@ -2,47 +2,150 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "nerd.h"
+#include "metrics.h"
 
 /**
  * @brief Constructs a Nerd structure (object).
  *
  * @param filepath The path to the file containing the learning instances for the Nerd algorithm.
- * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF. 
- * Use > 0 to indicate yes, and <= 0 to indicate no. In the case that it should not reuse the file, 
+ * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF.
+ * Use > 0 to indicate yes, and <= 0 to indicate no. In the case that it should not reuse the file,
  * the algorithm will ignore the given epochs.
- * @param activation_threshold The threshold which determines whether a rule should get activated 
+ * @param activation_threshold The threshold which determines whether a rule should get activated
  * or deactivated.
  * @param breadth The maximum size of Literals that a Rule should contain. //FIXME What if zero is given?
  * @param depth The maximum size of the KnowledgeBase //FIXME Currently not being used.
  * @param epochs The number of epochs the algorithm should learn for.
  * @param promotion_weight The amount that a Rule should be promoted with. It should be > 0.
  * @param demotion_weight The amount that a Rule should be demoted with. It should be > 0.
- * @param partial_observation If partial_observation is > 0, the initial observation will be saved 
+ * @param partial_observation If partial_observation is > 0, the initial observation will be saved
  * here. If NULL is given, it will not be saved.
  *
  * @return A new Nerd object *. Use nerd_destructor to deallocate.
  */
-Nerd *nerd_constructor(const char * const filepath, const uint_fast8_t reuse,
+Nerd *nerd_constructor(const char * const filepath, const bool reuse,
 const float activation_threshold, const unsigned int breadth, const unsigned int depth,
 const unsigned int epochs, const float promotion_weight, const float demotion_weight,
-const uint_fast8_t partial_observation) {
-    Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
+const bool partial_observation) {
     if (filepath) {
+        Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
         nerd->sensor = sensor_constructor_from_file(filepath, reuse);
+        nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
         nerd->breadth = breadth;
         nerd->depth = depth;
         nerd->epochs = epochs;
         nerd->promotion_weight = promotion_weight;
         nerd->demotion_weight = demotion_weight;
-        nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
         nerd->partial_observation = partial_observation;
-    } else {
-        nerd->sensor = NULL;
-        nerd->knowledge_base = NULL;
+        return nerd;
     }
-    return nerd;
+    return NULL;
+}
+
+/**
+ * @brief Constructs a Nerd structure (object) using an existing nerd file.
+ *
+ * @param filepath The path to the file that contains previous a Nerd structure parameters (except
+ * the number of epochs) and the learnt KnowledgeBase.
+ * @param epochs The number of epochs the algorithm should learn for.
+ *
+ * @return A new Nerd object * from the given filepath. Use nerd_destructor to deallocate.
+*/
+Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int epochs) {
+    if (filepath) {
+        FILE *file = fopen(filepath, "rb");
+        if (!file) {
+            return NULL;
+        }
+        Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
+        size_t buffer_size = BUFFER_SIZE;
+        char *buffer = (char *) malloc(buffer_size * sizeof(char));
+        unsigned short partial_observation, sensor_reuse;
+        float activation_threshold;
+
+        fscanf(file, "breadth: %zu\n", &(nerd->breadth));
+        fscanf(file, "depth: %zu\n", &(nerd->depth));
+        fscanf(file, "promotion_weight: %f\n", &(nerd->promotion_weight));
+        fscanf(file, "demotion_weight: %f\n", &(nerd->demotion_weight));
+        fscanf(file, "partial_observation: %hu\n", &partial_observation);
+        nerd->partial_observation = partial_observation;
+        fscanf(file, "sensor: %[^, ], %hu\n", buffer, &sensor_reuse);
+        nerd->sensor = sensor_constructor_from_file(buffer, sensor_reuse);
+        free(buffer);
+
+        fscanf(file, "knowledge_base:\n");
+        fscanf(file, "\tactivation_threshold: %f\n", &activation_threshold);
+        nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
+
+        fscanf(file, "\trules:\n");
+
+        fpos_t position;
+        fgetpos(file, &position);
+        char *tokens;
+        Body *body;
+        Literal *literal;
+        Rule *rule;
+        body = scene_constructor();
+
+        buffer = (char *) malloc(buffer_size * sizeof(char));
+        memset(buffer, 0, buffer_size);
+
+
+        while(fgets(buffer, buffer_size, file) != NULL) {
+            if (strlen(buffer) == buffer_size) {
+                buffer_size <<= 1;
+                buffer = realloc(buffer, buffer_size * sizeof(char));
+                fsetpos(file, &position);
+                continue;
+            }
+
+            tokens = strtok(buffer, " (),\n");
+
+            while (tokens != NULL) {
+                if (strcmp(tokens, "=>") == 0) {
+                    tokens = strtok(NULL, " (),\n");
+                    if (tokens[0] == '-') {
+                        literal = literal_constructor(tokens + 1, 0);
+                    } else {
+                        literal = literal_constructor(tokens, 1);
+                    }
+
+                    tokens = strtok(NULL, " (),\n");
+                    float weight = atof(tokens);
+
+                    rule = rule_constructor(body->size, body->literals, literal, weight);
+                    knowledge_base_add_rule(nerd->knowledge_base, rule);
+
+                    literal_destructor(&literal);
+                    scene_destructor(&body);
+                    body = scene_constructor();
+                    rule_destructor(&rule);
+                } else {
+                    if (tokens[0] == '-') {
+                        literal = literal_constructor(tokens + 1, 0);
+                    } else {
+                        literal = literal_constructor(tokens, 1);
+                    }
+                    scene_add_literal(body, literal);
+                    literal_destructor(&literal);
+                }
+                tokens = strtok(NULL, " (),\n");
+            }
+            fgetpos(file, &position);
+        }
+
+        scene_destructor(&body);
+
+        free(buffer);
+
+        fclose(file);
+        nerd->epochs = epochs;
+        return nerd;
+    }
+    return NULL;
 }
 
 /**
@@ -66,87 +169,53 @@ void nerd_destructor(Nerd ** const nerd) {
     }
 }
 
+/**
+ * @brief Calls prudens-js using node-js. It create a file with a converted KnowledgeBase and a
+ * Scene/Context, which holds an observation and saves the inferred Literals.
+ *
+ * @param knowledge_base The KnowledgeBase to be used in prudens-js.
+ * @param observation A Scene/Context, which includes all the observed Literals.
+ * @param inferred A Scene to save the inferred Literals by prudens-js. Deallocate using
+ * scene_destructor.
+*/
 void prudensjs_inference(const KnowledgeBase * const knowledge_base,
-const Scene * const restrict context, Scene ** restrict result, Scene ** restrict inferred_literals,
-unsigned int ** inferred_literals_rule_numbers, int *** inferred_literals_rule_indices) {
+const Scene * const restrict observation, Scene ** const inferred) {
     const char * const temp_filename = ".temp";
     char *knowledge_base_prudensjs = knowledge_base_to_prudensjs(knowledge_base),
-    *context_prudensjs = context_to_prudensjs(context);
-    if (knowledge_base_prudensjs && context_prudensjs) {
-        FILE *file = fopen(temp_filename, "wb");
-
-        fprintf(file, "%s\n%s", knowledge_base_prudensjs, context_prudensjs);
-        fclose(file);
-        system("node prudens-infer.js");
-
-        file = fopen(temp_filename, "rb");
-        if (feof(file)) {
-            return;
-        }
-
-        *result = scene_constructor();
-        *inferred_literals = scene_constructor();
-        Literal *l = NULL;
-        char buffer[50];
-        fpos_t file_pos;
-        fgetpos(file, &file_pos);
-        while (fgetc(file) != '\n') {
-            fsetpos(file, &file_pos);
-            fscanf(file, "%s", buffer);
-            if (buffer[0] == '-') {
-                l = literal_constructor(buffer + 1, 0);
-            } else {
-                l = literal_constructor(buffer, 1);
-            }
-            scene_add_literal(*result, l);
-            literal_destructor(&l);
-
-            fgetpos(file, &file_pos);
-        }
-
-        unsigned int *inferred_heads_number_of_rules = NULL;
-
-        while(fgetc(file) != '\n') {
-            fsetpos(file, &file_pos);
-            fscanf(file, " %[^, ],", buffer);
-            if (buffer[0] == '-') {
-                l = literal_constructor(buffer + 1, 0);
-            } else {
-                l = literal_constructor(buffer, 1);
-            }
-            scene_add_literal(*inferred_literals, l);
-            literal_destructor(&l);
-            inferred_heads_number_of_rules = (unsigned int *) 
-            realloc(inferred_heads_number_of_rules, ((*inferred_literals)->size)
-            * sizeof(unsigned int));
-
-            fscanf(file, "%d", &(inferred_heads_number_of_rules[(*inferred_literals)->size - 1]));
-
-            fgetpos(file, &file_pos);
-        }
-
-        *inferred_literals_rule_numbers = inferred_heads_number_of_rules;
-
-        int **inferred_heads_rules_indices = (int **) malloc((*inferred_literals)->size
-        * sizeof(int *));
-
-        unsigned int i, j;
-        for (i = 0; i < (*inferred_literals)->size; ++i) {
-            inferred_heads_rules_indices[i] = (int *) 
-            malloc(inferred_heads_number_of_rules[i] * sizeof(int));
-            for (j = 0; j < inferred_heads_number_of_rules[i]; ++j) {
-                fscanf(file, "%d", &(inferred_heads_rules_indices[i][j]));
-            }
-        }
-    
-        *inferred_literals_rule_indices = inferred_heads_rules_indices;
-
-        fclose(file);
-        remove(temp_filename);
+    *context_prudensjs = context_to_prudensjs(observation);
+    if (!(knowledge_base_prudensjs && context_prudensjs)) {
+        return;
     }
 
+    FILE *file = fopen(temp_filename, "wb");
+
+    fprintf(file, "%s\n%s", knowledge_base_prudensjs, context_prudensjs);
     free(knowledge_base_prudensjs);
     free(context_prudensjs);
+    fclose(file);
+    system("node prudens-infer.js");
+
+    file = fopen(temp_filename, "rb");
+    if (feof(file)) {
+        fclose(file);
+        return;
+    }
+
+    char buffer[BUFFER_SIZE];
+    *inferred = scene_constructor();
+    while (fscanf(file, "%s", buffer) != EOF) {
+        Literal *literal;
+        if (buffer[0] == '-') {
+            literal = literal_constructor(buffer + 1, 0);
+        } else {
+            literal = literal_constructor(buffer, 1);
+        }
+        scene_add_literal(*inferred, literal);
+        literal_destructor(&literal);
+    }
+
+    fclose(file);
+    remove(temp_filename);
 }
 
 /**
@@ -166,122 +235,66 @@ void nerd_start_learning(Nerd * const nerd) {
         5 - No priority for newly inactive rules (implemented by default).
     */
 
-    Scene *observation = NULL, *inferred = NULL, *inferred_literals = NULL;
-    IntVector *active_concurring_rules_observed = NULL, *inactive_concurring_rules_observed = NULL,
-    *active_applicable_rules_inferred = NULL, *inactive_applicable_rules_inferred = NULL;
-
-    unsigned int *inferred_literals_rule_numbers = NULL;
-    int **inferred_literals_rule_indices = NULL;
-    unsigned int epoch, index, i, k;
+    Scene *observation = NULL, *observed_and_inferred = NULL, *inferred = NULL, *uncovered = NULL;
+    IntVector *active_rules_to_demote = NULL, *demoted_deleted_applicable_rules = NULL,
+    *applicable_rules = NULL;
+    unsigned int epoch, iteration, index, k, j, number_of_demoted_rules;
+    const size_t total_observations = sensor_get_total_observations(nerd->sensor);
 
     char *str = knowledge_base_to_string(nerd->knowledge_base);
     printf("%s\n", str);
     free(str);
+    time_t start = time(NULL);
 
     for (epoch = 0; epoch < nerd->epochs; ++epoch) {
-        printf("Epoch %d of %d\n", epoch + 1, nerd->epochs);
+        for (iteration = 0; iteration < total_observations; ++iteration) {
+            printf("\nEpoch %d of %zu, Iteration %d of %zu\n", epoch + 1, nerd->epochs,
+            iteration + 1, total_observations);
 
-        sensor_get_next_scene(nerd->sensor, &observation, nerd->partial_observation, NULL);
+            sensor_get_next_scene(nerd->sensor, &observation, nerd->partial_observation, NULL);
+            prudensjs_inference(nerd->knowledge_base, observation, &inferred);
+            scene_union(observation, inferred, &observed_and_inferred);
 
-        prudensjs_inference(nerd->knowledge_base, observation, &inferred, &inferred_literals,
-        &inferred_literals_rule_numbers, &inferred_literals_rule_indices);
+            knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred,
+            nerd->breadth, 5);
 
-        knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred_literals,
-        nerd->breadth, 5);
-        Scene *uncovered = NULL;
-        scene_difference(observation, inferred_literals, &uncovered);
+            scene_difference(observation, inferred, &uncovered);
 
-        str = scene_to_string(observation);
-        printf("Observed: %s\n", str);
-        free(str);
-        str = scene_to_string(inferred_literals);
-        printf("Inferred: %s\n", str);
-        free(str);
-        str = scene_to_string(uncovered);
-        printf("Observed ∖ Inferred: %s\n", str);
-        free(str);
+            str = scene_to_string(observation);
+            printf("Observed: %s\n", str);
+            free(str);
+            str = scene_to_string(inferred);
+            printf("Inferred: %s\n", str);
+            free(str);
+            str = scene_to_string(uncovered);
+            printf("Observed ∖ Inferred: %s\n", str);
+            free(str);
 
-        unsigned int rules_demoted = 0, rules_promoted = 0;
-        IntVector *rules_demoted_vector = NULL, *applicable_rules = NULL;
-        rules_demoted_vector = int_vector_constructor();
-        applicable_rules = int_vector_constructor();
+            unsigned int rules_demoted = 0, rules_promoted = 0, rules_deleted = 0;
+            active_rules_to_demote = int_vector_constructor();
+            applicable_rules = int_vector_constructor();
 
-        for (index = nerd->knowledge_base->active->length; index > 0; --index) {
-            const Rule * const current_rule = nerd->knowledge_base->active->rules[index - 1];
-            
-            if (rule_applicable(current_rule, inferred)) {
-                int_vector_push(applicable_rules, index - 1);
-            }
-        }
+            for (index = nerd->knowledge_base->active->length; index > 0; --index) {
+                const Rule * const current_rule = nerd->knowledge_base->active->rules[index - 1];
 
-        printf("Applicable rule indices: ");
-        for (index = 0; index < applicable_rules->size; ++index) {
-            printf("%d ", applicable_rules->items[index]);
-        }
-        printf("\n");
-
-
-        for (index = 0; index < applicable_rules->size; ++index) {
-            const unsigned int current_rule_index = int_vector_get(applicable_rules, index);
-            const Rule * const current_rule = nerd->knowledge_base->active
-            ->rules[current_rule_index];
-
-            int rule_concurs_result = rule_concurs(current_rule, observation);
-            if (rule_concurs_result == 1) {
-                  knowledge_base_promote_rule(nerd->knowledge_base, ACTIVE, current_rule_index,
-                  nerd->promotion_weight);
-            } else if (rule_concurs_result == 0) {
-                int opposed_to_observation = 0;
-                for (k = 0 ; k < uncovered->size; ++k) {
-                    if (literal_opposed(current_rule->head, uncovered->observations[k]) == 1) {
-                        opposed_to_observation = 1;
-                        break;
-                    }
-                }
-                if (!opposed_to_observation) {
-                    continue;
-                }
-                int higher_positive = 0;
-                int higher_similar = 0;
-                for (k = index + 1; k < applicable_rules->size; ++k) {
-                    const unsigned int rule_to_compare_index = int_vector_get(applicable_rules, k);
-                    const Rule * const rule_to_compare = nerd->knowledge_base->active
-                    ->rules[rule_to_compare_index];
-
-                    int opposed_result = literal_opposed(current_rule->head, rule_to_compare->head);
-                    if (opposed_result >= 0) {
-                        higher_positive = opposed_result == 1;
-                        higher_similar = opposed_result == 0;
-                    }
-                }
-                if (!higher_positive) {
-                    str = rule_to_string(current_rule);
-                    if (knowledge_base_demote_rule(nerd->knowledge_base, ACTIVE, current_rule_index,
-                     nerd->demotion_weight)) {
-                        ++rules_demoted;
-                        int_vector_delete(applicable_rules, index);
-                    }
-                    printf("Active Rule demoted: %s\n", str);
-                    free(str);
+                if (rule_applicable(current_rule, observed_and_inferred)) {
+                    int_vector_push(applicable_rules, index - 1);
                 }
             }
-        }
 
-        for (index = 0; index < nerd->knowledge_base->inactive->length - rules_demoted; ++index) {
-            const unsigned rule_index = index - rules_promoted;
-            const Rule * const current_rule = nerd->knowledge_base->inactive->rules[rule_index];
+            for (index = 0; index < applicable_rules->size; ++index) {
+                const unsigned int current_rule_index = int_vector_get(applicable_rules, index);
+                const Rule * const current_rule = nerd->knowledge_base->active->
+                rules[current_rule_index];
 
-            if (rule_applicable(current_rule, inferred)) {
                 int rule_concurs_result = rule_concurs(current_rule, observation);
-                if (rule_concurs_result) {
-                    if (knowledge_base_promote_rule(nerd->knowledge_base, INACTIVE, rule_index,
-                    nerd->promotion_weight)) {
-                        ++rules_promoted;
-                    }
+                if (rule_concurs_result == 1) {
+                    knowledge_base_promote_rule(nerd->knowledge_base, ACTIVE, current_rule_index,
+                    nerd->promotion_weight);
                 } else if (rule_concurs_result == 0) {
                     int opposed_to_observation = 0;
                     for (k = 0 ; k < uncovered->size; ++k) {
-                        if (literal_opposed(current_rule->head, uncovered->observations[k]) == 1) {
+                        if (literal_opposed(current_rule->head, uncovered->literals[k]) == 1) {
                             opposed_to_observation = 1;
                             break;
                         }
@@ -289,37 +302,162 @@ void nerd_start_learning(Nerd * const nerd) {
                     if (!opposed_to_observation) {
                         continue;
                     }
-                    knowledge_base_demote_rule(nerd->knowledge_base, INACTIVE, rule_index,
-                    nerd->demotion_weight);
-                    str = rule_to_string(current_rule);
-                    printf("Inactive Rule demoted: %s\n", str);
-                    free(str);
+                    int higher_positive = 0;
+                    for (k = index + 1; k < applicable_rules->size; ++k) {
+                        const unsigned int rule_to_compare_index =
+                        int_vector_get(applicable_rules, k);
+                        const Rule * const rule_to_compare = nerd->knowledge_base->active->
+                        rules[rule_to_compare_index];
+
+                        int opposed_result =
+                        literal_opposed(current_rule->head, rule_to_compare->head);
+                        if (opposed_result > 0) {
+                            higher_positive = opposed_result == 1;
+                        }
+                    }
+                    if (!higher_positive) {
+                        int_vector_push(active_rules_to_demote, current_rule_index);
+                    }
                 }
             }
+
+
+            for (index = 0; index < active_rules_to_demote->size; ++index) {
+                number_of_demoted_rules = 0;
+                demoted_deleted_applicable_rules = int_vector_constructor();
+                if (knowledge_base_demote_chained_rules(nerd->knowledge_base, inferred,
+                applicable_rules, ACTIVE, int_vector_get(active_rules_to_demote, index),
+                nerd->demotion_weight, demoted_deleted_applicable_rules,
+                &number_of_demoted_rules) == 1) {
+                    ++rules_demoted;
+                }
+
+                rules_demoted += number_of_demoted_rules;
+
+                for (k = index + 1; k < active_rules_to_demote->size; ++k) {
+                    int active_rule_to_demote_subject_to_change =
+                    int_vector_get(active_rules_to_demote, k);
+                    for (j = 0; j < demoted_deleted_applicable_rules->size; ++j) {
+                        int active_deleted_rule =
+                        int_vector_get(demoted_deleted_applicable_rules, j);
+
+                        if (active_rule_to_demote_subject_to_change == active_deleted_rule) {
+                            int_vector_delete(active_rules_to_demote, k);
+                            ++index;
+                        } else if (active_rule_to_demote_subject_to_change > active_deleted_rule) {
+                            --active_rules_to_demote->items[k];
+                        }
+                    }
+                }
+
+                int_vector_destructor(&demoted_deleted_applicable_rules);
+            }
+
+            for (index = 0; index < nerd->knowledge_base->inactive->length - rules_demoted;
+            ++index) {
+                const unsigned rule_index = index - rules_promoted - rules_deleted;
+                const Rule * const current_rule = nerd->knowledge_base->inactive->rules[rule_index];
+
+                if (rule_applicable(current_rule, observed_and_inferred)) {
+                    int rule_concurs_result = rule_concurs(current_rule, observation);
+                    if (rule_concurs_result) {
+                        if (knowledge_base_promote_rule(nerd->knowledge_base, INACTIVE, rule_index,
+                        nerd->promotion_weight)) {
+                            ++rules_promoted;
+                        }
+                    } else if (rule_concurs_result == 0) {
+                        int opposed_to_observation = 0;
+                        for (k = 0; k < uncovered->size; ++k) {
+                            if (literal_opposed(current_rule->head, uncovered->literals[k]) == 1) {
+                                opposed_to_observation = 1;
+                                break;
+                            }
+                        }
+                        if (!opposed_to_observation) {
+                            continue;
+                        }
+
+                        if (knowledge_base_demote_chained_rules(nerd->knowledge_base, inferred,
+                        applicable_rules, INACTIVE, rule_index, nerd->demotion_weight, NULL,
+                        NULL) == 2) {
+                            ++rules_deleted;
+                        }
+                        // if (knowledge_base_demote_rule(&(nerd->knowledge_base), INACTIVE, rule_index,
+                        // nerd->demotion_weight) == 2) {
+                        //     ++rules_deleted;
+                        // }
+                    }
+                }
+            }
+
+            str = knowledge_base_to_string(nerd->knowledge_base);
+            printf("%s\n", str);
+            free(str);
+
+            int_vector_destructor(&active_rules_to_demote);
+            int_vector_destructor(&demoted_deleted_applicable_rules);
+            int_vector_destructor(&applicable_rules);
+
+            scene_destructor(&uncovered);
+            scene_destructor(&observation);
+            scene_destructor(&observed_and_inferred);
+            scene_destructor(&inferred);
         }
 
-        int_vector_destructor(&rules_demoted_vector);
-        int_vector_destructor(&applicable_rules);
-        scene_destructor(&uncovered);
+        // float total_accuracy = 0, accuracy;
 
-        free(inferred_literals_rule_numbers);
-        inferred_literals_rule_numbers = NULL;
+        // for (index = 0; index < total_observations; ++index) {
+        //     sensor_get_next_scene(&(nerd->sensor), &observation, 0, NULL);
+        //     evaluate_all_literals(nerd, &observation, &accuracy);
+        //     total_accuracy += accuracy;
+        //     scene_destructor(&observation);
+        // }
 
-        for (i = 0; i < inferred_literals->size; ++i) {
-            free(inferred_literals_rule_indices[i]);
-        }
-        free(inferred_literals_rule_indices);
-        inferred_literals_rule_indices = NULL;
 
-        scene_destructor(&observation);
-        scene_destructor(&inferred);
-        scene_destructor(&inferred_literals);
-        int_vector_destructor(&active_concurring_rules_observed);
-        int_vector_destructor(&inactive_concurring_rules_observed);
-        int_vector_destructor(&active_applicable_rules_inferred);
-        int_vector_destructor(&inactive_applicable_rules_inferred);
-        str = knowledge_base_to_string(nerd->knowledge_base);
-        printf("%s\n", str);
+        // printf("Epoch %d KnolwedgeBase accuracy: %f\n", epoch + 1,
+        // total_accuracy / total_observations);
+    }
+    printf("Total time: %.f\n", difftime(time(NULL), start));
+}
+
+/**
+ * @brief Saves/Converts the Nerd structure to a file which all the parameters that were used and the learnt
+ * KnowledgeBase are saved, except the number of epochs.
+ *
+ * @param nerd The Nerd structure to be saved/converted to a file.
+ * @param filepath The path and the name of the file which the Nerd structure will be saved to.
+*/
+void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
+    if (!(nerd && filepath)) {
+        return;
+    }
+
+    FILE *file = fopen(filepath, "wb");
+    unsigned int i;
+    char *str = NULL;
+
+    fprintf(file, "breadth: %zu\n", nerd->breadth);
+    fprintf(file, "depth: %zu\n", nerd->depth);
+    fprintf(file, "promotion_weight: %f\n", nerd->promotion_weight);
+    fprintf(file, "demotion_weight: %f\n", nerd->demotion_weight);
+    fprintf(file, "partial_observation: %hu\n", nerd->partial_observation);
+    fprintf(file, "sensor: %s, %hu\n", nerd->sensor->filepath, nerd->sensor->reuse);
+
+    fprintf(file, "knowledge_base:\n");
+    fprintf(file, "  activation_threshold: %f\n", nerd->knowledge_base->activation_threshold);
+    fprintf(file, "  rules:\n");
+
+    for (i = 0; i < nerd->knowledge_base->active->length; ++i) {
+        str = rule_to_string(nerd->knowledge_base->active->rules[i]);
+        fprintf(file, "    %s,\n", str);
         free(str);
     }
+
+    for (i = 0; i < nerd->knowledge_base->inactive->length; ++i) {
+        str = rule_to_string(nerd->knowledge_base->inactive->rules[i]);
+        fprintf(file, "    %s,\n", str);
+        free(str);
+    }
+
+    fclose(file);
 }

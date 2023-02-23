@@ -1,11 +1,10 @@
-#include <malloc.h>
 #include <string.h>
 
 #include "rule_queue.h"
 
 /**
  * @brief Constructs a RuleQueue.
- * 
+ *
  * @return A new RuleQueue object *. Use rule_queue_destructor to deallocate.
  */
 RuleQueue *rule_queue_constructor() {
@@ -17,7 +16,7 @@ RuleQueue *rule_queue_constructor() {
 
 /**
  * @brief Destructs a RuleQueue.
- * 
+ *
  * @param rule_queue The RuleQueue to be destructed.
  */
 void rule_queue_destructor(RuleQueue ** const rule_queue) {
@@ -39,16 +38,22 @@ void rule_queue_destructor(RuleQueue ** const rule_queue) {
 
 /**
  * @brief Makes a copy of the given RuleQueue.
- * 
- * @param destination The RuleQueue to save the copy. It should be a reference to the object's 
+ *
+ * @param destination The RuleQueue to save the copy. It should be a reference to the object's
  * pointer.
- * @param source The RuleQueue to be copied. If the RuleQueue is NULL, the contents of the 
+ * @param source The RuleQueue to be copied. If the RuleQueue is NULL, the contents of the
  * destination will not be changed.
  */
-void rule_queue_copy(RuleQueue ** const restrict destination,
-const RuleQueue * const restrict source) {
+void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const restrict source) {
     if (destination && source) {
         *destination = rule_queue_constructor();
+
+        if (source->length == 0) {
+            (*destination)->rules = NULL;
+            (*destination)->length = 0;
+            return;
+        }
+
         (*destination)->length = source->length;
         (*destination)->rules = (Rule **) malloc(source->length * sizeof(Rule *));
 
@@ -61,24 +66,25 @@ const RuleQueue * const restrict source) {
 
 /**
  * @brief Enqueues a Rule to a RuleQueue.
- * 
+ *
  * @param rule_queue The RuleQueue to enqueue (add) the rule into.
  * @param rule The Rule to be enqueued. If NULL is given, the queue will remain the same.
  */
 void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule) {
     if (rule_queue && rule) {
         ++rule_queue->length;
-        rule_queue->rules = (Rule **) realloc(rule_queue->rules, rule_queue->length * sizeof(Rule *));
+        rule_queue->rules = (Rule **) realloc(rule_queue->rules,
+        rule_queue->length * sizeof(Rule *));
         rule_copy(&(rule_queue->rules[rule_queue->length - 1]), rule);
     }
 }
 
 /**
  * @brief Dequeues a Rule from the RuleQueue.
- * 
+ *
  * @param rule_queue The RuleQueue to dequeue (remove) the rule from.
  * @param dequeued_rule The Rule that was dequeued to be saved. It should be a reference to the 
- * object's pointer. If NULL is given, the rule will be destroyed.
+ * object's pointer. If NULL is given, the rule will bedestroyed.
  */
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rule) {
     if (rule_queue) {
@@ -107,11 +113,11 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rul
 
 /**
  * @brief Finds the index of the given Rule in the RuleQueue.
- * 
+ *
  * @param rule_queue The RuleQueue to find the Rule in.
  * @param rule The Rule to be found.
- * 
- * @return index where the Rule is or -1 if it does not exist or either the Rule or the RuleQueue 
+ *
+ * @return index where the Rule is or -1 if it does not exist or either the Rule or the RuleQueue
  * are NULL.
  */
 int rule_queue_find(const RuleQueue * const  restrict rule_queue, const Rule * const restrict rule) {
@@ -129,10 +135,10 @@ int rule_queue_find(const RuleQueue * const  restrict rule_queue, const Rule * c
 
 /**
  * @brief Removes a Rule in the given position.
- * 
+ *
  * @param rule_queue The RuleQueue to remove the Rule.
  * @param rule_index The position of the Rule to be removed.
- * @param removed_rule The Rule that was removed to be saved. It should be a reference to the 
+ * @param removed_rule The Rule that was removed to be saved. It should be a reference to the
  * object's pointer.If NULL is given, the rule will be destroyed.
  */
 void rule_queue_remove_rule(RuleQueue * const rule_queue, const int rule_index,
@@ -161,7 +167,7 @@ Rule ** const removed_rule) {
                     memcpy(rule_queue->rules, rules, rule_queue->length * sizeof(Rule *));
                 } else {
                     memcpy(rule_queue->rules, rules, (u_rule_index) * sizeof(Rule *));
-                    memcpy(rule_queue->rules + u_rule_index, rules + u_rule_index + 1, 
+                    memcpy(rule_queue->rules + u_rule_index, rules + u_rule_index + 1,
                     (rule_queue->length - u_rule_index) * sizeof(Rule *));
                 }
 
@@ -174,7 +180,7 @@ Rule ** const removed_rule) {
 /**
  * @brief Find all the applicable Rules with a given Context. An applicable Rule, is a Rule whose
  * body is true.
- * 
+ *
  * @param rule_queue The RuleQueue to find the applicable Rules from.
  * @param context The Context to check for applicable Rules.
  * @param rule_indices The IntVector to save the indices of the Rules that are applicable. It should
@@ -195,9 +201,9 @@ const Context * const context, IntVector ** const rule_indices) {
 }
 
 /**
- * @brief Finds all the concurring rules with a given Context. A concurring Rule, is a Rule whose 
+ * @brief Finds all the concurring rules with a given Context. A concurring Rule, is a Rule whose
  * body and its head are true.
- * 
+ *
  * @param rule_queue The RuleQueue to find the concurring Rules from.
  * @param context The Context to check for concurring Rules.
  * @param rule_indices The IntVector to save the indices of the Rules that are concurring. It should
@@ -211,7 +217,7 @@ const Context * const context, IntVector ** const rule_indices) {
         unsigned int i, j;
         for (i = 0; i < rule_queue->length; ++i) {
             for (j = 0; j < context->size; ++j) {
-                if (literal_equals(rule_queue->rules[i]->head, context->observations[j])) {
+                if (literal_equals(rule_queue->rules[i]->head, context->literals[j])) {
                     if (rule_applicable(rule_queue->rules[i], context)) {
                         int_vector_push(*rule_indices, i);
                     }
@@ -224,10 +230,10 @@ const Context * const context, IntVector ** const rule_indices) {
 
 /**
  * @brief Converts the RuleQueue into a string format.
- * 
+ *
  * @param rule_queue The RuleQueue to be converted.
- * 
- * @return The string format of the given RuleQueue. Use free() to deallocate this string. Returns 
+ *
+ * @return The string format of the given RuleQueue. Use free() to deallocate this string. Returns
  * NULL if the RuleQueue is NULL.
  */
 char *rule_queue_to_string(const RuleQueue * const rule_queue) {

@@ -12,8 +12,11 @@ START_TEST(construct_destruct_test) {
 
     int_vector_destructor(&int_vector);
     ck_assert_ptr_null(int_vector);
-    
+
     int_vector_destructor(&int_vector);
+    ck_assert_ptr_null(int_vector);
+
+    int_vector_destructor(NULL);
 }
 END_TEST
 
@@ -80,6 +83,85 @@ START_TEST(push_test) {
     int_vector_destructor(&int_vector);
 
     int_vector_push(NULL, 5);
+}
+END_TEST
+
+START_TEST(insert_test) {
+    IntVector *int_vector = int_vector_constructor();
+
+    int_vector_push(int_vector, 5);
+    int_vector_push(int_vector, 9);
+    int_vector_push(int_vector, 15);
+    int_vector_push(int_vector, 20);
+    ck_assert_int_eq(int_vector->size, 4);
+    ck_assert_int_eq(int_vector->items[0], 5);
+    ck_assert_int_eq(int_vector->items[1], 9);
+    ck_assert_int_eq(int_vector->items[2], 15);
+    ck_assert_int_eq(int_vector->items[3], 20);
+    int_vector_insert(int_vector, 1, 50);
+    ck_assert_int_eq(int_vector->size, 5);
+    ck_assert_int_eq(int_vector->items[0], 5);
+    ck_assert_int_eq(int_vector->items[1], 50);
+    ck_assert_int_eq(int_vector->items[2], 9);
+    ck_assert_int_eq(int_vector->items[3], 15);
+    ck_assert_int_eq(int_vector->items[4], 20);
+
+    int_vector_insert(int_vector, 3, 500);
+    ck_assert_int_eq(int_vector->size, 6);
+    ck_assert_int_eq(int_vector->items[0], 5);
+    ck_assert_int_eq(int_vector->items[1], 50);
+    ck_assert_int_eq(int_vector->items[2], 9);
+    ck_assert_int_eq(int_vector->items[3], 500);
+    ck_assert_int_eq(int_vector->items[4], 15);
+    ck_assert_int_eq(int_vector->items[5], 20);
+
+    int_vector_insert(int_vector, 5, 80);
+    ck_assert_int_eq(int_vector->size, 7);
+    ck_assert_int_eq(int_vector->items[0], 5);
+    ck_assert_int_eq(int_vector->items[1], 50);
+    ck_assert_int_eq(int_vector->items[2], 9);
+    ck_assert_int_eq(int_vector->items[3], 500);
+    ck_assert_int_eq(int_vector->items[4], 15);
+    ck_assert_int_eq(int_vector->items[5], 80);
+    ck_assert_int_eq(int_vector->items[6], 20);
+
+    int_vector_insert(int_vector, 7, 9001);
+    ck_assert_int_eq(int_vector->size, 8);
+    ck_assert_int_eq(int_vector->items[0], 5);
+    ck_assert_int_eq(int_vector->items[1], 50);
+    ck_assert_int_eq(int_vector->items[2], 9);
+    ck_assert_int_eq(int_vector->items[3], 500);
+    ck_assert_int_eq(int_vector->items[4], 15);
+    ck_assert_int_eq(int_vector->items[5], 80);
+    ck_assert_int_eq(int_vector->items[6], 20);
+    ck_assert_int_eq(int_vector->items[7], 9001);
+
+    int_vector_insert(int_vector, 9, 42);
+    ck_assert_int_eq(int_vector->size, 8);
+    ck_assert_int_eq(int_vector->items[0], 5);
+    ck_assert_int_eq(int_vector->items[1], 50);
+    ck_assert_int_eq(int_vector->items[2], 9);
+    ck_assert_int_eq(int_vector->items[3], 500);
+    ck_assert_int_eq(int_vector->items[4], 15);
+    ck_assert_int_eq(int_vector->items[5], 80);
+    ck_assert_int_eq(int_vector->items[6], 20);
+    ck_assert_int_eq(int_vector->items[7], 9001);
+
+    int_vector_insert(NULL, 0, 50);
+    ck_assert_int_eq(int_vector->size, 8);
+
+    int_vector_destructor(&int_vector);
+    ck_assert_ptr_null(int_vector);
+
+    int_vector_insert(int_vector, 0, 800);
+    ck_assert_ptr_null(int_vector);
+
+    int_vector = int_vector_constructor();
+    int_vector_insert(int_vector, 0, 800);
+    ck_assert_int_eq(int_vector->size, 1);
+    ck_assert_int_eq(int_vector->items[0], 800);
+
+    int_vector_destructor(&int_vector);
 }
 END_TEST
 
@@ -208,6 +290,7 @@ Suite *int_vector_suite() {
     manipulation_case = tcase_create("Manipulation");
     tcase_add_test(manipulation_case, resize_test);
     tcase_add_test(manipulation_case, push_test);
+    tcase_add_test(manipulation_case, insert_test);
     tcase_add_test(manipulation_case, delete_test);
     tcase_add_test(manipulation_case, get_test);
     tcase_add_test(manipulation_case, set_test);

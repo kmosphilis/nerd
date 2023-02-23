@@ -2,32 +2,35 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "sensor.h"
-
-#define BUFFER_SIZE 255
 
 /**
  * @brief Constructs a Sensor from a file.
  *
+ * @param sensor The Sensor to be constructed. If NULL is given, nothing will happen.
  * @param filepath The path to the file. If NULL is given, the sensor will not be constructed.
- * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF. 
+ * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF.
  * Use > 0 to indicate yes, and 0 to indicate no.
  *
  * @return A new Sensor object *. Use sensor_destructor to deallocate.
  */
-Sensor *sensor_constructor_from_file(const char * const filepath, const uint_fast8_t reuse) {
+Sensor *sensor_constructor_from_file(const char * const filepath, const bool reuse) {
     Sensor *sensor = (Sensor *) malloc(sizeof(Sensor));
     if (filepath) {
-        sensor->enviroment = fopen(filepath, "rb");
-        if (sensor->enviroment == NULL) {
+        sensor->environment = fopen(filepath, "rb");
+        if (sensor->environment == NULL) {
             sensor->reuse = 0;
+            sensor->filepath = NULL;
         } else {
             sensor->reuse = reuse;
+            sensor->filepath = strdup(filepath);
         }
     } else {
-        sensor->enviroment = NULL;
+        sensor->environment = NULL;
         sensor->reuse = 0;
+        sensor->filepath = NULL;
     }
     return sensor;
 }
@@ -35,18 +38,48 @@ Sensor *sensor_constructor_from_file(const char * const filepath, const uint_fas
 /**
  * @brief Destructs a Sensor.
  *
- * @param sensor The Sensor to be destructed. It should be a reference to the object's pointer.
+ * @param sensor The Sensor to be destructed.
  */
 void sensor_destructor(Sensor ** const sensor) {
     if (sensor && (*sensor)) {
-        if ((*sensor)->enviroment) {
-            fclose((*sensor)->enviroment);
-            (*sensor)->enviroment = NULL;
+        if ((*sensor)->environment) {
+            fclose((*sensor)->environment);
+            (*sensor)->environment = NULL;
             (*sensor)->reuse = 0;
+            free((*sensor)->filepath);
+            (*sensor)->filepath = NULL;
         }
         free(*sensor);
         *sensor = NULL;
     }
+}
+
+/**
+ * @brief Finds the total literals in the environment.
+ *
+ * @param sensor The sensor to get the total literals from.
+ *
+ * @return The number of total literals, or -1 if the sensor is NULL.
+*/
+size_t sensor_get_total_observations(const Sensor * const sensor) {
+    if (sensor && sensor->environment) {
+        fpos_t current_possition;
+        fgetpos(sensor->environment, &current_possition);
+        rewind(sensor->environment);
+
+        size_t total_observations = 0;
+        char c;
+        for (c = getc(sensor->environment); c != EOF; c = getc(sensor->environment)) {
+            if (c == '\n') {
+                ++total_observations;
+            }
+        }
+        fsetpos(sensor->environment, &current_possition);
+
+        return total_observations;
+    }
+
+    return -1;
 }
 
 /**
@@ -61,16 +94,16 @@ void sensor_destructor(Sensor ** const sensor) {
  * here. If NULL is given, it will not be saved.
  */
 void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output,
-const unsigned short partial_observation, Scene ** const restrict initial_observation) {
+const bool partial_observation, Scene ** const restrict initial_observation) {
     if (sensor && output) {
         *output = scene_constructor();
-        if (sensor->enviroment) {
-            int c = fgetc(sensor->enviroment);
+        if (sensor->environment) {
+            int c = fgetc(sensor->environment);
 
             if (c == EOF) {
                 if (sensor->reuse) {
-                    fseek(sensor->enviroment, 0, SEEK_SET);
-                    c = fgetc(sensor->enviroment);
+                    fseek(sensor->environment, 0, SEEK_SET);
+                    c = fgetc(sensor->environment);
                 } else {
                     return;
                 }
@@ -97,7 +130,7 @@ const unsigned short partial_observation, Scene ** const restrict initial_observ
                     i = 0;
                 }
 
-                c = fgetc(sensor->enviroment);
+                c = fgetc(sensor->environment);
             }
 
             if (buffer[0] == '-') {

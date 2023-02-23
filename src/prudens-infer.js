@@ -13,22 +13,13 @@ fs.readFile(".temp", (err, data) => {
 
         let literals = [];
 
-        let rules = []
-        let inferredContext = 
-            parsers.contextToString(result.facts).replace(/;/g,"").replace("true", "").trim();
         for (let key in result.graph) {
             result.graph[key] = result.graph[key].filter((element) => !element.name.startsWith('$'));
             if (result.graph[key].length > 0) {
-                rules.push([]);
-                for (let rule of result.graph[key]) {
-                    rule.name = rule.name.replace("Rule", "");
-                    rules[rules.length - 1].push(rule.name);
-                }
-                literals.push(`${key}, ${rules[rules.length - 1].length}`);
+                literals.push(`${key}`);
             }
         }
-        rules.forEach((value, index, array) => array[index] = value.join(" "));
-        fs.writeFile(".temp", `${inferredContext}\n${literals.join(" ")}\n${rules.join("\n")}`, (err) => {
+        fs.writeFile(".temp", literals.join(" "), (err) => {
             if (err) throw err;
             return;
         });

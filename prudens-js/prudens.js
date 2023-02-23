@@ -383,8 +383,10 @@ function updateGraph(inferredHead, newRule, graph, previousFacts, factsToBeAdded
     let isPrior, beatsAll;
     for (const oppositeHead of conflicts) {
         // console.log("Here", oppositeHead);
+        // console.log("context:", context);
         if (utils.deepIncludes(oppositeHead, context)) { // Should we consider dilemmas in the case of contexts?
             // console.log("Context");
+            // console.log(context, literalToString(inferredHead));
             defeatedRules.push({
                 "defeated": newRule,
                 "by": undefined, // Undefined means context.
@@ -402,26 +404,36 @@ function updateGraph(inferredHead, newRule, graph, previousFacts, factsToBeAdded
             };
         }
         if (utils.deepIncludes(oppositeHead, facts, true)) {
-            // console.log("indludes:", oppositeHead);
+            // console.log("includes:", oppositeHead);
             includesConflict = true;
             const toBeRemoved = [];
             // console.log("facts:", facts);
             // console.log("graph:", graph);
             // console.log("lit:", oppositeHead);
             // debugger;
-            beatsAll = true; // FIXME in case an ungrounded variable appears on the head (i.e., one that *DOES NOT* appear in the rule's body, it should through a runtime error --- or, better, catch this on parsing?)
+            beatsAll = true; // FIXME in case an ungrounded variable appears on the head (i.e., one that *DOES NOT* appear in the rule's body, it should throw a runtime error --- or, better, catch this on parsing?)
+            if (!Object.keys(graph).includes(parsers.literalToString(oppositeHead))) {
+                continue;
+            }
             for (const rule of graph[parsers.literalToString(oppositeHead)]) {
-				isPrior = priorityFunction(newRule, rule, kbObject, sub);
+                isPrior = priorityFunction(newRule, rule, kbObject, sub);
                 // console.log(newRule, rule);
                 // console.log("isPrior:", isPrior);
                 // debugger;
                 if (isPrior === undefined || isPrior) {
+                    console.log("Here");
                     toBeRemoved.push(rule);
-                    defeatedRules.push({
+                    if (!utils.deepIncludes({
                         "defeated": rule,
                         "by": newRule,
                         "sub": sub,
-                    });
+                    }, defeatedRules)) {
+                        defeatedRules.push({
+                            "defeated": rule,
+                            "by": newRule,
+                            "sub": sub,
+                        });
+                    }
                     if (!utils.deepIncludes(rule, deletedRules)) {
                         deletedRules.push(rule);
                     }
@@ -429,12 +441,25 @@ function updateGraph(inferredHead, newRule, graph, previousFacts, factsToBeAdded
                     // console.log("Includes opposite head and not rule.");
                     // debugger;
                     if (isPrior === undefined) {
-						if (!utils.deepIncludes([rule, newRule, sub], dilemmas) && !utils.deepIncludes([newRule, rule, sub])) {
-							dilemmas.push([rule, newRule, sub]);
-						}
-						beatsAll = false;
-						inferred = false;
-					}
+                        if (!utils.deepIncludes([rule, newRule, sub], dilemmas) && !utils.deepIncludes([newRule, rule, sub])) {
+                            dilemmas.push([rule, newRule, sub]);
+                        }
+                        beatsAll = false;
+                        inferred = false;
+                    }
+                } else { // TODO Check this again!
+                    // console.log("here")
+                    if (!utils.deepIncludes({
+                        "defeated": newRule,
+                        "by": rule,
+                        "sub": sub,
+                    }, defeatedRules)) {
+                        defeatedRules.push({
+                            "defeated": newRule,
+                            "by": rule,
+                            "sub": sub,
+                        });
+                    }
                 }
             }
             if (graph[parsers.literalToString(oppositeHead)].length === toBeRemoved.length) {
@@ -443,11 +468,11 @@ function updateGraph(inferredHead, newRule, graph, previousFacts, factsToBeAdded
                 // console.log("graph:", graph);
                 // debugger;
                 if (beatsAll) {
-					graph[parsers.literalToString(inferredHead)] = [newRule];
-					// console.log("Facts prior to pushing: ", facts);
-					// debugger;
-					factsToBeAdded.push(inferredHead);
-				}
+                    graph[parsers.literalToString(inferredHead)] = [newRule];
+                    // console.log("Facts prior to pushing: ", facts);
+                    // debugger;
+                    factsToBeAdded.push(inferredHead);
+                }
                 // console.log("Facts prior to splicing: ", facts, "\nIndex of opposite head: " + deepIndexOf(facts, oppositeHead));
                 // debugger;
                 // facts = facts.splice(deepIndexOf(facts, oppositeHead), 1); // FIXME .indexOf() returns -1 because, guess what, it does not work with lists of objects... Create a deep alternative.

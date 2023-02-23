@@ -1,19 +1,24 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "scene.h"
 
-#ifndef __SENSOR_H__
-#define __SENSOR_H__
+#ifndef SENSOR_H
+#define SENSOR_H
+
+#define BUFFER_SIZE 256
 
 typedef struct Sensor {
-    FILE *enviroment;
-    uint_fast8_t reuse;
+    FILE *environment;
+    bool reuse;
+    char *filepath;
 } Sensor;
 
-Sensor *sensor_constructor_from_file(const char * const filepath, const uint_fast8_t reuse);
+Sensor *sensor_constructor_from_file(const char * const filepath, const bool reuse);
 void sensor_destructor(Sensor ** const sensor);
+size_t sensor_get_total_observations(const Sensor * const sensor);
 void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output,
-const unsigned short partial_observation, Scene ** const restrict initial_observation);
+const bool partial_observation, Scene ** const restrict initial_observation);
 
 #endif

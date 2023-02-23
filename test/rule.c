@@ -8,7 +8,7 @@
 START_TEST(construct_destruct_test) {
     Rule *rule = NULL;
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
@@ -17,7 +17,7 @@ START_TEST(construct_destruct_test) {
     for (i = 0; i < body_size; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule = rule_constructor(body_size, body, head, starting_weight);
@@ -25,10 +25,10 @@ START_TEST(construct_destruct_test) {
     ck_assert_int_eq(rule->body->size, body_size);
     ck_assert_literal_eq(rule->head, head);
     for(i = 0; i < body_size; ++i) {
-        ck_assert_literal_eq(rule->body->observations[i], body[i]);
+        ck_assert_literal_eq(rule->body->literals[i], body[i]);
     }
     ck_assert_float_eq(rule->weight, starting_weight);
-    
+
     rule_destructor(&rule);
     ck_assert_ptr_null(rule);
 
@@ -52,7 +52,7 @@ END_TEST
 START_TEST(copy_test) {
     Rule *rule1 = NULL, *rule2 = NULL;
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
@@ -61,7 +61,7 @@ START_TEST(copy_test) {
     for (i = 0; i < body_size; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule1 = rule_constructor(body_size, body, head, starting_weight);
@@ -91,7 +91,7 @@ END_TEST
 START_TEST(promote_test) {
     Rule *rule = NULL;
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
@@ -100,7 +100,7 @@ START_TEST(promote_test) {
     for (i = 0; i < body_size; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule = rule_constructor(body_size, body, head, starting_weight);
@@ -125,7 +125,7 @@ START_TEST(promote_test) {
     for (i = 0; i < body_size; ++i) {
         literal_destructor(&body[i]);
     }
-    
+
     free(body);
 }
 END_TEST
@@ -133,7 +133,7 @@ END_TEST
 START_TEST(demote_test) {
     Rule *rule = NULL;
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 5;
@@ -142,7 +142,7 @@ START_TEST(demote_test) {
     for (i = 0; i < body_size; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule = rule_constructor(body_size, body, head, starting_weight);
@@ -167,7 +167,7 @@ START_TEST(demote_test) {
     for (i = 0; i < body_size; ++i) {
         literal_destructor(&body[i]);
     }
-    
+
     free(body);
 }
 END_TEST
@@ -176,7 +176,7 @@ START_TEST(applicable_test) {
     Rule *rule = NULL;
     Context *context = context_constructor();
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
@@ -186,7 +186,7 @@ START_TEST(applicable_test) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
         context_add_literal(context, body[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule = rule_constructor(body_size, body, head, starting_weight);
@@ -218,7 +218,7 @@ START_TEST(concurs_test) {
     Rule *rule = NULL;
     Context *context = context_constructor();
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
@@ -228,7 +228,7 @@ START_TEST(concurs_test) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
         context_add_literal(context, body[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule = rule_constructor(body_size, body, head, starting_weight);
@@ -259,7 +259,7 @@ START_TEST(equality_checK_test) {
     Rule *rule1 = NULL, *rule2 = NULL, *rule3 = NULL, *rule4 = NULL, *rule5 = NULL, *rule6 = NULL,
     *rule7 = NULL;
     const size_t body_size = 3, body_size2 = 2;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     char *body_literal_atoms2[3] = {"Albatross", "Bird", "Antartica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
@@ -269,7 +269,7 @@ START_TEST(equality_checK_test) {
     for (i = 0; i < body_size; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule1 = rule_constructor(body_size, body, head, starting_weight);
@@ -338,7 +338,7 @@ END_TEST
 START_TEST(to_string_test) {
     Rule *rule = NULL, *copy = NULL;
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
@@ -347,7 +347,7 @@ START_TEST(to_string_test) {
     for (i = 0; i < body_size; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule = rule_constructor(body_size, body, head, starting_weight);
@@ -389,7 +389,7 @@ END_TEST
 START_TEST(to_prudensjs_test) {
     Rule *rule = NULL, *copy = NULL;
     const size_t body_size = 3;
-    Literal **body = (Literal **) malloc(sizeof(Literal*) * body_size), *head;
+    Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size), *head;
     char *body_literal_atoms[3] = {"Penguin", "Bird", "Antarctica"};
     uint_fast8_t body_literal_signs[3] = {1, 1, 1};
     float starting_weight = 0;
@@ -398,11 +398,11 @@ START_TEST(to_prudensjs_test) {
     for (i = 0; i < body_size; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
-    
+
     head = literal_constructor("Fly", 0);
 
     rule = rule_constructor(body_size, body, head, starting_weight);
-    
+
     char *rule_prudensjs_string = rule_to_prudensjs(rule, 1);
     ck_assert_str_eq(rule_prudensjs_string, "{\"name\": \"Rule1\", \"body\": ["
     "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "

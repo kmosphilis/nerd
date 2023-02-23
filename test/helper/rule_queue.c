@@ -6,7 +6,7 @@
 
 /**
  * @brief Creates a dynamic Rule array.
- * 
+ *
  * @return The Rule array. Use destruct_rules() to deallocate this array.
  */
 Rule **create_rules() {
@@ -14,7 +14,7 @@ Rule **create_rules() {
     unsigned int j;
 
     const size_t body_size[3] = {3, 2, 4};
-    
+
     char *body_literal_atoms[3][4] = {
         {"Penguin", "Bird", "Antarctica"},
         {"Albatross", "Bird"},
@@ -38,7 +38,7 @@ Rule **create_rules() {
         for (i = 0; i < body_size[j]; ++i) {
             body[i] = literal_constructor(body_literal_atoms[j][i], body_literal_signs[j][i]);
         }
-        
+
         head = literal_constructor("Fly", head_sign[j]);
 
         rule = rule_constructor(body_size[j], body, head, starting_weight);
@@ -58,7 +58,7 @@ Rule **create_rules() {
 
 /**
  * @brief Destructs the dynamic Rule array created from create_rules().
- * 
+ *
  * @param rules The dynamic Rule array.
  */
 void destruct_rules(Rule **rules) {
@@ -71,11 +71,10 @@ void destruct_rules(Rule **rules) {
 
 /**
  * @brief Creates a RuleQueue by constructing and filling it with values.
- * 
+ *
  * @return A * to the created RuleQueue.
  */
 RuleQueue *create_rule_queue() {
-    
     RuleQueue *rule_queue = rule_queue_constructor();
 
     Rule **rules = create_rules();

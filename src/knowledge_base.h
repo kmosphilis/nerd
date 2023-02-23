@@ -3,8 +3,8 @@
 #include "scene.h"
 #include "context.h"
 
-#ifndef __KNOWLEDGE_BASE_H__
-#define __KNOWLEDGE_BASE_H__
+#ifndef KNOWLEDGE_BASE_H
+#define KNOWLEDGE_BASE_H
 
 typedef struct KnowledgeBase {
     RuleQueue *active, *inactive;
@@ -34,10 +34,15 @@ void knowledge_base_promote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_promote, const float promotion_rate);
 void knowledge_base_demote_rules(KnowledgeBase * const knowledge_base,
 const RuleQueue * const rules_to_demote, const float demotion_rate);
-int knowledge_base_promote_rule(KnowledgeBase * const knowledge_base, const RuleEffectiveness type,
-const unsigned int rule_index, const float promotion_weight);
-int knowledge_base_demote_rule(KnowledgeBase * const knowledge_base, const RuleEffectiveness type,
-const unsigned int rule_index, const float demotion_weight);
+int knowledge_base_promote_rule(KnowledgeBase * const knowledge_base,
+const RuleEffectiveness effectiveness, const unsigned int rule_index, const float promotion_weight);
+int knowledge_base_demote_rule(KnowledgeBase * const knowledge_base,
+const RuleEffectiveness effectiveness, const unsigned int rule_index, const float demotion_weight);
+int knowledge_base_demote_chained_rules(KnowledgeBase * const knowledge_base,
+const Scene * const inferred, IntVector * const applicable_rules,
+const RuleEffectiveness effectiveness, const unsigned int rule_to_demote,
+const float demotion_weight, IntVector * const demoted_deleted_applicable_rules,
+unsigned int * const number_of_demoted_rules);
 char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base);
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base);
 

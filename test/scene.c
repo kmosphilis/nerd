@@ -13,6 +13,9 @@ START_TEST(construct_destruct_test) {
     scene_destructor(&scene);
     ck_assert_ptr_null(scene);
 
+    scene_destructor(&scene);
+    ck_assert_ptr_null(scene);
+
     scene_destructor(NULL);
 }
 END_TEST
@@ -25,31 +28,32 @@ START_TEST(add_test) {
     literal = literal_constructor("Penguin", 1);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 1);
-    ck_assert_literal_eq(scene->observations[0], literal);
+    ck_assert_literal_eq(scene->literals[0], literal);
     literal_destructor(&literal);
     ck_assert_scene_notempty(scene);
 
     literal = literal_constructor("Antarctica", 1);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 2);
-    ck_assert_literal_eq(scene->observations[1], literal);
+    ck_assert_literal_eq(scene->literals[1], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Bird", 1);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 3);
-    ck_assert_literal_eq(scene->observations[2], literal);
+    ck_assert_literal_eq(scene->literals[2], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Fly", 0);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 4);
-    ck_assert_literal_eq(scene->observations[3], literal);
+    ck_assert_literal_eq(scene->literals[3], literal);
 
     scene_add_literal(scene, NULL);
     ck_assert_int_eq(scene->size, 4);
 
     scene_add_literal(NULL, literal);
+    ck_assert_int_eq(scene->size, 4);
 
     scene_add_literal(scene, literal);
     ck_assert_int_ne(scene->size, 5);
@@ -68,27 +72,27 @@ START_TEST(index_retrieval_test)  {
     literal = literal_constructor("Penguin", 1);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 1);
-    ck_assert_literal_eq(scene->observations[0], literal);
+    ck_assert_literal_eq(scene->literals[0], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Antarctica", 1);
     literal_copy(&literal2, literal);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 2);
-    ck_assert_literal_eq(scene->observations[1], literal);
+    ck_assert_literal_eq(scene->literals[1], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Bird", 1);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 3);
-    ck_assert_literal_eq(scene->observations[2], literal);
+    ck_assert_literal_eq(scene->literals[2], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Fly", 0);
     literal_copy(&literal3, literal);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 4);
-    ck_assert_literal_eq(scene->observations[3], literal);
+    ck_assert_literal_eq(scene->literals[3], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Fly", 1);
@@ -114,39 +118,39 @@ START_TEST(delete_test)  {
     literal_copy(&literal1, literal);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 1);
-    ck_assert_literal_eq(scene->observations[0], literal);
+    ck_assert_literal_eq(scene->literals[0], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Antarctica", 1);
     scene_add_literal(scene, literal);
     literal_copy(&literal2, literal);
     ck_assert_int_eq(scene->size, 2);
-    ck_assert_literal_eq(scene->observations[1], literal);
+    ck_assert_literal_eq(scene->literals[1], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Bird", 1);
     literal_copy(&literal3, literal);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 3);
-    ck_assert_literal_eq(scene->observations[2], literal);
+    ck_assert_literal_eq(scene->literals[2], literal);
     literal_destructor(&literal);
 
     literal = literal_constructor("Fly", 0);
     scene_add_literal(scene, literal);
     ck_assert_int_eq(scene->size, 4);
-    ck_assert_literal_eq(scene->observations[3], literal);
+    ck_assert_literal_eq(scene->literals[3], literal);
 
     int literal_index = scene_literal_index(scene, literal1);
     scene_remove_literal(scene, literal_index);
     ck_assert_int_eq(scene->size, 3);
-    ck_assert_literal_ne(scene->observations[literal_index], literal1);
-    ck_assert_literal_eq(scene->observations[literal_index], literal2);
+    ck_assert_literal_ne(scene->literals[literal_index], literal1);
+    ck_assert_literal_eq(scene->literals[literal_index], literal2);
 
     literal_index = scene_literal_index(scene, literal3);
     scene_remove_literal(scene, literal_index);
     ck_assert_int_eq(scene->size, 2);
-    ck_assert_literal_ne(scene->observations[literal_index], literal3);
-    ck_assert_literal_eq(scene->observations[literal_index], literal);
+    ck_assert_literal_ne(scene->literals[literal_index], literal3);
+    ck_assert_literal_eq(scene->literals[literal_index], literal);
 
     scene_remove_literal(scene, 9);
     ck_assert_int_eq(scene->size, 2);
@@ -154,11 +158,11 @@ START_TEST(delete_test)  {
     literal_index = scene_literal_index(scene, literal);
     scene_remove_literal(scene, literal_index);
     ck_assert_int_eq(scene->size, 1);
-    ck_assert_literal_ne(scene->observations[0], literal);
-    ck_assert_literal_eq(scene->observations[0], literal2);
+    ck_assert_literal_ne(scene->literals[0], literal);
+    ck_assert_literal_eq(scene->literals[0], literal2);
     scene_remove_literal(NULL, 0);
     ck_assert_int_eq(scene->size, 1);
-    ck_assert_literal_eq(scene->observations[0], literal2);
+    ck_assert_literal_eq(scene->literals[0], literal2);
 
 
     literal_destructor(&literal);
@@ -192,7 +196,7 @@ START_TEST(copy_test) {
 
     scene_copy(&scene2, scene1);
 
-    ck_assert_ptr_ne(scene1->observations, scene2->observations);
+    ck_assert_ptr_ne(scene1->literals, scene2->literals);
     ck_assert_scene_eq(scene1, scene2);
 
     scene_destructor(&scene1);
@@ -217,6 +221,10 @@ START_TEST(copy_test) {
 
     scene_destructor(&scene1);
     scene_destructor(&scene2);
+
+    scene_copy(&scene1, scene2);
+    ck_assert_ptr_null(scene2);
+    ck_assert_ptr_null(scene1);
 }
 END_TEST
 
@@ -312,7 +320,7 @@ START_TEST(combine_test) {
 
     scene_union(NULL, NULL, &result);
     ck_assert_ptr_null(result);
-    
+
     scene_union(scene1, scene2, NULL);
 
     scene_destructor(&scene1);
@@ -370,7 +378,7 @@ START_TEST(difference_test) {
 
     scene_difference(NULL, NULL, &result);
     ck_assert_ptr_null(result);
-    
+
     scene_difference(scene1, scene2, NULL);
 
     scene_destructor(&scene1);
@@ -466,7 +474,7 @@ START_TEST(intersect_test) {
 
     scene_intersect(NULL, NULL, &result);
     ck_assert_ptr_null(result);
-    
+
     scene_intersect(scene1, scene2, NULL);
 
     scene_destructor(&scene1);
@@ -511,7 +519,7 @@ START_TEST(opposed_literals_test) {
     literal = literal_constructor("Antarctica", 1);
     scene_add_literal(scene1, literal);
     literal_destructor(&literal);
-    
+
     scene_opposed_literals(scene1, scene2, &result);
     ck_assert_scene_eq(expected2, result);
     scene_destructor(&result);

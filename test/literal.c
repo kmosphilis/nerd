@@ -26,13 +26,16 @@ START_TEST(construct_destruct_test) {
     ck_assert_str_eq(literal->atom, "penguin");
     ck_assert_int_eq(literal->sign, 1);
     literal_destructor(&literal);
+    ck_assert_ptr_null(literal);
 
     literal = literal_constructor(NULL, 0);
     ck_assert_ptr_nonnull(literal);
     ck_assert_literal_empty(literal);
     literal_destructor(&literal);
+    ck_assert_ptr_null(literal);
 
     literal_destructor(&literal);
+    ck_assert_ptr_null(literal);
     literal_destructor(NULL);
 }
 END_TEST
@@ -96,7 +99,7 @@ END_TEST
 
 START_TEST(equality_check_test) {
     Literal *literal1 = NULL, *literal2 = NULL, *literal3 = NULL, *literal4 = NULL;
-    
+
     literal1 = literal_constructor("Penguin", 1);
     literal_copy(&literal2, literal1);
     literal3 = literal_constructor("Penguin", 0);
@@ -122,7 +125,7 @@ END_TEST
 
 START_TEST(opposed_test) {
     Literal *literal1 = NULL, *literal2 = NULL, *literal3 = NULL, *literal4 = NULL;
-    
+
     literal1 = literal_constructor("Penguin", 1);
     literal_copy(&literal2, literal1);
     literal3 = literal_constructor("Penguin", 0);

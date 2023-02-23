@@ -1,19 +1,20 @@
+#include <stdio.h>
+
 #include "int_vector.h"
 #include "rule.h"
 #include "context.h"
 
-#ifndef __RULE_QUEUE_H__
-#define __RULE_QUEUE_H__
+#ifndef RULE_QUEUE_H
+#define RULE_QUEUE_H
 
 typedef struct RuleQueue {
     Rule **rules;
-    unsigned int length;
+    size_t length;
 } RuleQueue;
 
 RuleQueue *rule_queue_constructor();
 void rule_queue_destructor(RuleQueue ** const rule_queue);
-void rule_queue_copy(RuleQueue ** const restrict destination,
-const RuleQueue * const restrict source);
+void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const restrict source);
 void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule);
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rule);
 int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule);

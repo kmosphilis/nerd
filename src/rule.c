@@ -6,13 +6,13 @@
 
 /**
  * @brief Constructs a Rule.
- * 
+ *
  * @param body_size The size of the body of the rule.
  * @param body An array containing a series of Literals required to activate the rule.
  * @param head The head when the rule gets activated.
  * @param weight The weight of the rule.
- * 
- * @return A new Rule *. Use rule_destructor to deallocate. Returnes NULL, if the body is 
+ *
+ * @return A new Rule *. Use rule_destructor to deallocate. Returnes NULL, if the body is
  * NULL, the body_size is > 0 or the head's atom is empty.
  */
 Rule *rule_constructor(const unsigned int body_size, Literal ** const body,
@@ -36,7 +36,7 @@ const Literal * const head, const float weight) {
 
 /**
  * @brief Deconstructs a Rule.
- * 
+ *
  * @param rule The Rule to be destructed. It should be a reference to the object's pointer.
  */
 void rule_destructor(Rule ** const rule) {
@@ -51,12 +51,12 @@ void rule_destructor(Rule ** const rule) {
 
 /**
  * @brief Makes a copy of the given Rule.
- * 
+ *
  * @param destination The Rule to save the copy. It should be a reference to the object's pointer.
- * @param source The Rule to be copied. If the Rule, its body or the head's atom are NULL, the 
+ * @param source The Rule to be copied. If the Rule, its body or the head's atom are NULL, the
  * content of the destination will not be changed.
  */
-void rule_copy(Rule ** const restrict destination, const Rule * const restrict source) {
+void rule_copy(Rule ** const destination, const Rule * const restrict source) {
     if (destination && source) {
         *destination = (Rule *) malloc(sizeof(Rule));
         literal_copy(&((*destination)->head), source->head);
@@ -66,9 +66,9 @@ void rule_copy(Rule ** const restrict destination, const Rule * const restrict s
 }
 
 /**
- * @brief Promote the rule by adding the given amount. If the amount given is negative, it will be 
+ * @brief Promote the rule by adding the given amount. If the amount given is negative, it will be
  * considered a demotion.
- * 
+ *
  * @param rule The Rule to be promoted. If NULL, nothing will happen.
  * @param amount The amount to be added to the weight of the rule.
  */
@@ -79,9 +79,9 @@ void rule_promote(Rule * const rule, const float amount) {
 }
 
 /**
- * @brief Demote the rule by subtracting the given amount. If the amount is negative, it will be 
+ * @brief Demote the rule by subtracting the given amount. If the amount is negative, it will be
  * considered a promotion. The weight will never be negative.
- * 
+ *
  * @param rule The Rule to be demoted. If NULL, nothing will happen.
  * @param amount The amount to be subtracted from the weight of the rule.
  */
@@ -92,13 +92,13 @@ void rule_demote(Rule * const rule, const float amount) {
 }
 
 /**
- * @brief Checks if a Rule is applicable with a given context. An applicable Rule, is a Rule whose 
+ * @brief Checks if a Rule is applicable with a given context. An applicable Rule, is a Rule whose
  * body is true in the given Context.
- * 
+ *
  * @param rule The Rule to be checked.
  * @param context The Context that the Rule will be assest with.
- * 
- * @return 1 if the Rule is applicable, 0 if it is not, or -1 if at least one of the given 
+ *
+ * @return 1 if the Rule is applicable, 0 if it is not, or -1 if at least one of the given
  * parameters is NULL.
  */
 int rule_applicable(const Rule * const rule, const Context * const context) {
@@ -106,7 +106,7 @@ int rule_applicable(const Rule * const rule, const Context * const context) {
         unsigned int i, j, applicable_literals = 0;
         for (i = 0; i < context->size; ++i) {
             for (j = 0; j < rule->body->size; ++j) {
-                if (literal_equals(context->observations[i], rule->body->observations[j])) {
+                if (literal_equals(context->literals[i], rule->body->literals[j])) {
                     ++applicable_literals;
                     if (applicable_literals == rule->body->size) {
                         return 1;
@@ -120,20 +120,20 @@ int rule_applicable(const Rule * const rule, const Context * const context) {
 }
 
 /**
- * @brief Check if a Rule concurs with a given context. A concurring Rule, is a Rule whose head is 
+ * @brief Check if a Rule concurs with a given context. A concurring Rule, is a Rule whose head is
  * true in the given context, and it's body doesn't have to be.
- * 
+ *
  * @param rule The Rule to be checked.
  * @param context The Context that the Rule will be assest with.
- * 
- * @return 1 if the Rule concurs; i.e. the head is true, 0 if the head does not concur, and -1 if 
+ *
+ * @return 1 if the Rule concurs; i.e. the head is true, 0 if the head does not concur, and -1 if
  * one of given parameters is NULL.
 */
 int rule_concurs(const Rule * const rule, const Context * const context) {
     if (rule && context) {
         unsigned int i;
         for (i = 0; i < context->size; ++i) {
-            if (literal_equals(rule->head, context->observations[i])) {
+            if (literal_equals(rule->head, context->literals[i])) {
                 return 1;
             }
         }
@@ -143,12 +143,12 @@ int rule_concurs(const Rule * const rule, const Context * const context) {
 }
 
 /**
- * @brief Check two Rules to see if they are equal. It check their body, and their head. Their body 
+ * @brief Check two Rules to see if they are equal. It check their body, and their head. Their body
  * Literals can be in different order.
- * 
+ *
  * @param rule1 The first rule to be checked.
  * @param rule2 The second rule to be checked.
- * 
+ *
  * @return 1 if they are equal, 0 if they are not and -1 of one of the Rules is NULL.
  */
 int rule_equals(const Rule * const restrict rule1, const Rule * const restrict rule2) {
@@ -159,8 +159,7 @@ int rule_equals(const Rule * const restrict rule1, const Rule * const restrict r
                 unsigned short failed = 0;
                 for (i = 0; i < rule1->body->size; ++i) {
                     for (j = 0; j < rule2->body->size; ++j) {
-                        if (!literal_equals(rule1->body->observations[i],
-                        rule2->body->observations[j])) {
+                        if (!literal_equals(rule1->body->literals[i], rule2->body->literals[j])) {
                             ++failed;
                         }
                     }
@@ -181,20 +180,20 @@ int rule_equals(const Rule * const restrict rule1, const Rule * const restrict r
 
 /**
  * @brief Converts the Rule into a string format.
- * 
+ *
  * @param rule The Rule to be converted.
- * 
- * @return The string format of the given Rule. Use free() to deallocate this string. Returns NULL 
+ *
+ * @return The string format of the given Rule. Use free() to deallocate this string. Returns NULL
  * if the Rule, its body or the head's atom are NULL.
  */
 char *rule_to_string(const Rule * const rule) {
     if (rule) {
-        if (rule->body && rule->head) {
+        if (rule->body && (rule->body->size != 0) && rule->head) {
             unsigned int i;
             char *literal_string, *result = strdup("(");
             size_t result_size = strlen(result) + 1;
 
-            literal_string = literal_to_string(rule->body->observations[0]);
+            literal_string = literal_to_string(rule->body->literals[0]);
             result_size += strlen(literal_string);
             char *temp = strdup(result);
             result = (char *) realloc(result, result_size);
@@ -203,7 +202,7 @@ char *rule_to_string(const Rule * const rule) {
             free(literal_string);
 
             for (i = 1; i < rule->body->size; ++i) {
-                literal_string = literal_to_string(rule->body->observations[i]);
+                literal_string = literal_to_string(rule->body->literals[i]);
                 result_size += strlen(literal_string) + 2;
                 temp = strdup(result);
                 result = (char *) realloc(result, result_size);
@@ -229,16 +228,16 @@ char *rule_to_string(const Rule * const rule) {
 }
 /**
  * @brief Converts a Rule to a Prudens JS Rule format.
- * 
+ *
  * @param rule The Rule to be converted.
  * @param rule_number A number to be appended at the name of the rule.
- * 
- * @return The Prudens JS Rule format (as a string) of the given Rule. Use free() to deallocate the 
+ *
+ * @return The Prudens JS Rule format (as a string) of the given Rule. Use free() to deallocate the
  * result. Returns NULL if the Rule, its body or the head's atom are NULL.
  */
 char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number) {
     if (rule) {
-        if (rule->body && rule->head) {
+        if (rule->body && (rule->body->size != 0) && rule->head) {
             char temp_buffer[50];
             int rule_number_size = sprintf(temp_buffer, "%d", rule_number);
 
@@ -248,7 +247,7 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
 
             unsigned int i;
             for (i = 0; i < rule->body->size - 1; ++i) {
-                literal_prudensjs_string = literal_to_prudensjs(rule->body->observations[i]);
+                literal_prudensjs_string = literal_to_prudensjs(rule->body->literals[i]);
                 body_size += strlen(literal_prudensjs_string) + 2;
                 temp = strdup(body);
                 body = (char *) realloc(body, body_size);
@@ -257,7 +256,7 @@ char *rule_to_prudensjs(const Rule * const rule, const unsigned int rule_number)
                 free(literal_prudensjs_string);
             }
 
-            literal_prudensjs_string = literal_to_prudensjs(rule->body->observations[i]);
+            literal_prudensjs_string = literal_to_prudensjs(rule->body->literals[i]);
             body_size += strlen(literal_prudensjs_string) + 11;
             temp = strdup(body);
             body = (char *) realloc(body, body_size);

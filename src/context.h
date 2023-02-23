@@ -1,7 +1,7 @@
 #include "scene.h"
 
-#ifndef __CONTEXT_H__
-#define __CONTEXT_H__
+#ifndef CONTEXT_H
+#define CONTEXT_H
 
 typedef Scene Context;
 

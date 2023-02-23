@@ -7,21 +7,23 @@
 #include "helper/int_vector.h"
 
 START_TEST(construct_destruct_test) {
-    RuleQueue *rule_queue = NULL;
+    RuleQueue *rule_queue = rule_queue_constructor();
 
-    rule_queue = rule_queue_constructor();
     ck_assert_rule_queue_empty(rule_queue);
+
     rule_queue_destructor(&rule_queue);
     ck_assert_ptr_null(rule_queue);
+
     rule_queue_destructor(&rule_queue);
+    ck_assert_ptr_null(rule_queue);
+
+    rule_queue_destructor(NULL);
 }
 END_TEST
 
 START_TEST(enqueue_test) {
-    RuleQueue *rule_queue = NULL;
+    RuleQueue *rule_queue = rule_queue_constructor();
     Rule *rule = NULL, **rules = create_rules();
-
-    rule_queue = rule_queue_constructor();
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
@@ -48,9 +50,7 @@ START_TEST(enqueue_test) {
 END_TEST
 
 START_TEST(dequeue_test) {
-    RuleQueue *rule_queue = NULL;
-    
-    rule_queue = rule_queue_constructor();
+    RuleQueue *rule_queue = rule_queue_constructor();
 
     Rule **rules = create_rules(), *dequeued_rule = NULL;
 
@@ -103,9 +103,7 @@ START_TEST(dequeue_test) {
 END_TEST
 
 START_TEST(copy_test) {
-    RuleQueue *rule_queue1 = NULL, *rule_queue2 = NULL;
-
-    rule_queue1 = rule_queue_constructor();
+    RuleQueue *rule_queue1 = rule_queue_constructor(), *rule_queue2 = NULL;
 
     Rule **rules = create_rules();
 
@@ -145,14 +143,17 @@ START_TEST(copy_test) {
 
     rule_queue_copy(NULL, NULL);
 
+    rule_queue_copy(&rule_queue1, rule_queue2);
+
+    ck_assert_ptr_null(rule_queue2);
+    ck_assert_ptr_null(rule_queue1);
+
     destruct_rules(rules);
 }
 END_TEST
 
 START_TEST(to_string_test) {
-    RuleQueue *rule_queue = NULL;
-    
-    rule_queue = rule_queue_constructor();
+    RuleQueue *rule_queue = rule_queue_constructor();
 
     Rule **rules = create_rules();
 
@@ -193,9 +194,7 @@ START_TEST(to_string_test) {
 END_TEST
 
 START_TEST(retrieve_index_text) {
-    RuleQueue *rule_queue = NULL;
-    
-    rule_queue = rule_queue_constructor();
+    RuleQueue *rule_queue = rule_queue_constructor();
 
     Rule *rule = NULL, **rules = create_rules();
 
@@ -226,9 +225,7 @@ START_TEST(retrieve_index_text) {
 END_TEST
 
 START_TEST(remove_indexed_rule_test) {
-    RuleQueue *rule_queue = NULL;
-    
-    rule_queue = rule_queue_constructor();
+    RuleQueue *rule_queue = rule_queue_constructor();
 
     Rule *rule = NULL, **rules = create_rules();
 
@@ -274,12 +271,9 @@ START_TEST(remove_indexed_rule_test) {
 END_TEST
 
 START_TEST(find_applicable_rules_test) {
-    RuleQueue *rule_queue = NULL;
-    Context *context = NULL;
-    Literal *literal = NULL;
+    RuleQueue *rule_queue = rule_queue_constructor();
+    Context *context = context_constructor();
     IntVector *result = NULL;
-    
-    rule_queue = rule_queue_constructor();
 
     Rule **rules = create_rules();
 
@@ -288,8 +282,7 @@ START_TEST(find_applicable_rules_test) {
         rule_queue_enqueue(rule_queue, rules[i]);
     }
 
-    context = context_constructor();
-    literal = literal_constructor("Penguin", 1);
+    Literal *literal = literal_constructor("Penguin", 1);
     context_add_literal(context, literal);
     literal_destructor(&literal);
 
@@ -309,7 +302,7 @@ START_TEST(find_applicable_rules_test) {
 
     rule_queue_find_applicable_rules(NULL, context, &result);
     ck_assert_ptr_null(result);
-    
+
     rule_queue_find_applicable_rules(rule_queue, NULL, &result);
     ck_assert_ptr_null(result);
 
@@ -321,12 +314,9 @@ START_TEST(find_applicable_rules_test) {
 }
 
 START_TEST(find_concurring_rules_test) {
-    RuleQueue *rule_queue = NULL;
-    Context *context = NULL;
-    Literal *literal = NULL;
+    RuleQueue *rule_queue = rule_queue_constructor();
+    Context *context = context_constructor();
     IntVector *result = NULL;
-    
-    rule_queue = rule_queue_constructor();
 
     Rule **rules = create_rules();
 
@@ -335,8 +325,7 @@ START_TEST(find_concurring_rules_test) {
         rule_queue_enqueue(rule_queue, rules[i]);
     }
 
-    context = context_constructor();
-    literal = literal_constructor("Penguin", 1);
+    Literal *literal = literal_constructor("Penguin", 1);
     context_add_literal(context, literal);
     literal_destructor(&literal);
 
