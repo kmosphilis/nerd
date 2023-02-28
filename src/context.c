@@ -25,13 +25,12 @@ void context_destructor(Context ** const context) {
 }
 
 /**
- * @brief Adds a Literal to the Context by taking its ownership. Alias for a scene_add_literal.
+ * @brief Adds a Literal pointer to the Context. Alias for a scene_add_literal.
  *
  * @param context The Context to be expanded.
- * @param literal The Literal to add in the Context. A reference to a Literal *, which will be moved
- * permanently in the given Context (the reference will lose its ownership).
+ * @param literal The Literal to add in the Context.
  */
-void context_add_literal(Context * const context, Literal ** const literal) {
+void context_add_literal(Context * const context, Literal * const literal) {
     scene_add_literal(context, literal);
 }
 

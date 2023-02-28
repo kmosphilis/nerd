@@ -10,7 +10,6 @@
     const Literal * const _l2 = (Y); \
     ck_assert_ptr_nonnull(_l1); \
     ck_assert_ptr_nonnull(_l2); \
-    ck_assert_ptr_ne(_l1->atom, _l2->atom); \
     char l1_sign = _l1->sign ? ' ' : '-'; \
     char l2_sign = _l2->sign ? ' ' : '-'; \
     if (_l1->atom) { \

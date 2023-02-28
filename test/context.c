@@ -5,17 +5,13 @@
 
 START_TEST(to_prudensjs_test) {
     Context *context = context_constructor();
-    Literal *literal = literal_constructor("Penguin", 1);
-    context_add_literal(context, &literal);
+    Literal *l1 = literal_constructor("Penguin", 1), *l2 = literal_constructor("Antarctica", 1),
+    *l3 = literal_constructor("Bird", 1), *l4 = literal_constructor("Fly", 0);
 
-    literal = literal_constructor("Antarctica", 1);
-    context_add_literal(context, &literal);
-
-    literal = literal_constructor("Bird", 1);
-    context_add_literal(context, &literal);
-
-    literal = literal_constructor("Fly", 0);
-    context_add_literal(context, &literal);
+    context_add_literal(context, l1);
+    context_add_literal(context, l2);
+    context_add_literal(context, l3);
+    context_add_literal(context, l4);
 
     char *context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
@@ -44,6 +40,11 @@ START_TEST(to_prudensjs_test) {
 
     context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_pstr_eq(context_prudensjs_string, NULL);
+
+    literal_destructor(&l1);
+    literal_destructor(&l2);
+    literal_destructor(&l3);
+    literal_destructor(&l4);
 }
 END_TEST
 
@@ -61,11 +62,9 @@ Suite *context_suite() {
 
 int main() {
     Suite *suite = context_suite();
-    SRunner* s_runner;
+    SRunner *s_runner = srunner_create(suite);
 
-    s_runner = srunner_create(suite);
     srunner_set_fork_status(s_runner, CK_NOFORK);
-
     srunner_run_all(s_runner, CK_ENV);
     int number_of_failed = srunner_ntests_failed(s_runner);
     srunner_free(s_runner);

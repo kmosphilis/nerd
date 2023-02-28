@@ -235,12 +235,10 @@ Suite *literal_suite() {
 }
 
 int main() {
-    Suite* suite = literal_suite();
-    SRunner* s_runner;
+    Suite *suite = literal_suite();
+    SRunner *s_runner = srunner_create(suite);
 
-    s_runner = srunner_create(suite);
     srunner_set_fork_status(s_runner, CK_NOFORK);
-
     srunner_run_all(s_runner, CK_ENV);
     int number_failed = srunner_ntests_failed(s_runner);
     srunner_free(s_runner);
