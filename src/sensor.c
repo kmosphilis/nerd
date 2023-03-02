@@ -14,25 +14,21 @@
  * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF.
  * Use > 0 to indicate yes, and 0 to indicate no.
  *
- * @return A new Sensor object *. Use sensor_destructor to deallocate.
+ * @return A new Sensor *, or NULL if filepath is NULL or does not exist. Use sensor_destructor to
+ * deallocate.
  */
 Sensor *sensor_constructor_from_file(const char * const filepath, const bool reuse) {
-    Sensor *sensor = (Sensor *) malloc(sizeof(Sensor));
     if (filepath) {
-        sensor->environment = fopen(filepath, "rb");
-        if (sensor->environment == NULL) {
-            sensor->reuse = 0;
-            sensor->filepath = NULL;
-        } else {
+        FILE *environment = fopen(filepath, "rb");
+        if (environment != NULL) {
+            Sensor *sensor = (Sensor *) malloc(sizeof(Sensor));
+            sensor->environment = environment;
             sensor->reuse = reuse;
             sensor->filepath = strdup(filepath);
+            return sensor;
         }
-    } else {
-        sensor->environment = NULL;
-        sensor->reuse = 0;
-        sensor->filepath = NULL;
     }
-    return sensor;
+    return NULL;
 }
 
 /**
@@ -124,8 +120,7 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
                     } else {
                         literal = literal_constructor(buffer, 1);
                     }
-                    scene_add_literal(*output, literal);
-                    literal_destructor(&literal);
+                    scene_add_literal(*output, &literal);
                     memset(buffer, 0, BUFFER_SIZE);
                     i = 0;
                 }
@@ -138,9 +133,8 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
             } else {
                 literal = literal_constructor(buffer, 1);
             }
-            scene_add_literal(*output, literal);
+            scene_add_literal(*output, &literal);
 
-            literal_destructor(&literal);
             free(buffer);
 
             if (partial_observation) {

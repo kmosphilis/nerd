@@ -22,18 +22,9 @@ START_TEST(construct_destruct_test) {
     ck_assert_ptr_null(sensor);
 
     sensor = sensor_constructor_from_file("./test/data/filethatdoesntexist.txt", 0);
-    ck_assert_ptr_null(sensor->environment);
-    ck_assert_int_eq(sensor->reuse, 0);
-    ck_assert_pstr_eq(sensor->filepath, NULL);
-    sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor);
 
     sensor = sensor_constructor_from_file(NULL, 0);
-    ck_assert_ptr_null(sensor->environment);
-    sensor_destructor(&sensor);
-    ck_assert_ptr_null(sensor);
-
-    sensor_destructor(&sensor);
     ck_assert_ptr_null(sensor);
 
     sensor_destructor(&sensor);
