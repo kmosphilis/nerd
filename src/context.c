@@ -18,20 +18,22 @@ Context *context_constructor() {
 /**
  * @brief Destructs a Context. Alias for scene_constructor.
  *
- * @param context The context to be destructed. It should be a reference to the object's pointer.
+ * @param context The context to be destructed. It should be a reference to the struct's pointer (to
+ * a Context *).
  */
 void context_destructor(Context ** const context) {
     scene_destructor(context);
 }
 
 /**
- * @brief Adds a Literal pointer to the Context. Alias for a scene_add_literal.
+ * @brief Adds a Literal to the Context by taking its ownership. Alias for a scene_add_literal.
  *
  * @param context The Context to be expanded.
- * @param literal The Literal to add in the Context.
+ * @param literal_to_add The Literal to add in the Context. It should be a reference to a Literal *
+ * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL.
  */
-void context_add_literal(Context * const context, Literal * const literal) {
-    scene_add_literal(context, literal);
+void context_add_literal(Context * const context, Literal ** const literal_to_add) {
+    scene_add_literal(context, literal_to_add);
 }
 
 /**

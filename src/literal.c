@@ -36,7 +36,8 @@ Literal *literal_constructor(const char * const atom, const bool sign) {
 /**
  * @brief Destructs the given Literal.
  *
- * @param literal The Literal to be destructed. It should be a reference to the object's pointer.
+ * @param literal The Literal to be destructed. It should be a reference to the struct's pointer (to
+ * a Literal *).
  */
 void literal_destructor(Literal ** const literal) {
     if (literal && (*literal)) {
@@ -53,8 +54,8 @@ void literal_destructor(Literal ** const literal) {
 /**
  * @brief Makes a copy of the given Literal.
  *
- * @param destination The Literal to save the copy. It should be a reference to the object's
- * pointer.
+ * @param destination The Literal to save the copy. It should be a reference to the struct's
+ * pointer (to a Literal *).
  * @param source The Literal to be copied. If the Literal or its atom are NULL, the content of the
  * destination will not be changed.
  */

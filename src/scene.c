@@ -18,14 +18,15 @@ Scene *scene_constructor() {
 /**
  * @brief Destructs a Scene. If NULL is given, nothing will happen.
  *
- * @param scene The Scene to be destructed. It should be a reference to the object's pointer.
+ * @param scene The Scene to be destructed. It should be a reference to the struct's pointer (to a
+ * Scene *).
  */
 void scene_destructor(Scene ** const scene) {
     if (scene && (*scene)) {
         if ((*scene)->literals) {
             unsigned int i = 0;
             for (i = 0; i < (*scene)->size; ++i) {
-                (*scene)->literals[i] = NULL;
+                literal_destructor(&((*scene)->literals[i]));
             }
 
             free((*scene)->literals);
@@ -40,7 +41,8 @@ void scene_destructor(Scene ** const scene) {
 /**
  * @brief Makes a copy of the given Scene.
  *
- * @param destination The Scene to save the copy. It should be a reference to the object's pointer.
+ * @param destination The Scene to save the copy. It should be a reference to the struct's pointer
+ * (to a Scene *).
  * @param source The Scene to be copied. If Scene or its literals are NULL, the content of the
  * destination will not be changed.
  */
@@ -57,26 +59,42 @@ void scene_copy(Scene ** const destination, const Scene * const restrict source)
 
         unsigned int i;
         for (i = 0; i < source->size; ++i) {
-            (*destination)->literals[i] = source->literals[i];
+            literal_copy(&((*destination)->literals[i]), source->literals[i]);
         }
     }
 }
 
 /**
- * @brief Adds a Literal to the Scene. It does not acquire ownership, so if the given pointer gets
- * deallocated, there will be a segmentation fault.
+ * @brief Adds a Literal to the Scene by taking its ownership.
  *
  * @param scene The Scene to be expanded.
- * @param literal_to_add The Literal to add in the Scene. It should be a Literal *.
+ * @param literal_to_add The Literal to add in the Scene. It should be a reference to a Literal *
+ * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL.
  */
-void scene_add_literal(Scene * const scene, Literal * const literal_to_add) {
-    if (scene && literal_to_add) {
-        if (scene_literal_index(scene, literal_to_add) == -1) {
+void scene_add_literal(Scene * const scene, Literal ** const literal_to_add) {
+    if (scene && literal_to_add && (*literal_to_add)) {
+        if (scene_literal_index(scene, *literal_to_add) == -1) {
             ++scene->size;
             scene->literals = (Literal **) realloc(scene->literals,
             scene->size * sizeof(Literal *));
-            scene->literals[scene->size - 1] = literal_to_add;
+            scene->literals[scene->size - 1] = *literal_to_add;
+            *literal_to_add = NULL;
         }
+    }
+}
+
+/**
+ * @brief Adds a copy of the given Literal to the Scene. Should be used for set operations and
+ * opposed.
+ *
+ * @param scene The Scene to be expanded.
+ * @param literal_to_add The Literal * to be copied.
+*/
+void _scene_add_literal_copy(Scene * const scene, const Literal * const literal_to_add) {
+    if (scene && literal_to_add) {
+        ++scene->size;
+        scene->literals = (Literal **) realloc(scene->literals, scene->size * sizeof(Literal *));
+        literal_copy(&(scene->literals[scene->size - 1]), literal_to_add);
     }
 }
 
@@ -89,7 +107,7 @@ void scene_add_literal(Scene * const scene, Literal * const literal_to_add) {
 void scene_remove_literal(Scene * const scene, const unsigned int literal_index) {
     if (scene) {
         if (literal_index < scene->size) {
-            scene->literals[literal_index] = NULL;
+            literal_destructor(&(scene->literals[literal_index]));
             --scene->size;
             Literal **literals = scene->literals;
             scene->literals = (Literal **) malloc(scene->size * sizeof(Literal *));
@@ -135,7 +153,8 @@ int scene_literal_index(const Scene * const scene, const Literal * const literal
  * @param scene1 The first Scene to be combined.
  * @param scene2 The second Scene to be combined.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer.
+ * performed. It should be a reference to the object's pointer. The Literals in the result are
+ * copies its parents Literals, thus it does not take their ownership.
  */
 void scene_union(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
@@ -152,7 +171,7 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene1->size) {
-                        scene_add_literal_copy(*result, scene2->literals[i]);
+                        _scene_add_literal_copy(*result, scene2->literals[i]);
                     }
                 }
             }
@@ -168,7 +187,8 @@ Scene ** const restrict result) {
  * @param scene1 The Scene to remove elements from.
  * @param scene2 The Scene to compare with.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer.
+ * performed. It should be a reference to the object's pointer. The Literals in the result are
+ * copies its parents Literals, thus it does not take their ownership.
  */
 void scene_difference(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
@@ -186,7 +206,7 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene2->size) {
-                        scene_add_literal_copy(*result, scene1->literals[i]);
+                        _scene_add_literal_copy(*result, scene1->literals[i]);
                     }
                 }
             } else {
@@ -204,7 +224,8 @@ Scene ** const restrict result) {
  * @param scene1 The first Scene to compare.
  * @param scene2 The second Scene to compare.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer.
+ * performed. It should be a reference to the object's pointer. The Literals in the result are
+ * copies its parents Literals, thus it does not take their ownership.
  */
 void scene_intersect(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
@@ -215,7 +236,7 @@ Scene ** const restrict result) {
         for (i = 0; i < scene1->size; ++i) {
             for (j = 0; j < scene2->size; ++j) {
                 if (literal_equals(scene1->literals[i], scene2->literals[j])) {
-                    scene_add_literal_copy(*result, scene1->literals[i]);
+                    _scene_add_literal_copy(*result, scene1->literals[i]);
                     break;
                 }
             }
@@ -236,7 +257,7 @@ void scene_subset() {
 
 }
 
-// TODO Add comment.
+// TODO Add comment and test.
 int scene_number_of_similar_literals(const Scene * const restrict scene1,
 const Scene * const scene2) {
     if (!(scene1 && scene2)) {
@@ -256,6 +277,7 @@ const Scene * const scene2) {
     return total_equals;
 }
 
+//TODO Add comment and test.
 int scene_number_of_opposed_literals(const Scene * const restrict scene1,
 const Scene * const restrict scene2) {
     if (!(scene1 && scene2)) {
@@ -281,7 +303,8 @@ const Scene * const restrict scene2) {
  * @param scene1 The Scene used as ground truth.
  * @param scene2 The Scene to find the different Literals.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer.
+ * performed. It should be a reference to the object's pointer. The Literals in the result are
+ * copies its parents Literals, thus it does not take their ownership.
  */
 void scene_opposed_literals(const Scene * const restrict scene1,
 const Scene * const restrict scene2, Scene ** const restrict result) {
@@ -292,7 +315,7 @@ const Scene * const restrict scene2, Scene ** const restrict result) {
             for (j = 0; j < scene2->size; ++j) {
                 if (!literal_equals(scene1->literals[i], scene2->literals[j])) {
                     if (strcmp(scene1->literals[i]->atom, scene2->literals[j]->atom) == 0) {
-                        scene_add_literal_copy(*result, scene2->literals[j]);
+                        _scene_add_literal_copy(*result, scene2->literals[j]);
                         break;
                     }
                 } else {

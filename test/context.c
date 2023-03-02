@@ -8,10 +8,10 @@ START_TEST(to_prudensjs_test) {
     Literal *l1 = literal_constructor("Penguin", 1), *l2 = literal_constructor("Antarctica", 1),
     *l3 = literal_constructor("Bird", 1), *l4 = literal_constructor("Fly", 0);
 
-    context_add_literal(context, l1);
-    context_add_literal(context, l2);
-    context_add_literal(context, l3);
-    context_add_literal(context, l4);
+    context_add_literal(context, &l1);
+    context_add_literal(context, &l2);
+    context_add_literal(context, &l3);
+    context_add_literal(context, &l4);
 
     char *context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
@@ -40,11 +40,6 @@ START_TEST(to_prudensjs_test) {
 
     context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_pstr_eq(context_prudensjs_string, NULL);
-
-    literal_destructor(&l1);
-    literal_destructor(&l2);
-    literal_destructor(&l3);
-    literal_destructor(&l4);
 }
 END_TEST
 
