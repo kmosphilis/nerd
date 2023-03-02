@@ -5,7 +5,7 @@
 /**
  * @brief Constructs a RuleQueue.
  *
- * @return A new RuleQueue object *. Use rule_queue_destructor to deallocate.
+ * @return A new RuleQueue *. Use rule_queue_destructor to deallocate.
  */
 RuleQueue *rule_queue_constructor() {
     RuleQueue *rule_queue = (RuleQueue *) malloc(sizeof(RuleQueue));
@@ -39,8 +39,8 @@ void rule_queue_destructor(RuleQueue ** const rule_queue) {
 /**
  * @brief Makes a copy of the given RuleQueue.
  *
- * @param destination The RuleQueue to save the copy. It should be a reference to the object's
- * pointer.
+ * @param destination The RuleQueue to save the copy. It should be a reference to the struct's
+ * pointer (to a RuleQueue *).
  * @param source The RuleQueue to be copied. If the RuleQueue is NULL, the contents of the
  * destination will not be changed.
  */
@@ -70,12 +70,13 @@ void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const res
  * @param rule_queue The RuleQueue to enqueue (add) the rule into.
  * @param rule The Rule to be enqueued. If NULL is given, the queue will remain the same.
  */
-void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule) {
-    if (rule_queue && rule) {
+void rule_queue_enqueue(RuleQueue * const rule_queue, Rule ** const rule) {
+    if (rule_queue && rule && (*rule)) {
         ++rule_queue->length;
         rule_queue->rules = (Rule **) realloc(rule_queue->rules,
         rule_queue->length * sizeof(Rule *));
-        rule_copy(&(rule_queue->rules[rule_queue->length - 1]), rule);
+        rule_queue->rules[rule_queue->length - 1] = *rule;
+        *rule = NULL;
     }
 }
 
@@ -83,8 +84,8 @@ void rule_queue_enqueue(RuleQueue * const rule_queue, const Rule * const rule) {
  * @brief Dequeues a Rule from the RuleQueue.
  *
  * @param rule_queue The RuleQueue to dequeue (remove) the rule from.
- * @param dequeued_rule The Rule that was dequeued to be saved. It should be a reference to the 
- * object's pointer. If NULL is given, the rule will bedestroyed.
+ * @param dequeued_rule The Rule that was dequeued to be saved. It should be a reference to the
+ * struct's pointer (to a Rule *). If NULL is given, the rule will be destroyed.
  */
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rule) {
     if (rule_queue) {
@@ -139,7 +140,7 @@ int rule_queue_find(const RuleQueue * const  restrict rule_queue, const Rule * c
  * @param rule_queue The RuleQueue to remove the Rule.
  * @param rule_index The position of the Rule to be removed.
  * @param removed_rule The Rule that was removed to be saved. It should be a reference to the
- * object's pointer.If NULL is given, the rule will be destroyed.
+ * struct's pointer (to a Rule *). If NULL is given, the rule will be destroyed.
  */
 void rule_queue_remove_rule(RuleQueue * const rule_queue, const int rule_index,
 Rule ** const removed_rule) {
@@ -184,7 +185,7 @@ Rule ** const removed_rule) {
  * @param rule_queue The RuleQueue to find the applicable Rules from.
  * @param context The Context to check for applicable Rules.
  * @param rule_indices The IntVector to save the indices of the Rules that are applicable. It should
- *  be a reference to the object's pointer.
+ * be a reference to the struct's pointer (to a IntVector *).
  */
 void rule_queue_find_applicable_rules(const RuleQueue * const rule_queue,
 const Context * const context, IntVector ** const rule_indices) {
@@ -207,7 +208,7 @@ const Context * const context, IntVector ** const rule_indices) {
  * @param rule_queue The RuleQueue to find the concurring Rules from.
  * @param context The Context to check for concurring Rules.
  * @param rule_indices The IntVector to save the indices of the Rules that are concurring. It should
- *  be a reference to the object's pointer.
+ * be a reference to the struct's pointer (IntVector *).
  */
 void rule_queue_find_concurring_rules(const RuleQueue * const rule_queue,
 const Context * const context, IntVector ** const rule_indices) {

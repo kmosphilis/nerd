@@ -1,5 +1,6 @@
-#include <malloc.h>
 #include <check.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #include "rule_queue.h"
 #include "rule.h"
@@ -13,25 +14,24 @@ Rule **create_rules() {
     Rule **rules = (Rule **) malloc(sizeof(Rule *) * RULES_TO_CREATE);
     unsigned int j;
 
-    const size_t body_size[3] = {3, 2, 4};
+    const size_t body_size[RULES_TO_CREATE] = {3, 2, 4};
 
-    char *body_literal_atoms[3][4] = {
+    const char *body_literal_atoms[RULES_TO_CREATE][4] = {
         {"Penguin", "Bird", "Antarctica"},
         {"Albatross", "Bird"},
         {"Seagull", "Bird", "Harbor", "Ocean"}
     };
-    uint8_t body_literal_signs[3][4] = {
-        {1, 1, 1},
-        {1, 1},
-        {1, 1, 1, 1}
+    const bool body_literal_signs[RULES_TO_CREATE][4] = {
+        {true, true, true},
+        {true, true},
+        {true, true, true, true}
     };
 
-    int head_sign[3] = {0, 1, 1};
+    int head_sign[RULES_TO_CREATE] = {0, 1, 1};
     float starting_weight = 0;
 
     for (j = 0; j < RULES_TO_CREATE; ++j) {
-        Rule *rule;
-        Literal **body = (Literal **) malloc(sizeof(Literal *) * body_size[j]);
+        Literal *body[RULES_TO_CREATE];
         Literal *head;
 
         unsigned int i;
@@ -41,16 +41,7 @@ Rule **create_rules() {
 
         head = literal_constructor("Fly", head_sign[j]);
 
-        rule = rule_constructor(body_size[j], body, head, starting_weight);
-
-        literal_destructor(&head);
-
-        for (i = 0; i < body_size[j]; ++i) {
-            literal_destructor(&body[i]);
-        }
-        free(body);
-
-        rules[j] = rule;
+        rules[j] = rule_constructor(body_size[j], body, &head, starting_weight);
         starting_weight += 1;
     }
     return rules;
@@ -81,7 +72,7 @@ RuleQueue *create_rule_queue() {
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
     destruct_rules(rules);

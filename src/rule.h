@@ -12,8 +12,8 @@ typedef struct Rule {
     float weight;
 } Rule;
 
-Rule *rule_constructor(const unsigned int body_size, Literal ** const body,
-const Literal * const head, const float weight);
+Rule *rule_constructor(const unsigned int body_size, Literal ** const body, Literal ** const head,
+const float weight);
 void rule_destructor(Rule ** const rule);
 void rule_copy(Rule ** const destination, const Rule * const restrict source);
 void rule_promote(Rule * const rule, const float amount);

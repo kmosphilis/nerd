@@ -23,73 +23,84 @@ END_TEST
 
 START_TEST(enqueue_test) {
     RuleQueue *rule_queue = rule_queue_constructor();
-    Rule *rule = NULL, **rules = create_rules();
+    Rule *rule = NULL, **rules = create_rules(), **rules_copy = create_rules();
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
     ck_assert_int_eq(rule_queue->length, RULES_TO_CREATE);
 
     for (i = 0; i < rule_queue->length; ++i) {
-        ck_assert_rule_eq(rules[i], rule_queue->rules[i]);
+        ck_assert_ptr_null(rules[i]);
+        ck_assert_rule_eq(rules_copy[i], rule_queue->rules[i]);
     }
 
-    rule_queue_enqueue(rule_queue, rule);
+    rule_queue_enqueue(rule_queue, &rule);
     ck_assert_int_eq(rule_queue->length, RULES_TO_CREATE);
 
-    rule_queue_enqueue(NULL, rules[0]);
+    rule_queue_enqueue(rule_queue, NULL);
+    ck_assert_int_eq(rule_queue->length, RULES_TO_CREATE);
+
+    rule_queue_enqueue(NULL, &rules_copy[0]);
     ck_assert_rule_queue_notempty(rule_queue);
 
     rule_queue_destructor(&rule_queue);
     ck_assert_ptr_null(rule_queue);
 
     destruct_rules(rules);
+    destruct_rules(rules_copy);
 }
 END_TEST
 
 START_TEST(dequeue_test) {
     RuleQueue *rule_queue = rule_queue_constructor();
 
-    Rule **rules = create_rules(), *dequeued_rule = NULL;
+    Rule **rules = create_rules(), **rules_copy = create_rules(), *dequeued_rule = NULL;
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
     for (i = 0; i <rule_queue->length; ++i) {
-        ck_assert_rule_eq(rules[i], rule_queue->rules[i]);
+        ck_assert_rule_eq(rules_copy[i], rule_queue->rules[i]);
     }
+
+    Rule *pre_dequeue_rule = rule_queue->rules[0];
 
     rule_queue_dequeue(rule_queue, &dequeued_rule);
+    ck_assert_ptr_eq(pre_dequeue_rule, dequeued_rule);
     ck_assert_int_eq(rule_queue->length, 2);
     ck_assert_rule_queue_notempty(rule_queue);
-    ck_assert_rule_eq(dequeued_rule, rules[0]);
+    ck_assert_rule_eq(dequeued_rule, rules_copy[0]);
     rule_destructor(&dequeued_rule);
 
-    for (i = 0; i <rule_queue->length; ++i) {
-        ck_assert_rule_eq(rules[i + 1], rule_queue->rules[i]);
+    for (i = 0; i < rule_queue->length; ++i) {
+        ck_assert_rule_eq(rules_copy[i + 1], rule_queue->rules[i]);
     }
 
     rule_queue_dequeue(rule_queue, NULL);
     ck_assert_rule_queue_notempty(rule_queue);
 
     for (i = 0; i <rule_queue->length; ++i) {
-        ck_assert_rule_eq(rules[i + 2], rule_queue->rules[i]);
+        ck_assert_rule_eq(rules_copy[i + 2], rule_queue->rules[i]);
     }
 
-    rule_queue_enqueue(rule_queue, rules[1]);
-    ck_assert_rule_eq(rules[2], rule_queue->rules[0]);
-    ck_assert_rule_eq(rules[1], rule_queue->rules[1]);
+    Rule *rule;
+    rule_copy(&rule, rules_copy[1]);
+    rule_queue_enqueue(rule_queue, &rule);
+    ck_assert_rule_eq(rules_copy[2], rule_queue->rules[0]);
+    ck_assert_rule_eq(rules_copy[1], rule_queue->rules[1]);
 
+    pre_dequeue_rule = rule_queue->rules[0];
     rule_queue_dequeue(rule_queue, &dequeued_rule);
-    ck_assert_rule_eq(dequeued_rule, rules[2]);
-
+    ck_assert_rule_eq(dequeued_rule, rules_copy[2]);
+    ck_assert_ptr_eq(pre_dequeue_rule, dequeued_rule);
     rule_destructor(&dequeued_rule);
 
-    ck_assert_rule_eq(rules[1], rule_queue->rules[0]);
+    ck_assert_rule_eq(rules_copy[1], rule_queue->rules[0]);
 
     rule_queue_dequeue(rule_queue, NULL);
     ck_assert_rule_queue_empty(rule_queue);
@@ -99,17 +110,18 @@ START_TEST(dequeue_test) {
     rule_queue_dequeue(rule_queue, NULL);
 
     destruct_rules(rules);
+    destruct_rules(rules_copy);
 }
 END_TEST
 
 START_TEST(copy_test) {
     RuleQueue *rule_queue1 = rule_queue_constructor(), *rule_queue2 = NULL;
 
-    Rule **rules = create_rules();
+    Rule **rules = create_rules(), **rules_copy = create_rules();
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue1, rules[i]);
+        rule_queue_enqueue(rule_queue1, &rules[i]);
     }
     rule_queue_copy(&rule_queue2, rule_queue1);
     ck_assert_ptr_ne(rule_queue1, rule_queue2);
@@ -117,8 +129,8 @@ START_TEST(copy_test) {
     ck_assert_int_eq(rule_queue1->length, rule_queue2->length);
 
     for (i = 0; i < rule_queue1->length; ++i) {
-        ck_assert_rule_eq(rules[i], rule_queue1->rules[i]);
-        ck_assert_rule_eq(rules[i], rule_queue2->rules[i]);
+        ck_assert_rule_eq(rules_copy[i], rule_queue1->rules[i]);
+        ck_assert_rule_eq(rules_copy[i], rule_queue2->rules[i]);
         ck_assert_rule_eq(rule_queue1->rules[i], rule_queue2->rules[i]);
         ck_assert_ptr_ne(rule_queue1->rules[i], rule_queue2->rules[i]);
     }
@@ -129,7 +141,7 @@ START_TEST(copy_test) {
     ck_assert_rule_queue_notempty(rule_queue2);
 
     for (i = 0; i < rule_queue2->length; ++i) {
-        ck_assert_rule_eq(rules[i], rule_queue2->rules[i]);
+        ck_assert_rule_eq(rules_copy[i], rule_queue2->rules[i]);
     }
 
     rule_queue_copy(NULL, rule_queue2);
@@ -149,6 +161,7 @@ START_TEST(copy_test) {
     ck_assert_ptr_null(rule_queue1);
 
     destruct_rules(rules);
+    destruct_rules(rules_copy);
 }
 END_TEST
 
@@ -159,7 +172,7 @@ START_TEST(to_string_test) {
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
     char *rule_queue_string = rule_queue_to_string(rule_queue);
@@ -196,70 +209,74 @@ END_TEST
 START_TEST(retrieve_index_text) {
     RuleQueue *rule_queue = rule_queue_constructor();
 
-    Rule *rule = NULL, **rules = create_rules();
+    Rule *rule = NULL, *copy, **rules = create_rules(), **rules_copy = create_rules();
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
-    ck_assert_int_eq(rule_queue_find(rule_queue, rules[1]), 1);
-    ck_assert_int_eq(rule_queue_find(rule_queue, rules[2]), 2);
+    ck_assert_int_eq(rule_queue_find(rule_queue, rules_copy[1]), 1);
+    ck_assert_int_eq(rule_queue_find(rule_queue, rules_copy[2]), 2);
 
     rule_queue_dequeue(rule_queue, &rule);
     ck_assert_int_ne(rule_queue_find(rule_queue, rule), 2);
     ck_assert_int_eq(rule_queue_find(rule_queue, rule), -1);
 
     rule_queue_dequeue(rule_queue, NULL);
-    rule_queue_enqueue(rule_queue, rule);
-    ck_assert_int_eq(rule_queue_find(rule_queue, rule), 1);
+    rule_copy(&copy, rule);
+    rule_queue_enqueue(rule_queue, &rule);
+    ck_assert_int_eq(rule_queue_find(rule_queue, copy), 1);
     ck_assert_int_eq(rule_queue_find(NULL, rule), -2);
 
-    rule_destructor(&rule);
-    ck_assert_int_eq(rule_queue_find(rule_queue, rule), -2);
+    rule_destructor(&copy);
+    ck_assert_int_eq(rule_queue_find(rule_queue, copy), -2);
 
     rule_queue_destructor(&rule_queue);
 
     destruct_rules(rules);
+    destruct_rules(rules_copy);
 }
 END_TEST
 
 START_TEST(remove_indexed_rule_test) {
     RuleQueue *rule_queue = rule_queue_constructor();
 
-    Rule *rule = NULL, **rules = create_rules();
+    Rule *rule = NULL, **rules = create_rules(), **rules_copy = create_rules();
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
-    int rule_index = rule_queue_find(rule_queue, rules[1]);
+    int rule_index = rule_queue_find(rule_queue, rules_copy[1]);
     ck_assert_int_eq(rule_index, 1);
 
     rule_queue_remove_rule(rule_queue, rule_index, NULL);
-    ck_assert_rule_eq(rule_queue->rules[0], rules[0]);
-    ck_assert_rule_eq(rule_queue->rules[1], rules[2]);
+    ck_assert_rule_eq(rule_queue->rules[0], rules_copy[0]);
+    ck_assert_rule_eq(rule_queue->rules[1], rules_copy[2]);
 
-    rule_queue_enqueue(rule_queue, rules[0]);
+    rule_copy(&rule, rules_copy[0]);
+    rule_queue_enqueue(rule_queue, &rule);
     rule_queue_remove_rule(rule_queue, 0, NULL);
-    ck_assert_rule_eq(rule_queue->rules[0], rules[2]);
-    ck_assert_rule_eq(rule_queue->rules[1], rules[0]);
+    ck_assert_rule_eq(rule_queue->rules[0], rules_copy[2]);
+    ck_assert_rule_eq(rule_queue->rules[1], rules_copy[0]);
 
-    rule_queue_enqueue(rule_queue, rules[1]);
+    rule_copy(&rule, rules_copy[1]);
+    rule_queue_enqueue(rule_queue, &rule);
     rule_queue_remove_rule(rule_queue, 2, &rule);
-    ck_assert_rule_eq(rule_queue->rules[0], rules[2]);
-    ck_assert_rule_eq(rule_queue->rules[1], rules[0]);
-    ck_assert_rule_eq(rule, rules[1]);
+    ck_assert_rule_eq(rule_queue->rules[0], rules_copy[2]);
+    ck_assert_rule_eq(rule_queue->rules[1], rules_copy[0]);
+    ck_assert_rule_eq(rule, rules_copy[1]);
     rule_destructor(&rule);
 
     rule_queue_remove_rule(rule_queue, 8, NULL);
-    ck_assert_rule_eq(rule_queue->rules[0], rules[2]);
-    ck_assert_rule_eq(rule_queue->rules[1], rules[0]);
+    ck_assert_rule_eq(rule_queue->rules[0], rules_copy[2]);
+    ck_assert_rule_eq(rule_queue->rules[1], rules_copy[0]);
 
     rule_queue_remove_rule(rule_queue, -1, NULL);
-    ck_assert_rule_eq(rule_queue->rules[0], rules[2]);
-    ck_assert_rule_eq(rule_queue->rules[1], rules[0]);
+    ck_assert_rule_eq(rule_queue->rules[0], rules_copy[2]);
+    ck_assert_rule_eq(rule_queue->rules[1], rules_copy[0]);
 
     rule_queue_destructor(&rule_queue);
     ck_assert_ptr_null(rule_queue);
@@ -267,6 +284,7 @@ START_TEST(remove_indexed_rule_test) {
     ck_assert_ptr_null(rule_queue);
 
     destruct_rules(rules);
+    destruct_rules(rules_copy);
 }
 END_TEST
 
@@ -279,20 +297,17 @@ START_TEST(find_applicable_rules_test) {
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
     Literal *literal = literal_constructor("Penguin", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     literal = literal_constructor("Antarctica", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     literal = literal_constructor("Bird", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     rule_queue_find_applicable_rules(rule_queue, context, &result);
     ck_assert_int_vector_notempty(result);
@@ -322,28 +337,24 @@ START_TEST(find_concurring_rules_test) {
 
     unsigned int i;
     for (i = 0; i < RULES_TO_CREATE; ++i) {
-        rule_queue_enqueue(rule_queue, rules[i]);
+        rule_queue_enqueue(rule_queue, &rules[i]);
     }
 
     Literal *literal = literal_constructor("Penguin", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     literal = literal_constructor("Antarctica", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     literal = literal_constructor("Bird", 1);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     rule_queue_find_concurring_rules(rule_queue, context, &result);
     ck_assert_int_vector_empty(result);
     int_vector_destructor(&result);
 
     literal = literal_constructor("Fly", 0);
-    context_add_literal(context, literal);
-    literal_destructor(&literal);
+    context_add_literal(context, &literal);
 
     rule_queue_find_concurring_rules(rule_queue, context, &result);
     ck_assert_int_vector_notempty(result);

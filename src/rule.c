@@ -5,27 +5,31 @@
 #include "rule.h"
 
 /**
- * @brief Constructs a Rule.
+ * @brief Constructs a Rule by taking the ownership of the given Literals (body and head).
  *
- * @param body_size The size of the body of the rule.
- * @param body An array containing a series of Literals required to activate the rule.
- * @param head The head when the rule gets activated.
+ * @param body_size The size of the body of the Rule.
+ * @param body An array containing a series of Literals required to activate the Rule. It should be
+ * an array of Literal * (or a Literal **). Upon succession, the items in this array/pointer
+ * paremter will become NULL.
+ * @param head The head of the Rule when it gets activated. It should be a reference to a Literal *
+ * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL.
  * @param weight The weight of the rule.
  *
- * @return A new Rule *. Use rule_destructor to deallocate. Returnes NULL, if the body is
+ * @return A new Rule *. Use rule_destructor to deallocate. Returns NULL, if the body is
  * NULL, the body_size is > 0 or the head's atom is empty.
  */
-Rule *rule_constructor(const unsigned int body_size, Literal ** const body,
-const Literal * const head, const float weight) {
-    if (head && body  && (body_size > 0)) {
+Rule *rule_constructor(const unsigned int body_size, Literal ** const body, Literal ** const head,
+const float weight) {
+    if (head && (*head) && body  && (body_size > 0)) {
         Rule *rule = (Rule *) malloc(sizeof(Rule));
 
-        literal_copy(&(rule->head), head);
+        rule->head = *head;
+        *head = NULL;
         rule->body = context_constructor();
 
         unsigned int i;
         for (i = 0; i < body_size; ++i) {
-            context_add_literal(rule->body, body[i]);
+            context_add_literal(rule->body, &(body[i]));
         }
 
         rule->weight = weight;
@@ -37,7 +41,8 @@ const Literal * const head, const float weight) {
 /**
  * @brief Deconstructs a Rule.
  *
- * @param rule The Rule to be destructed. It should be a reference to the object's pointer.
+ * @param rule The Rule to be destructed. It should be a reference to the struct's pointer (to a
+ * Rule *).
  */
 void rule_destructor(Rule ** const rule) {
     if (rule && (*rule)) {
@@ -52,7 +57,8 @@ void rule_destructor(Rule ** const rule) {
 /**
  * @brief Makes a copy of the given Rule.
  *
- * @param destination The Rule to save the copy. It should be a reference to the object's pointer.
+ * @param destination The Rule to save the copy. It should be a reference to the struct's pointer
+ * (to a Rule *).
  * @param source The Rule to be copied. If the Rule, its body or the head's atom are NULL, the
  * content of the destination will not be changed.
  */
