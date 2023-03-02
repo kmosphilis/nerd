@@ -44,7 +44,7 @@ void rule_queue_destructor(RuleQueue ** const rule_queue) {
  * @param source The RuleQueue to be copied. If the RuleQueue is NULL, the contents of the
  * destination will not be changed.
  */
-void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const restrict source) {
+void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const source) {
     if (destination && source) {
         *destination = rule_queue_constructor();
 
@@ -121,7 +121,7 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rul
  * @return index where the Rule is or -1 if it does not exist or either the Rule or the RuleQueue
  * are NULL.
  */
-int rule_queue_find(const RuleQueue * const  restrict rule_queue, const Rule * const restrict rule) {
+int rule_queue_find(const RuleQueue * const  rule_queue, const Rule * const rule) {
     if (rule_queue && rule) {
         unsigned int i;
         for (i = 0; i < rule_queue->length; ++i) {

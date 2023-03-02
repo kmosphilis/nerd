@@ -14,7 +14,7 @@ typedef struct RuleQueue {
 
 RuleQueue *rule_queue_constructor();
 void rule_queue_destructor(RuleQueue ** const rule_queue);
-void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const restrict source);
+void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const source);
 void rule_queue_enqueue(RuleQueue * const rule_queue, Rule ** const rule);
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rule);
 int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule);
