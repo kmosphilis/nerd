@@ -29,9 +29,6 @@ START_TEST(construct_destruct_test) {
     ck_assert_ptr_null(literal);
 
     literal = literal_constructor(NULL, 0);
-    ck_assert_ptr_nonnull(literal);
-    ck_assert_literal_empty(literal);
-    literal_destructor(&literal);
     ck_assert_ptr_null(literal);
 
     literal_destructor(&literal);

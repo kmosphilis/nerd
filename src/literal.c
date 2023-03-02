@@ -6,31 +6,26 @@
 #include "literal.h"
 
 /**
- * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form. If
- * the atom is NULL, the Literal that will be created will be in a destructed, unusable form.
+ * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form.
  *
  * @param literal The Literal to be constructed.
  * @param atom The name of the atom to be used.
  * @param sign Indicates whether the atom is negated or not. > 0 is positive, 0 is negative.
  *
- * @return A new Literal *. Use literal_destructor to deallocate.
+ * @return A new Literal * or NULL if atom == NULL. Use literal_destructor to deallocate.
  */
 Literal *literal_constructor(const char * const atom, const bool sign) {
-    // if (literal) {
+    if (atom) {
         Literal *literal = (Literal *) malloc(sizeof(Literal));
-        if (atom) {
-            literal->atom = strdup(atom);
-            unsigned int i;
-            for (i = 0; i < strlen(atom); ++i) {
-                literal->atom[i] = tolower(literal->atom[i]);
-            }
-            literal->sign = sign > 0;
-        } else {
-            literal->atom = NULL;
-            literal->sign = false;
+        literal->atom = strdup(atom);
+        unsigned int i;
+        for (i = 0; i < strlen(atom); ++i) {
+            literal->atom[i] = tolower(literal->atom[i]);
         }
+        literal->sign = sign > 0;
         return literal;
-    // }
+    }
+    return NULL;
 }
 
 /**

@@ -15,8 +15,8 @@
  * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL.
  * @param weight The weight of the rule.
  *
- * @return A new Rule *. Use rule_destructor to deallocate. Returns NULL, if the body is
- * NULL, the body_size is > 0 or the head's atom is empty.
+ * @return A new Rule * or NULL, if the body is NULL, the body_size is > 0 or the head is NULL. Use
+ * rule_destructor to deallocate.
  */
 Rule *rule_constructor(const unsigned int body_size, Literal ** const body, Literal ** const head,
 const float weight) {
