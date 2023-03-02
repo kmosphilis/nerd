@@ -103,11 +103,18 @@ void _scene_add_literal_copy(Scene * const scene, const Literal * const literal_
  *
  * @param scene The Scene to be reduced.
  * @param literal_index The index of the Literal to be removed.
+ * @param removed_literal A place to save the Literal that will be removed. It should be a reference
+ * to the struct's pointer (to a Literal *). If NULL is given, the Literal will be destroyed.
  */
-void scene_remove_literal(Scene * const scene, const unsigned int literal_index) {
+void scene_remove_literal(Scene * const scene, const unsigned int literal_index,
+Literal ** const removed_literal) {
     if (scene) {
         if (literal_index < scene->size) {
-            literal_destructor(&(scene->literals[literal_index]));
+            if (removed_literal) {
+                *removed_literal = scene->literals[literal_index];
+            } else {
+                literal_destructor(&(scene->literals[literal_index]));
+            }
             --scene->size;
             Literal **literals = scene->literals;
             scene->literals = (Literal **) malloc(scene->size * sizeof(Literal *));

@@ -147,7 +147,7 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
                 if (number_of_literals == (*output)->size) {
                     return;
                 } else if (number_of_literals == 1) {
-                    scene_remove_literal(*output, rand() % (*output)->size);
+                    scene_remove_literal(*output, rand() % (*output)->size, NULL);
                     return;
                 }
 
@@ -161,7 +161,7 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
                 for (i = 0; i < number_of_literals; ++i) {
                     int index = rand() % number_of_literals;
                     --number_of_literals;
-                    scene_remove_literal(*output, random_literals[index]);
+                    scene_remove_literal(*output, random_literals[index], NULL);
                     random_literals[index] = random_literals[number_of_literals];
                 }
                 free(random_literals);

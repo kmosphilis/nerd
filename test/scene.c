@@ -110,7 +110,8 @@ END_TEST
 START_TEST(delete_test)  {
     Scene *scene = scene_constructor();
     Literal *l1 = literal_constructor("Penguin", 1), *l2 = literal_constructor("Antarctica", 1),
-    *l3 = literal_constructor("Bird", 1), *l4 = literal_constructor("Fly", 0), *c1, *c2, *c3, *c4;
+    *l3 = literal_constructor("Bird", 1), *l4 = literal_constructor("Fly", 0), *c1, *c2, *c3, *c4,
+    *removed_literal;
 
     literal_copy(&c1, l1);
     literal_copy(&c2, l2);
@@ -123,28 +124,44 @@ START_TEST(delete_test)  {
     scene_add_literal(scene, &l4);
 
     int literal_index = scene_literal_index(scene, c1);
-    scene_remove_literal(scene, literal_index);
+    scene_remove_literal(scene, literal_index, NULL);
     ck_assert_int_eq(scene->size, 3);
     ck_assert_literal_ne(scene->literals[literal_index], c1);
     ck_assert_literal_eq(scene->literals[literal_index], c2);
 
     literal_index = scene_literal_index(scene, c3);
-    scene_remove_literal(scene, literal_index);
+    scene_remove_literal(scene, literal_index, &removed_literal);
+    ck_assert_literal_eq(removed_literal, c3);
     ck_assert_int_eq(scene->size, 2);
     ck_assert_literal_ne(scene->literals[literal_index], c3);
     ck_assert_literal_eq(scene->literals[literal_index], c4);
+    literal_destructor(&removed_literal);
 
-    scene_remove_literal(scene, 9);
+    scene_remove_literal(scene, 9, NULL);
     ck_assert_int_eq(scene->size, 2);
 
+    ck_assert_ptr_null(removed_literal);
+    scene_remove_literal(scene, 9, &removed_literal);
+    ck_assert_int_eq(scene->size, 2);
+    ck_assert_ptr_null(removed_literal);
+
     literal_index = scene_literal_index(scene, c4);
-    scene_remove_literal(scene, literal_index);
+    scene_remove_literal(scene, literal_index, &removed_literal);
+    ck_assert_literal_eq(removed_literal, c4);
     ck_assert_int_eq(scene->size, 1);
     ck_assert_literal_ne(scene->literals[0], c4);
     ck_assert_literal_eq(scene->literals[0], c2);
-    scene_remove_literal(NULL, 0);
+    literal_destructor(&removed_literal);
+
+    scene_remove_literal(NULL, 0, NULL);
     ck_assert_int_eq(scene->size, 1);
     ck_assert_literal_eq(scene->literals[0], c2);
+
+    ck_assert_ptr_null(removed_literal);
+    scene_remove_literal(NULL, 0, &removed_literal);
+    ck_assert_int_eq(scene->size, 1);
+    ck_assert_literal_eq(scene->literals[0], c2);
+    ck_assert_ptr_null(removed_literal);
 
     scene_destructor(&scene);
     literal_destructor(&c1);
