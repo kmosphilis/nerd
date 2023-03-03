@@ -57,16 +57,18 @@ const KnowledgeBase * const restrict source) {
 }
 
 /**
- * @brief Adds a Rule in the KnowledgeBase. If the weight of the Rule is above the
- * activation_threshold, the Rule will be added to the active RuleQueue, otherwise it will be added
- * to the inactive RuleQueue.
+ * @brief Adds a Rule in the KnowledgeBase by taking its ownership. If the weight of the Rule is
+ * above the activation_threshold, the Rule will be added to the active RuleQueue, otherwise it will
+ *  be added to the inactive RuleQueue.
  *
  * @param knowledge_base The KnowledgeBase to be expanded.
- * @param rule The Rule to be added.
+ // TODO change the documentation of this parameter and from other similar files.
+ * @param rule The Rule to be added. It should be reference to a Rule * (Rule ** - a pointer to a
+ * Rule *). Upon succession, this parameter will become NULL.
  */
-void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * const rule) {
-    if (knowledge_base && rule) {
-        if (rule->weight >= knowledge_base->activation_threshold) {
+void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, Rule ** const rule) {
+    if (knowledge_base && rule && (*rule)) {
+        if ((*rule)->weight >= knowledge_base->activation_threshold) {
             rule_queue_enqueue(knowledge_base->active, rule);
         } else {
             rule_queue_enqueue(knowledge_base->inactive, rule);
@@ -90,7 +92,7 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
     if (knowledge_base && observed) {
         Context *uncovered = NULL;
         Scene *combined = NULL;
-        Literal *head = NULL;
+        Literal *head = NULL, *temp;
         Body *body = NULL;
         Rule *new_rule = NULL;
 
@@ -111,7 +113,7 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
 
                 int head_index = scene_literal_index(combined, head);
                 if (head_index >= 0) {
-                    scene_remove_literal(combined, head_index);
+                    scene_remove_literal(combined, head_index, NULL);
                 }
 
                 body_size = (rand() % max_body_size) + 1;
@@ -132,22 +134,23 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
                     chosen_index = random_indices[random_chosen];
                     random_indices[random_chosen] = random_indices[remaining_randoms - 1];
                     remaining_randoms--;
-                    context_add_literal(body, combined->literals[chosen_index]);
+                    literal_copy(&temp, combined->literals[chosen_index]);
+                    context_add_literal(body, &temp);
                 }
 
-                new_rule = rule_constructor(body->size, body->literals, head, 0);
+                literal_copy(&temp, head);
+                new_rule = rule_constructor(body->size, body->literals, &temp, 0);
 
-                if (rule_queue_find(knowledge_base->active, new_rule) == -1) {
-                    if (rule_queue_find(knowledge_base->inactive, new_rule) == -1) {
-                        knowledge_base_add_rule(knowledge_base, new_rule);
-                    }
+                if ((rule_queue_find(knowledge_base->active, new_rule) == -1) ||
+                (rule_queue_find(knowledge_base->inactive, new_rule) == -1)) {
+                    knowledge_base_add_rule(knowledge_base, &new_rule);
+                } else {
+                    rule_destructor(&new_rule);
                 }
 
-                scene_add_literal(combined, head);
+                scene_add_literal(combined, &head);
                 free(random_indices);
-                rule_destructor(&new_rule);
                 context_destructor(&body);
-                literal_destructor(&head);
             }
         }
 
@@ -227,12 +230,8 @@ const RuleQueue * const rules_to_promote, const float promotion_rate) {
                     if (knowledge_base->inactive->rules[rule_index]->weight >=
                     knowledge_base->activation_threshold) {
                         Rule *rule_to_move = NULL;
-
-                        rule_queue_remove_rule(knowledge_base->inactive, rule_index,
-                        &rule_to_move);
-                        rule_queue_enqueue(knowledge_base->active, rule_to_move);
-
-                        rule_destructor(&rule_to_move);
+                        rule_queue_remove_rule(knowledge_base->inactive, rule_index, &rule_to_move);
+                        rule_queue_enqueue(knowledge_base->active, &rule_to_move);
                     }
                 }
             }
@@ -267,11 +266,8 @@ const RuleQueue * const rules_to_demote, const float demotion_rate) {
                     if (knowledge_base->active->rules[rule_index]->weight <
                     knowledge_base->activation_threshold) {
                         Rule *rule_to_move = NULL;
-
                         rule_queue_remove_rule(knowledge_base->active, rule_index, &rule_to_move);
-                        rule_queue_enqueue(knowledge_base->inactive, rule_to_move);
-
-                        rule_destructor(&rule_to_move);
+                        rule_queue_enqueue(knowledge_base->inactive, &rule_to_move);
                     }
                 }
             }
@@ -305,11 +301,8 @@ const float promotion_weight) {
             if (knowledge_base->inactive->rules[rule_index]->weight >=
             knowledge_base->activation_threshold) {
                 Rule *rule_to_move = NULL;
-
                 rule_queue_remove_rule(knowledge_base->inactive, rule_index, &rule_to_move);
-                rule_queue_enqueue(knowledge_base->active, rule_to_move);
-
-                rule_destructor(&rule_to_move);
+                rule_queue_enqueue(knowledge_base->active, &rule_to_move);
                 return 1;
             }
         }
@@ -342,11 +335,8 @@ const RuleEffectiveness effectiveness, const unsigned int rule_index, const floa
             if (knowledge_base->active->rules[rule_index]->weight <
             knowledge_base->activation_threshold) {
                 Rule *rule_to_move = NULL;
-
                 rule_queue_remove_rule(knowledge_base->active, rule_index, &rule_to_move);
-                rule_queue_enqueue(knowledge_base->inactive, rule_to_move);
-
-                rule_destructor(&rule_to_move);
+                rule_queue_enqueue(knowledge_base->inactive, &rule_to_move);
                 return 1;
             }
         } else if ((effectiveness == INACTIVE) && (knowledge_base->inactive->length > rule_index)) {

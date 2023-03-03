@@ -85,10 +85,9 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
         fpos_t position;
         fgetpos(file, &position);
         char *tokens;
-        Body *body;
         Literal *literal;
         Rule *rule;
-        body = scene_constructor();
+        Body *body = scene_constructor();
 
         buffer = (char *) malloc(buffer_size * sizeof(char));
         memset(buffer, 0, buffer_size);
@@ -116,21 +115,18 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
                     tokens = strtok(NULL, " (),\n");
                     float weight = atof(tokens);
 
-                    rule = rule_constructor(body->size, body->literals, literal, weight);
-                    knowledge_base_add_rule(nerd->knowledge_base, rule);
+                    rule = rule_constructor(body->size, body->literals, &literal, weight);
+                    knowledge_base_add_rule(nerd->knowledge_base, &rule);
 
-                    literal_destructor(&literal);
                     scene_destructor(&body);
                     body = scene_constructor();
-                    rule_destructor(&rule);
                 } else {
                     if (tokens[0] == '-') {
                         literal = literal_constructor(tokens + 1, 0);
                     } else {
                         literal = literal_constructor(tokens, 1);
                     }
-                    scene_add_literal(body, literal);
-                    literal_destructor(&literal);
+                    scene_add_literal(body, &literal);
                 }
                 tokens = strtok(NULL, " (),\n");
             }
@@ -210,8 +206,7 @@ const Scene * const restrict observation, Scene ** const inferred) {
         } else {
             literal = literal_constructor(buffer, 1);
         }
-        scene_add_literal(*inferred, literal);
-        literal_destructor(&literal);
+        scene_add_literal(*inferred, &literal);
     }
 
     fclose(file);

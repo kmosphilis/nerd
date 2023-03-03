@@ -20,7 +20,7 @@ KnowledgeBase *knowledge_base_constructor(const float activation_threshold);
 void knowledge_base_destructor(KnowledgeBase ** const knowledge_base);
 void knowledge_base_copy(KnowledgeBase ** const restrict destination,
 const KnowledgeBase * const restrict source);
-void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, const Rule * const rule);
+void knowledge_base_add_rule(KnowledgeBase * const knowledge_base, Rule ** const rule);
 void knowledge_base_create_new_rules(KnowledgeBase * const KnowledgeBase,
 const Scene * const restrict observed, const Scene * const restrict inferred,
 const unsigned int max_body_size, const unsigned int max_number_of_rules);

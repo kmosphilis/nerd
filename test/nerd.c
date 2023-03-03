@@ -61,14 +61,13 @@ START_TEST(construct_destruct_test) {
         Rule *rule = NULL;
         rule_copy(&rule, rule_queue->rules[i]);
         rule_promote(rule, 3.0);
-        rule_queue_enqueue(rule_queue, rule);
-        rule_destructor(&rule);
+        rule_queue_enqueue(rule_queue, &rule);
     }
 
     KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
 
     for (i = 0; i < rule_queue->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, rule_queue->rules[i]);
+        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
     }
 
     rule_queue_destructor(&rule_queue);
