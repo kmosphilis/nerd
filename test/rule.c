@@ -167,10 +167,10 @@ START_TEST(applicable_test) {
 
     ck_assert_int_eq(rule_applicable(rule, context), 1);
 
-    scene_remove_literal(context, context->size - 1);
+    scene_remove_literal(context, context->size - 1, NULL);
     ck_assert_int_eq(rule_applicable(rule, context),1);
 
-    scene_remove_literal(context, 0);
+    scene_remove_literal(context, 0, NULL);
     ck_assert_int_eq(rule_applicable(rule, context), 0);
 
     ck_assert_int_eq(rule_applicable(rule, NULL), -1);
@@ -201,10 +201,10 @@ START_TEST(concurs_test) {
 
     ck_assert_int_eq(rule_concurs(rule, context), 1);
 
-    scene_remove_literal(context, 0);
+    scene_remove_literal(context, 0, NULL);
     ck_assert_int_eq(rule_concurs(rule, context), 1);
 
-    scene_remove_literal(context, context->size - 1);
+    scene_remove_literal(context, context->size - 1, NULL);
     ck_assert_int_eq(rule_concurs(rule, context), 0);
     ck_assert_int_eq(rule_concurs(rule, NULL), -1);
     rule_destructor(&rule);
