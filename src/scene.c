@@ -3,16 +3,26 @@
 
 #include "scene.h"
 
+typedef struct _Scene {
+    Scene scene;
+    bool ownership;
+} _Scene;
+
 /**
  * @brief Constructs a Scene.
  *
+ * @param take_ownership Indicates whether the scene should take onwership of the Literals that will
+ * be added or just keep their reference. If true is given it will take their ownership, otherwise
+ * it will not.
+ *
  * @return A new Scene *. Use scene_destructor to deallocate.
  */
-Scene *scene_constructor() {
-    Scene *scene = (Scene *) malloc(sizeof(Scene));
-    scene->literals = NULL;
-    scene->size = 0;
-    return scene;
+Scene *scene_constructor(const bool take_ownership) {
+    _Scene *scene = (_Scene *) malloc(sizeof(_Scene));
+    scene->scene.literals = NULL;
+    scene->scene.size = 0;
+    scene->ownership = take_ownership;
+    return &(scene->scene);
 }
 
 /**
@@ -23,17 +33,20 @@ Scene *scene_constructor() {
  */
 void scene_destructor(Scene ** const scene) {
     if (scene && (*scene)) {
+        _Scene *_scene = (_Scene *) *scene;
         if ((*scene)->literals) {
-            unsigned int i = 0;
-            for (i = 0; i < (*scene)->size; ++i) {
-                literal_destructor(&((*scene)->literals[i]));
+            if (_scene->ownership) {
+                unsigned int i = 0;
+                for (i = 0; i < (*scene)->size; ++i) {
+                    literal_destructor(&((*scene)->literals[i]));
+                }
             }
 
             free((*scene)->literals);
             (*scene)->literals = NULL;
             (*scene)->size = 0;
         }
-        free(*scene);
+        free(_scene);
         *scene = NULL;
     }
 }
@@ -48,7 +61,40 @@ void scene_destructor(Scene ** const scene) {
  */
 void scene_copy(Scene ** const destination, const Scene * const restrict source) {
     if (destination && source) {
-        *destination = scene_constructor();
+        _Scene *_source = (_Scene*) source;
+        *destination = scene_constructor(_source->ownership);
+
+        if (source->size == 0) {
+            return;
+        }
+
+        (*destination)->size = source->size;
+        (*destination)->literals = (Literal **) malloc(source->size * sizeof(Literal *));
+
+        unsigned int i;
+        if (_source->ownership) {
+            for (i = 0; i < source->size; ++i) {
+                literal_copy(&((*destination)->literals[i]), source->literals[i]);
+            }
+        } else {
+            for (i = 0; i < source->size; ++i) {
+                (*destination)->literals[i] = source->literals[i];
+            }
+        }
+    }
+}
+
+/**
+ * @brief Makes a copy of the given Scene, but forces the ownership parameter to be true.
+ *
+ * @param destination The Scene to save the copy. It should be a reference to the struct's pointer
+ * (to a Scene *).
+ * @param source The Scene to be copied. If Scene or its literals are NULL, the content of the
+ * destination will not be changed.
+ */
+void _scene_copy(Scene ** const destination, const Scene * const restrict source) {
+    if (destination && source) {
+        *destination = scene_constructor(true);
 
         if (source->size == 0) {
             return;
@@ -65,11 +111,27 @@ void scene_copy(Scene ** const destination, const Scene * const restrict source)
 }
 
 /**
- * @brief Adds a Literal to the Scene by taking its ownership.
+ * @brief Shows whether the given Scene is taking the ownership of the Literal that will be (have
+ * been) added.
+ *
+ * @param scene The Scene to find if it takes ownership or not.
+ *
+ * @return 1 (true) if it taking ownership, 0 (false) if it does not or -1 if the scene is NULL.
+*/
+int scene_is_taking_ownership(const Scene * const scene) {
+    if (scene) {
+        return ((_Scene *) scene)->ownership;
+    }
+    return -1;
+}
+
+/**
+ * @brief Adds a Literal to the Scene.
  *
  * @param scene The Scene to be expanded.
  * @param literal_to_add The Literal to add in the Scene. It should be a reference to a Literal *
- * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL.
+ * (Literal ** - a pointer to a Literal *). If the given scene was constructed to take ownership,
+ * this parameter will become NULL. If not, it will not become NULL.
  */
 void scene_add_literal(Scene * const scene, Literal ** const literal_to_add) {
     if (scene && literal_to_add && (*literal_to_add)) {
@@ -78,7 +140,9 @@ void scene_add_literal(Scene * const scene, Literal ** const literal_to_add) {
             scene->literals = (Literal **) realloc(scene->literals,
             scene->size * sizeof(Literal *));
             scene->literals[scene->size - 1] = *literal_to_add;
-            *literal_to_add = NULL;
+            if (((_Scene *) scene)->ownership) {
+                *literal_to_add = NULL;
+            }
         }
     }
 }
@@ -90,11 +154,11 @@ void scene_add_literal(Scene * const scene, Literal ** const literal_to_add) {
  * @param scene The Scene to be expanded.
  * @param literal_to_add The Literal * to be copied.
 */
-void _scene_add_literal_copy(Scene * const scene, const Literal * const literal_to_add) {
+void _scene_add_literal_copy(Scene * const scene, Literal ** const literal_to_add) {
     if (scene && literal_to_add) {
         ++scene->size;
         scene->literals = (Literal **) realloc(scene->literals, scene->size * sizeof(Literal *));
-        literal_copy(&(scene->literals[scene->size - 1]), literal_to_add);
+        literal_copy(&(scene->literals[scene->size - 1]), *literal_to_add);
     }
 }
 
@@ -104,7 +168,9 @@ void _scene_add_literal_copy(Scene * const scene, const Literal * const literal_
  * @param scene The Scene to be reduced.
  * @param literal_index The index of the Literal to be removed.
  * @param removed_literal A place to save the Literal that will be removed. It should be a reference
- * to the struct's pointer (to a Literal *). If NULL is given, the Literal will be destroyed.
+ * to the struct's pointer (to a Literal *). If NULL is given and the scene was constructed to take
+ * ownership, the Literal will be destroyed. If it was constructed to keep references, it will not
+ * be destroyed.
  */
 void scene_remove_literal(Scene * const scene, const unsigned int literal_index,
 Literal ** const removed_literal) {
@@ -112,10 +178,16 @@ Literal ** const removed_literal) {
         if (literal_index < scene->size) {
             if (removed_literal) {
                 *removed_literal = scene->literals[literal_index];
-            } else {
+            } else if (((_Scene *) scene)->ownership){
                 literal_destructor(&(scene->literals[literal_index]));
             }
             --scene->size;
+            if (scene->size == 0) {
+                free(scene->literals);
+                scene->literals = NULL;
+                return;
+            }
+
             Literal **literals = scene->literals;
             scene->literals = (Literal **) malloc(scene->size * sizeof(Literal *));
             if (literal_index == 0) {
@@ -160,15 +232,30 @@ int scene_literal_index(const Scene * const scene, const Literal * const literal
  * @param scene1 The first Scene to be combined.
  * @param scene2 The second Scene to be combined.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer. The Literals in the result are
- * copies its parents Literals, thus it does not take their ownership.
+ * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
+ * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
+ * of its parents Literals. If both were not constructed to take ownership, the result will contain
+ * the same references and will not take ownership either.
  */
 void scene_union(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
     if (result) {
         if (scene1) {
-            scene_copy(result, scene1);
+            // scene_copy(result, scene1);
             if (scene2 && (scene2->size != 0)) {
+                _Scene *_scene1 = (_Scene *) scene1;
+                _Scene *_scene2 = (_Scene *) scene2;
+                /*if (_scene1->ownership) {
+                    scene_copy(result, scene1);
+                } else*/ if (_scene2->ownership) {
+                    _scene_copy(result, scene1);
+                } else {
+                    scene_copy(result, scene1);
+                }
+                void (*add_literal)(Scene * const scene, Literal ** const literal) =
+                (_scene1->ownership || _scene2->ownership) ? _scene_add_literal_copy :
+                scene_add_literal;
+
                 unsigned int i, j;
                 for (i = 0; i < scene2->size; ++i) {
                     for (j = 0; j < scene1->size; ++j) {
@@ -178,9 +265,11 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene1->size) {
-                        _scene_add_literal_copy(*result, scene2->literals[i]);
+                        add_literal(*result, &scene2->literals[i]);
                     }
                 }
+            } else {
+                scene_copy(result, scene1);
             }
         } else if (scene2) {
             scene_copy(result, scene2);
@@ -194,15 +283,23 @@ Scene ** const restrict result) {
  * @param scene1 The Scene to remove elements from.
  * @param scene2 The Scene to compare with.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer. The Literals in the result are
- * copies its parents Literals, thus it does not take their ownership.
+ * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
+ * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
+ * of its parents Literals. If both were not constructed to take ownership, the result will contain
+ * the same references and will not take ownership either..
  */
 void scene_difference(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
     if (result) {
         if (scene1) {
             if (scene2 && (scene2->size != 0)) {
-                *result = scene_constructor();
+                _Scene *_scene1 = (_Scene *) scene1;
+                _Scene *_scene2 = (_Scene *) scene2;
+
+                *result = scene_constructor(_scene1->ownership || _scene2->ownership);
+                void (*add_literal)(Scene * const scene, Literal ** const literal) =
+                (_scene1->ownership || _scene2->ownership) ? _scene_add_literal_copy :
+                scene_add_literal;
 
                 unsigned int i, j;
                 for (i = 0; i < scene1->size; ++i) {
@@ -213,14 +310,14 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene2->size) {
-                        _scene_add_literal_copy(*result, scene1->literals[i]);
+                        add_literal(*result, &scene1->literals[i]);
                     }
                 }
             } else {
                 scene_copy(result, scene1);
             }
         } else if (scene2) {
-            scene_copy(result, scene2);
+            *result = scene_constructor(((_Scene *) scene2)->ownership);
         }
     }
 }
@@ -231,22 +328,38 @@ Scene ** const restrict result) {
  * @param scene1 The first Scene to compare.
  * @param scene2 The second Scene to compare.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer. The Literals in the result are
- * copies its parents Literals, thus it does not take their ownership.
+ * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
+ * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
+ * of its parents Literals. If both were not constructed to take ownership, the result will contain
+ * the same references and will not take ownership either.
  */
 void scene_intersect(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
-    if (scene1 && scene2 && result) {
-        *result = scene_constructor();
+    if (result) {
+        if (scene1) {
+            if (scene2) {
+                _Scene *_scene1 = (_Scene *) scene1;
+                _Scene *_scene2 = (_Scene *) scene2;
 
-        unsigned int i, j;
-        for (i = 0; i < scene1->size; ++i) {
-            for (j = 0; j < scene2->size; ++j) {
-                if (literal_equals(scene1->literals[i], scene2->literals[j])) {
-                    _scene_add_literal_copy(*result, scene1->literals[i]);
-                    break;
+                *result = scene_constructor(_scene1->ownership || _scene2->ownership);
+                void (*add_literal)(Scene * const scene, Literal ** const literal) =
+                (_scene1->ownership || _scene2->ownership) ? _scene_add_literal_copy :
+                scene_add_literal;
+
+                unsigned int i, j;
+                for (i = 0; i < scene1->size; ++i) {
+                    for (j = 0; j < scene2->size; ++j) {
+                        if (literal_equals(scene1->literals[i], scene2->literals[j])) {
+                            add_literal(*result, &scene1->literals[i]);
+                            break;
+                        }
+                    }
                 }
+            } else {
+                *result = scene_constructor(((_Scene *) scene1)->ownership);
             }
+        } else if (scene2) {
+            *result = scene_constructor(((_Scene *) scene2)->ownership);
         }
     }
 }
@@ -310,25 +423,42 @@ const Scene * const restrict scene2) {
  * @param scene1 The Scene used as ground truth.
  * @param scene2 The Scene to find the different Literals.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the object's pointer. The Literals in the result are
- * copies its parents Literals, thus it does not take their ownership.
+ * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
+ * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
+ * of its parents Literals. If both were not constructed to take ownership, the result will contain
+ * the same references and will not take ownership either.
  */
 void scene_opposed_literals(const Scene * const restrict scene1,
 const Scene * const restrict scene2, Scene ** const restrict result) {
-    if (scene1 && scene2 && result) {
-        *result = scene_constructor();
-        unsigned int i, j;
-        for (i = 0; i < scene1->size; ++i) {
-            for (j = 0; j < scene2->size; ++j) {
-                if (!literal_equals(scene1->literals[i], scene2->literals[j])) {
-                    if (strcmp(scene1->literals[i]->atom, scene2->literals[j]->atom) == 0) {
-                        _scene_add_literal_copy(*result, scene2->literals[j]);
-                        break;
+    if (result) {
+        if (scene1) {
+            if (scene2) {
+                _Scene *_scene1 = (_Scene *) scene1;
+                _Scene *_scene2 = (_Scene *) scene2;
+
+                *result = scene_constructor(_scene1->ownership || _scene2->ownership);
+                void (*add_literal)(Scene * const scene, Literal ** const literal) =
+                (_scene1->ownership || _scene2->ownership) ? _scene_add_literal_copy :
+                scene_add_literal;
+
+                unsigned int i, j;
+                for (i = 0; i < scene1->size; ++i) {
+                    for (j = 0; j < scene2->size; ++j) {
+                        if (!literal_equals(scene1->literals[i], scene2->literals[j])) {
+                            if (strcmp(scene1->literals[i]->atom, scene2->literals[j]->atom) == 0) {
+                                add_literal(*result, &scene2->literals[j]);
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
-                } else {
-                    break;
                 }
+            } else {
+                *result = scene_constructor(((_Scene *) scene1)->ownership);
             }
+        } else if (scene2) {
+            *result = scene_constructor(((_Scene *) scene2)->ownership);
         }
     }
 }

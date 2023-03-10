@@ -7,11 +7,15 @@
 /**
  * @brief Constructs a Context. Alias for scene_constructor.
  *
+ * @param take_ownership Indicates whether the scene should take onwership of the Literals that will
+ * be added or just keep their reference. If true is given it will take their ownership, otherwise
+ * it will not.
+ *
  * @return A new Context *. Use context_destructor to deallocate.
  */
-Context *context_constructor() {
+Context *context_constructor(const bool take_ownership) {
     Context *context = NULL;
-    context = scene_constructor();
+    context = scene_constructor(take_ownership);
     return context;
 }
 

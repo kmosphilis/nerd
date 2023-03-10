@@ -4,7 +4,7 @@
 #include "../src/context.h"
 
 START_TEST(to_prudensjs_test) {
-    Context *context = context_constructor();
+    Context *context = context_constructor(true);
     Literal *l1 = literal_constructor("Penguin", 1), *l2 = literal_constructor("Antarctica", 1),
     *l3 = literal_constructor("Bird", 1), *l4 = literal_constructor("Fly", 0);
 
@@ -26,8 +26,8 @@ START_TEST(to_prudensjs_test) {
     "false, \"isAction\": false, \"arity\": 0}]}");
     free(context_prudensjs_string);
 
-    scene_remove_literal(context, 1);
-    scene_remove_literal(context, 2);
+    scene_remove_literal(context, 1, NULL);
+    scene_remove_literal(context, 2, NULL);
     context_prudensjs_string = context_to_prudensjs(context);
     ck_assert_str_eq(context_prudensjs_string, "{\"type\": \"output\", \"context\": ["
     "{\"name\": \"penguin\", \"sign\": true, \"isJS\": false, \"isEquality\": "
