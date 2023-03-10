@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "literal.h"
 #include "context.h"
 
@@ -13,9 +15,10 @@ typedef struct Rule {
 } Rule;
 
 Rule *rule_constructor(const unsigned int body_size, Literal ** const body, Literal ** const head,
-const float weight);
+const float weight, const bool take_ownership);
 void rule_destructor(Rule ** const rule);
 void rule_copy(Rule ** const destination, const Rule * const restrict source);
+int rule_took_ownership(const Rule * const rule);
 void rule_promote(Rule * const rule, const float amount);
 void rule_demote(Rule * const rule, const float amount);
 int rule_applicable(const Rule * const rule, const Context * const context);

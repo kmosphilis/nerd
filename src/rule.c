@@ -5,7 +5,7 @@
 #include "rule.h"
 
 /**
- * @brief Constructs a Rule by taking the ownership of the given Literals (body and head).
+ * @brief Constructs a Rule.
  *
  * @param body_size The size of the body of the Rule.
  * @param body An array containing a series of Literals required to activate the Rule. It should be
@@ -14,18 +14,23 @@
  * @param head The head of the Rule when it gets activated. It should be a reference to a Literal *
  * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL.
  * @param weight The weight of the rule.
+ * @param take_ownership Indicates whether the Rule should take onwership of the given Literals
+ * (body and head) that will be added or just keep their reference. If true is given it will take
+ * their ownership, otherwise it will not.
  *
  * @return A new Rule * or NULL, if the body is NULL, the body_size is > 0 or the head is NULL. Use
  * rule_destructor to deallocate.
  */
 Rule *rule_constructor(const unsigned int body_size, Literal ** const body, Literal ** const head,
-const float weight) {
+const float weight, const bool take_ownership) {
     if (head && (*head) && body  && (body_size > 0)) {
         Rule *rule = (Rule *) malloc(sizeof(Rule));
 
         rule->head = *head;
-        *head = NULL;
-        rule->body = context_constructor();
+        if (take_ownership) {
+            *head = NULL;
+        }
+        rule->body = context_constructor(take_ownership);
 
         unsigned int i;
         for (i = 0; i < body_size; ++i) {
@@ -46,7 +51,9 @@ const float weight) {
  */
 void rule_destructor(Rule ** const rule) {
     if (rule && (*rule)) {
-        literal_destructor(&((*rule)->head));
+        if (scene_is_taking_ownership((*rule)->body)) {
+            literal_destructor(&((*rule)->head));
+        }
         context_destructor(&((*rule)->body));
         (*rule)->weight = INFINITY;
         free(*rule);
@@ -65,10 +72,28 @@ void rule_destructor(Rule ** const rule) {
 void rule_copy(Rule ** const destination, const Rule * const restrict source) {
     if (destination && source) {
         *destination = (Rule *) malloc(sizeof(Rule));
-        literal_copy(&((*destination)->head), source->head);
+        if (scene_is_taking_ownership(source->body)) {
+            literal_copy(&((*destination)->head), source->head);
+        } else {
+            (*destination)->head = source->head;
+        }
         scene_copy(&((*destination)->body), source->body);
         (*destination)->weight = source->weight;
     }
+}
+
+/**
+ * @brief Shows whether the given Rule took the ownership of the Literals from its body and head.
+ *
+ * @param rule The Rule to find if it took ownership or not.
+ *
+ * @return 1 (true) if it took ownership, 0 (false) if it didn't not or -1 if the rule is NULL.
+*/
+int rule_took_ownership(const Rule * const rule) {
+    if (rule) {
+        return scene_is_taking_ownership(rule->body);
+    }
+    return -1;
 }
 
 /**

@@ -22,7 +22,7 @@ START_TEST(construct_destruct_test) {
         body_copy[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
 
-    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
 
     ck_assert_int_eq(rule->body->size, BODY_SIZE);
     ck_assert_literal_eq(rule->head, head_copy);
@@ -41,27 +41,46 @@ START_TEST(construct_destruct_test) {
 
     rule_destructor(NULL);
 
-    rule = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
     ck_assert_ptr_null(rule);
 
-    rule = rule_constructor(0, body, &head, starting_weight);
+    rule = rule_constructor(0, body, &head, starting_weight, true);
     ck_assert_ptr_null(rule);
 
-    rule = rule_constructor(BODY_SIZE, NULL, &head, starting_weight);
+    rule = rule_constructor(BODY_SIZE, NULL, &head, starting_weight, true);
     ck_assert_ptr_null(rule);
 
-    rule = rule_constructor(BODY_SIZE, body, NULL, starting_weight);
+    rule = rule_constructor(BODY_SIZE, body, NULL, starting_weight, true);
     ck_assert_ptr_null(rule);
+
+    rule = rule_constructor(BODY_SIZE, body_copy, &head_copy, starting_weight, false);
+
+    ck_assert_int_eq(rule->body->size, BODY_SIZE);
+    ck_assert_literal_eq(rule->head, head_copy);
+    ck_assert_ptr_eq(rule->head, head_copy);
+    ck_assert_ptr_nonnull(head_copy);
+    for(i = 0; i < BODY_SIZE; ++i) {
+        ck_assert_ptr_nonnull(body_copy[i]);
+        ck_assert_literal_eq(rule->body->literals[i], body_copy[i]);
+        ck_assert_ptr_eq(rule->body->literals[i], body_copy[i]);
+    }
+    ck_assert_float_eq(rule->weight, starting_weight);
+
+    rule_destructor(&rule);
+    ck_assert_ptr_nonnull(head_copy);
 
     for (i = 0; i < BODY_SIZE; ++i) {
-        literal_destructor(&body_copy[i]);
+        ck_assert_ptr_nonnull(&(body_copy[i]));
+        literal_destructor(&(body_copy[i]));
     }
     literal_destructor(&head_copy);
 }
 END_TEST
 
-START_TEST(copy_test) {
-    Literal *body[BODY_SIZE], *head = literal_constructor("Fly", 0);
+START_TEST(took_ownership_test) {
+    Literal *body[BODY_SIZE], *body_copy[BODY_SIZE], *head = literal_constructor("Fly", 0),
+    *head_copy;
+    literal_copy(&head_copy, head);
     char *body_literal_atoms[BODY_SIZE] = {"Penguin", "Bird", "Antarctica"};
     bool body_literal_signs[BODY_SIZE] = {true, true, true};
     float starting_weight = 0;
@@ -69,22 +88,71 @@ START_TEST(copy_test) {
     unsigned int i;
     for (i = 0; i < BODY_SIZE; ++i) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
+        body_copy[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
 
-    Rule *rule1 = rule_constructor(BODY_SIZE, body, &head, starting_weight), *rule2;
+    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
+    ck_assert_int_eq(rule_took_ownership(rule), true);
+    rule_destructor(&rule);
+
+    rule = rule_constructor(BODY_SIZE, body_copy, &head_copy, starting_weight, false);
+    ck_assert_int_eq(rule_took_ownership(rule), false);
+    rule_destructor(&rule);
+    ck_assert_int_eq(rule_took_ownership(rule), -1);
+
+    for (i = 0; i < BODY_SIZE; ++i) {
+        literal_destructor(&(body_copy[i]));
+    }
+    literal_destructor(&head_copy);
+}
+
+START_TEST(copy_test) {
+    Literal *body[BODY_SIZE], *head = literal_constructor("Fly", 0), *body_copy[BODY_SIZE],
+    *head_copy;
+    char *body_literal_atoms[BODY_SIZE] = {"Penguin", "Bird", "Antarctica"};
+    bool body_literal_signs[BODY_SIZE] = {true, true, true};
+    float starting_weight = 0;
+
+    unsigned int i;
+    for (i = 0; i < BODY_SIZE; ++i) {
+        body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
+        literal_copy(&(body_copy[i]), body[i]);
+    }
+    literal_copy(&head_copy, head);
+
+    Rule *rule1 = rule_constructor(BODY_SIZE, body, &head, starting_weight, true), *rule2;
 
     rule_copy(&rule2, rule1);
 
+    ck_assert_rule_eq(rule1, rule2);
     ck_assert_ptr_ne(rule1, rule2);
     ck_assert_ptr_ne(rule1->body, rule2->body);
     ck_assert_ptr_ne(rule1->head, rule2->head);
-    ck_assert_rule_eq(rule1, rule2);
+    for (i = 0; i < rule1->body->size; ++i) {
+        ck_assert_ptr_ne(rule1->body->literals[i], rule2->body->literals[i]);
+    }
     rule_destructor(&rule1);
     ck_assert_ptr_null(rule1);
     ck_assert_ptr_nonnull(rule2);
 
     rule_copy(NULL, rule2);
     ck_assert_ptr_nonnull(rule2);
+    rule_destructor(&rule2);
+
+    rule1 = rule_constructor(BODY_SIZE, body_copy, &head_copy, starting_weight, false);
+    rule_copy(&rule2, rule1);
+
+    ck_assert_rule_eq(rule1, rule2);
+    ck_assert_ptr_ne(rule1, rule2);
+    ck_assert_ptr_ne(rule1->body, rule2->body);
+    ck_assert_ptr_eq(rule1->head, rule2->head);
+    for (i = 0 ; i < rule1->body->size; ++i) {
+        ck_assert_ptr_eq(rule1->body->literals[i], rule2->body->literals[i]);
+        literal_destructor(&(body_copy[i]));
+    }
+    literal_destructor(&head_copy);
+
+    rule_destructor(&rule1);
     rule_destructor(&rule2);
 }
 END_TEST
@@ -100,7 +168,7 @@ START_TEST(promote_test) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
 
-    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
 
     rule_promote(rule, 1.89);
     ck_assert_float_eq_tol(rule->weight, starting_weight + 1.89, 0.000001);
@@ -129,7 +197,7 @@ START_TEST(demote_test) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
 
-    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
 
     rule_demote(rule, 1.89);
     ck_assert_float_eq_tol(rule->weight, starting_weight - 1.89, 0.000001);
@@ -148,7 +216,7 @@ START_TEST(demote_test) {
 END_TEST
 
 START_TEST(applicable_test) {
-    Context *context = context_constructor();
+    Context *context = context_constructor(true);
     Literal *body[BODY_SIZE], *head = literal_constructor("Fly", 0), *head_copy, *copy;
     literal_copy(&head_copy, head);
     char *body_literal_atoms[BODY_SIZE] = {"Penguin", "Bird", "Antarctica"};
@@ -162,7 +230,7 @@ START_TEST(applicable_test) {
         scene_add_literal(context, &copy);
     }
 
-    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
     context_add_literal(context, &head_copy);
 
     ck_assert_int_eq(rule_applicable(rule, context), 1);
@@ -182,7 +250,7 @@ START_TEST(applicable_test) {
 END_TEST
 
 START_TEST(concurs_test) {
-    Context *context = context_constructor();
+    Context *context = context_constructor(true);
     Literal *body[BODY_SIZE], *head = literal_constructor("Fly", 0), *head_copy, *copy;
     literal_copy(&head_copy, head);
     char *body_literal_atoms[BODY_SIZE] = {"Penguin", "Bird", "Antarctica"};
@@ -196,7 +264,7 @@ START_TEST(concurs_test) {
         scene_add_literal(context, &copy);
     }
 
-    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    Rule *rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
     context_add_literal(context, &head_copy);
 
     ck_assert_int_eq(rule_concurs(rule, context), 1);
@@ -231,11 +299,11 @@ START_TEST(equality_checK_test) {
         literal_copy(&(body_copy[i]), body[i]);
     }
 
-    rule1 = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    rule1 = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
     rule_copy(&rule6, rule1);
 
     literal_copy(&head, head_copy);
-    rule2 = rule_constructor(BODY_SIZE, body_copy, &head, starting_weight - 0.00001);
+    rule2 = rule_constructor(BODY_SIZE, body_copy, &head, starting_weight - 0.00001, true);
 
     for (i = 0; i < BODY_SIZE; ++i) {
         body[i] = literal_constructor(body_literal_atoms[BODY_SIZE - i - 1],
@@ -243,7 +311,7 @@ START_TEST(equality_checK_test) {
         literal_copy(&(body_copy[i]), body[i]);
     }
 
-    rule3 = rule_constructor(BODY_SIZE, body, &head_copy, starting_weight);
+    rule3 = rule_constructor(BODY_SIZE, body, &head_copy, starting_weight, true);
 
     head = literal_constructor("Fly", 1);
     literal_copy(&head_copy, head);
@@ -252,8 +320,8 @@ START_TEST(equality_checK_test) {
         literal_copy(&(body[i]), body_copy[i]);
     }
 
-    rule4 = rule_constructor(BODY_SIZE, body, &head, starting_weight);
-    rule5 = rule_constructor(BODY_SIZE - 1, body_copy, &head_copy, starting_weight);
+    rule4 = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
+    rule5 = rule_constructor(BODY_SIZE - 1, body_copy, &head_copy, starting_weight, true);
 
     for (i = 0; i < (BODY_SIZE - 1); ++i) {
         ck_assert_ptr_null(body_copy[i]);
@@ -267,7 +335,7 @@ START_TEST(equality_checK_test) {
         body[i] = literal_constructor(body_literal_atoms2[i], body_literal_signs[i]);
     }
 
-    rule7 = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    rule7 = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
 
     ck_assert_int_eq(rule_equals(rule1, rule6), 1);
     ck_assert_int_eq(rule_equals(rule1, rule2), 1);
@@ -311,7 +379,7 @@ START_TEST(to_string_test) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
 
-    rule = rule_constructor(BODY_SIZE, body, &head, starting_weight);
+    rule = rule_constructor(BODY_SIZE, body, &head, starting_weight, true);
 
     char *rule_string = rule_to_string(rule);
     ck_assert_str_eq(rule_string, "(penguin, bird, antarctica) => -fly (0.0000)");
@@ -356,7 +424,7 @@ START_TEST(to_prudensjs_test) {
         body[i] = literal_constructor(body_literal_atoms[i], body_literal_signs[i]);
     }
 
-    rule = rule_constructor(body_size, body, &head, starting_weight);
+    rule = rule_constructor(body_size, body, &head, starting_weight, true);
 
     char *rule_prudensjs_string = rule_to_prudensjs(rule, 1);
     ck_assert_str_eq(rule_prudensjs_string, "{\"name\": \"Rule1\", \"body\": ["
@@ -410,6 +478,7 @@ Suite *rule_suite() {
     suite = suite_create("Rule");
     create_case = tcase_create("Create");
     tcase_add_test(create_case, construct_destruct_test);
+    tcase_add_test(create_case, took_ownership_test);
     suite_add_tcase(suite, create_case);
 
     copy_case = tcase_create("Copy");
