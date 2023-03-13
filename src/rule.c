@@ -10,9 +10,10 @@
  * @param body_size The size of the body of the Rule.
  * @param body An array containing a series of Literals required to activate the Rule. It should be
  * an array of Literal * (or a Literal **). Upon succession, the items in this array/pointer
- * paremter will become NULL.
+ * paremter will become NULL, if and only if take_ownership is true.
  * @param head The head of the Rule when it gets activated. It should be a reference to a Literal *
- * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL.
+ * (Literal ** - a pointer to a Literal *). Upon succession, this parameter will become NULL, if and
+ * only if take_ownership is true.
  * @param weight The weight of the rule.
  * @param take_ownership Indicates whether the Rule should take onwership of the given Literals
  * (body and head) that will be added or just keep their reference. If true is given it will take

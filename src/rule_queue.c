@@ -104,8 +104,8 @@ int rule_queue_is_taking_ownership(const RuleQueue * const rule_queue) {
  *
  * @param rule_queue The RuleQueue to enqueue (add) the rule into.
  * @param rule The Rule to be enqueued. It should be reference to a Rule * (Rule ** - a pointer to a
- *  Rule *). Upon succession, this parameter will become NULL. If NULL is given, the queue
- * will remain the same.
+ * Rule *). If the given rule_queue was constructed to take ownership, this parameter will become
+ * NULL. If not, it will not become NULL. If NULL is given, the queue will remain the same.
  */
 void rule_queue_enqueue(RuleQueue * const rule_queue, Rule ** const rule) {
     if (rule_queue && rule && (*rule)) {
