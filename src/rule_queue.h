@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "int_vector.h"
 #include "rule.h"
@@ -12,9 +13,10 @@ typedef struct RuleQueue {
     size_t length;
 } RuleQueue;
 
-RuleQueue *rule_queue_constructor();
+RuleQueue *rule_queue_constructor(const bool take_ownership);
 void rule_queue_destructor(RuleQueue ** const rule_queue);
 void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const source);
+int rule_queue_is_taking_ownership(const RuleQueue * const rule_queue);
 void rule_queue_enqueue(RuleQueue * const rule_queue, Rule ** const rule);
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rule);
 int rule_queue_find(const RuleQueue * const rule_queue, const Rule * const rule);

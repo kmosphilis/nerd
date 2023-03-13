@@ -41,7 +41,7 @@ Rule **create_rules() {
 
         head = literal_constructor("Fly", head_sign[j]);
 
-        rules[j] = rule_constructor(body_size[j], body, &head, starting_weight);
+        rules[j] = rule_constructor(body_size[j], body, &head, starting_weight, true);
         starting_weight += 1;
     }
     return rules;
@@ -66,7 +66,7 @@ void destruct_rules(Rule **rules) {
  * @return A * to the created RuleQueue.
  */
 RuleQueue *create_rule_queue() {
-    RuleQueue *rule_queue = rule_queue_constructor();
+    RuleQueue *rule_queue = rule_queue_constructor(true);
 
     Rule **rules = create_rules();
 

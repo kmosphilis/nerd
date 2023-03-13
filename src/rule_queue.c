@@ -2,16 +2,26 @@
 
 #include "rule_queue.h"
 
+typedef struct _RuleQueue {
+    RuleQueue rule_queue;
+    bool ownership;
+} _RuleQueue;
+
 /**
  * @brief Constructs a RuleQueue.
  *
+ * @param take_ownership Indicates whether the RuleQueue should take onwership of the Rules that
+ * will be added or just keep their reference. If true is given it will take their ownership,
+ * otherwise +it will not.
+ *
  * @return A new RuleQueue *. Use rule_queue_destructor to deallocate.
  */
-RuleQueue *rule_queue_constructor() {
-    RuleQueue *rule_queue = (RuleQueue *) malloc(sizeof(RuleQueue));
-    rule_queue->length = 0;
-    rule_queue->rules = NULL;
-    return rule_queue;
+RuleQueue *rule_queue_constructor(const bool take_ownership) {
+    _RuleQueue *queue = (_RuleQueue *) malloc(sizeof(_RuleQueue));
+    queue->rule_queue.length = 0;
+    queue->rule_queue.rules = NULL;
+    queue->ownership = take_ownership;
+    return &(queue->rule_queue);
 }
 
 /**
@@ -23,8 +33,10 @@ void rule_queue_destructor(RuleQueue ** const rule_queue) {
     if (rule_queue && (*rule_queue)) {
         if ((*rule_queue)->rules) {
             unsigned int i;
-            for (i = 0; i < (*rule_queue)->length; ++i) {
-                rule_destructor(&((*rule_queue)->rules[i]));
+            if (((_RuleQueue *) *rule_queue)->ownership) {
+                for (i = 0; i < (*rule_queue)->length; ++i) {
+                    rule_destructor(&((*rule_queue)->rules[i]));
+                }
             }
 
             free((*rule_queue)->rules);
@@ -46,7 +58,8 @@ void rule_queue_destructor(RuleQueue ** const rule_queue) {
  */
 void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const source) {
     if (destination && source) {
-        *destination = rule_queue_constructor();
+        _RuleQueue *_source = (_RuleQueue *) source;
+        *destination = rule_queue_constructor(_source->ownership);
 
         if (source->length == 0) {
             (*destination)->rules = NULL;
@@ -58,17 +71,41 @@ void rule_queue_copy(RuleQueue ** const destination, const RuleQueue * const sou
         (*destination)->rules = (Rule **) malloc(source->length * sizeof(Rule *));
 
         unsigned int i;
-        for (i = 0; i < source->length; ++i) {
-            rule_copy(&((*destination)->rules[i]), source->rules[i]);
+        if (_source->ownership) {
+            for (i = 0; i < source->length; ++i) {
+                rule_copy(&((*destination)->rules[i]), source->rules[i]);
+            }
+        } else {
+            for (i = 0; i < source->length; ++i) {
+                (*destination)->rules[i] = source->rules[i];
+            }
         }
     }
+}
+
+/**
+ * @brief Shows whether the RuleQueue is taking the ownership of the Rules that will be (have been)
+ * added.
+ *
+ * @param rule_queue The RuleQueue to find if it takes ownership or not.
+ *
+ * @return 1 (true) if it taking ownership, 0 (false) if it does not or -1 if the rule_queue is
+ * NULL.
+*/
+int rule_queue_is_taking_ownership(const RuleQueue * const rule_queue) {
+    if (rule_queue) {
+        return ((_RuleQueue *) rule_queue)->ownership;
+    }
+    return -1;
 }
 
 /**
  * @brief Enqueues a Rule to a RuleQueue.
  *
  * @param rule_queue The RuleQueue to enqueue (add) the rule into.
- * @param rule The Rule to be enqueued. If NULL is given, the queue will remain the same.
+ * @param rule The Rule to be enqueued. It should be reference to a Rule * (Rule ** - a pointer to a
+ *  Rule *). Upon succession, this parameter will become NULL. If NULL is given, the queue
+ * will remain the same.
  */
 void rule_queue_enqueue(RuleQueue * const rule_queue, Rule ** const rule) {
     if (rule_queue && rule && (*rule)) {
@@ -76,7 +113,9 @@ void rule_queue_enqueue(RuleQueue * const rule_queue, Rule ** const rule) {
         rule_queue->rules = (Rule **) realloc(rule_queue->rules,
         rule_queue->length * sizeof(Rule *));
         rule_queue->rules[rule_queue->length - 1] = *rule;
-        *rule = NULL;
+        if (((_RuleQueue *) rule_queue)->ownership) {
+            *rule = NULL;
+        }
     }
 }
 
@@ -93,7 +132,7 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rul
             --rule_queue->length;
             if (dequeued_rule) {
                 *dequeued_rule = rule_queue->rules[0];
-            } else {
+            } else if (((_RuleQueue *) rule_queue)->ownership) {
                 rule_destructor(&(rule_queue->rules[0]));
             }
 
@@ -150,7 +189,7 @@ Rule ** const removed_rule) {
             --rule_queue->length;
             if (removed_rule) {
                 *removed_rule = rule_queue->rules[u_rule_index];
-            } else {
+            } else if (((_RuleQueue *) rule_queue)->ownership) {
                 rule_destructor(&(rule_queue->rules[u_rule_index]));
             }
 

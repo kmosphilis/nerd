@@ -18,7 +18,6 @@
     const Rule * const _r2 = (Y); \
     ck_assert_ptr_nonnull(_r1); \
     ck_assert_ptr_nonnull(_r2); \
-    ck_assert_ptr_ne(_r1->body, _r2->body); \
     ck_assert_scene_eq(_r1->body, _r2->body); \
     ck_assert_literal_eq(_r1->head, _r2->head); \
     ck_assert_float_eq_tol(_r1->weight, _r2->weight, 0.000001); \
