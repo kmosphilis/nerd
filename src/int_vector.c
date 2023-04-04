@@ -58,10 +58,26 @@ void int_vector_copy(IntVector ** const destination, const IntVector * const res
  */
 void int_vector_resize(IntVector * const int_vector, const unsigned int new_size) {
     if (int_vector) {
-        int old_size = int_vector->size;
+        if (new_size == 0) {
+            int_vector->size = 0;
+            free(int_vector->items);
+            int_vector->items = NULL;
+            return;
+        }
 
-        int_vector->items = (int *) realloc(int_vector->items, new_size * sizeof(int));
+        unsigned int old_size = int_vector->size;
+        int *old = int_vector->items;
+
+        int_vector->items = (int *) malloc(new_size * sizeof(int));
         int_vector->size = new_size;
+
+        if (new_size > old_size) {
+            memcpy(int_vector->items, old, sizeof(int) * old_size);
+        } else {
+            memcpy(int_vector->items, old, sizeof(int) * new_size);
+        }
+
+        free(old);
 
         unsigned int i;
         for (i = old_size; i < new_size; ++i) {
@@ -158,7 +174,7 @@ int int_vector_get(const IntVector * const int_vector, const unsigned int index)
 }
 
 /**
- * @brief Sets a the given item (int) to the given index. Equivalent to int_vector.items[index] =
+ * @brief Sets the given item (int) to the given index. Equivalent to int_vector.items[index] =
  * new_item but with checks.
  *
  * @param int_vector The IntVector to set the new item to. If NULL the process will fail.
