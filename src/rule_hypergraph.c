@@ -89,8 +89,11 @@ void vertex_destructor(Vertex ** const vertex, const bool destruct_literal) {
  * @param rule_hypergraph The RuleHyperGraph to find the corresponding Vertices to be connected.
  * @param rule The Rule to show which Literals should be connected. The Body of a rule has the
  * origin Vertices, and the head has the destination Vertex. It should be reference to a Rule *
- * (Rule ** - a pointer to a Rule *). Upon succession, this parameter will become NULL as it will
- * take its ownership.
+ * (Rule ** - a pointer to a Rule *). If the given Rule had took ownership of its content, a new
+ * Rule will be created without taking the ownership of that content as it will belong to the
+ * internal RB-Tree. If it does not take the ownership of the its content, the content pointers
+ * might stil change, as the body and head will take the pointer of the item allocated in the
+ * RB-Tree.
  * @param head_vertex The Vertex that the edge will be created for. It will not be added to the
  * Vertex.
  *
@@ -133,6 +136,7 @@ Vertex * const head_vertex) {
         free((*rule));
         *rule = new_rule;
     } else {
+        (*rule)->head = head_vertex->literal;
         for (i = 0; i < (*rule)->body->size; ++i) {
             vertex = vertex_constructor((*rule)->body->literals[i]);
 
@@ -140,12 +144,12 @@ Vertex * const head_vertex) {
             if (result) {
                 vertex_destructor(&vertex, false);
                 vertex = result;
+                (*rule)->body->literals[i] = vertex->literal;
             }
             edge->from[i] = vertex;
         }
     }
     edge->rule = *rule;
-    *rule = NULL;
     return edge;
 }
 
@@ -357,28 +361,36 @@ END_TEST
 
 START_TEST(construct_destruct_edge_test) {
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
-    *l3 = literal_constructor("bird", true), *c1 = l1, *c3 = l3, *l_array[2] = {c1, c3};
-
+    *l3 = literal_constructor("bird", true), *l_array[2] = {l1, l3}, *c1, *c2, *c3;
+    literal_copy(&c1, l1);
+    literal_copy(&c2, l2);
+    literal_copy(&c3, l3);
     Vertex *v1 = vertex_constructor(l1), *v2 = vertex_constructor(l2), *v3 = vertex_constructor(l3),
     *v_array[2] = {v1, v3};
-    Rule *r1 = rule_constructor(1, &c1, &l2, 0, false),
-    *r2 = rule_constructor(2, l_array, &l2, 0, false), *copy_ptr = r1;
+    Rule *r1 = rule_constructor(1, &l1, &l2, 0, false),
+    *r2 = rule_constructor(2, l_array, &l2, 0, false),
+    *r3 = rule_constructor(1, &c2, &c1, 0, false);
     RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
 
     prb_insert(hypergraph->literal_tree, v1);
+    prb_insert(hypergraph->literal_tree, v2);
     prb_insert(hypergraph->literal_tree, v3);
 
     Edge *edge1 = edge_constructor(hypergraph, &r1, v2);
-    ck_assert_ptr_null(r1);
-    ck_assert_ptr_eq(edge1->rule, copy_ptr);
+    ck_assert_ptr_nonnull(r1);
+    ck_assert_ptr_eq(edge1->rule, r1);
+    ck_assert_ptr_eq(edge1->rule->head, v2->literal);
+    ck_assert_ptr_eq(edge1->rule->body->literals[0], v1->literal);
     ck_assert_ptr_nonnull(edge1->from);
     ck_assert_int_eq(edge1->number_of_vertices, 1);
     ck_assert_ptr_eq(edge1->from[0], v1);
 
-    copy_ptr = r2;
     Edge *edge2 = edge_constructor(hypergraph, &r2, v2);
-    ck_assert_ptr_null(r2);
-    ck_assert_ptr_eq(edge2->rule, copy_ptr);
+    ck_assert_ptr_nonnull(r2);
+    ck_assert_ptr_eq(edge2->rule, r2);
+    ck_assert_ptr_eq(edge2->rule->head, v2->literal);
+    ck_assert_ptr_eq(edge2->rule->body->literals[0], v1->literal);
+    ck_assert_ptr_eq(edge2->rule->body->literals[1], v3->literal);
     ck_assert_ptr_nonnull(edge2->from);
     ck_assert_int_eq(edge2->number_of_vertices, 2);
     unsigned int i;
@@ -386,13 +398,40 @@ START_TEST(construct_destruct_edge_test) {
         ck_assert_ptr_eq(edge2->from[i], v_array[i]);
     }
 
-    rule_hypergraph_destructor(&hypergraph);
+    ck_assert_ptr_ne(r3->head, v2->literal);
+    ck_assert_ptr_ne(r3->body->literals[0], v1->literal);
+    Edge *edge3 = edge_constructor(hypergraph, &r3, v1);
+    ck_assert_ptr_nonnull(r3);
+    ck_assert_ptr_eq(edge3->rule, r3);
+    ck_assert_ptr_eq(edge3->rule->head, v1->literal);
+    ck_assert_ptr_eq(edge3->rule->body->literals[0], v2->literal);
+    ck_assert_ptr_nonnull(edge3->from);
+    ck_assert_int_eq(edge3->number_of_vertices, 1);
+    ck_assert_ptr_eq(edge3->from[0], v2);
+
+    Rule *r4 = rule_constructor(1, &c3, &c2, 0.0, true), *r4_ptr = r4;
+    ck_assert_ptr_ne(r4->head, v2->literal);
+    ck_assert_ptr_ne(r4->body->literals[0], v3->literal);
+    ck_assert_ptr_eq(r4->head, r4_ptr->head);
+    ck_assert_ptr_eq(r4->body->literals[0], r4_ptr->body->literals[0]);
+    Edge *edge4 = edge_constructor(hypergraph, &r4, v2);
+    ck_assert_ptr_nonnull(r4);
+    ck_assert_ptr_eq(edge4->rule, r4);
+    ck_assert_ptr_ne(r4, r4_ptr);
+    ck_assert_ptr_eq(edge4->rule->head, v2->literal);
+    ck_assert_ptr_eq(edge4->rule->body->literals[0], v3->literal);
+    ck_assert_ptr_nonnull(edge4->from);
+    ck_assert_int_eq(edge4->number_of_vertices, 1);
+    ck_assert_ptr_eq(edge4->from[0], v3);
+
     edge_destructor(&edge1);
     ck_assert_ptr_null(edge1);
     edge_destructor(&edge2);
-    ck_assert_ptr_null(edge2);
+    edge_destructor(&edge3);
+    edge_destructor(&edge4);
+    literal_destructor(&c1);
 
-    vertex_destructor(&v2, true);
+    rule_hypergraph_destructor(&hypergraph);
 }
 END_TEST
 
