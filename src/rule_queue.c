@@ -124,8 +124,9 @@ void rule_queue_enqueue(RuleQueue * const rule_queue, Rule ** const rule) {
  *
  * @param rule_queue The RuleQueue to dequeue (remove) the Rule from.
  * @param dequeued_rule A place to save the Rule that will be dequeued. It should be a reference to
- * the struct's pointer (to a Rule *). If NULL is given, the Rule will be destroyed.
- */
+ * the struct's pointer (Rule **). Make sure that the given double pointer is not already allocated,
+ * otherwise its contents will be lost in the memory. If NULL is given, the Rule will be destroyed.
+*/
 void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rule) {
     if (rule_queue) {
         if (rule_queue->rules) {
@@ -179,8 +180,9 @@ int rule_queue_find(const RuleQueue * const  rule_queue, const Rule * const rule
  * @param rule_queue The RuleQueue to remove the Rule.
  * @param rule_index The position of the Rule to be removed.
  * @param removed_rule A place to save the Rule that will be removed. It should be a reference to
- * the struct's pointer (to a Rule *). If NULL is given, the Rule will be destroyed.
- */
+ * the struct's pointer (Rule **). Make sure that the given double pointer is not already allocated,
+ * otherwise its contents will be lost in the memory. If NULL is given, the Rule will be destroyed.
+*/
 void rule_queue_remove_rule(RuleQueue * const rule_queue, const int rule_index,
 Rule ** const removed_rule) {
     if (rule_queue && (rule_index >= 0)) {

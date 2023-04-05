@@ -232,11 +232,12 @@ int scene_literal_index(const Scene * const scene, const Literal * const literal
  * @param scene1 The first Scene to be combined.
  * @param scene2 The second Scene to be combined.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
- * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
- * of its parents Literals. If both were not constructed to take ownership, the result will contain
- * the same references and will not take ownership either.
- */
+ * performed. It should be a reference to the struct's pointer (Scene **). Make sure that the
+ * given double pointer is not already allocated, otherwise its contents will be lost in the memory.
+ * If at least one of the given Scenes (scene1 and scene2) was constrcuted to take ownership, the
+ * Literals in the result will be copies of its parents Literals. If both were not constructed to
+ * take ownership, the result will contain the same references and will not take ownership either.
+*/
 void scene_union(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
     if (result) {
@@ -283,11 +284,12 @@ Scene ** const restrict result) {
  * @param scene1 The Scene to remove elements from.
  * @param scene2 The Scene to compare with.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
- * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
- * of its parents Literals. If both were not constructed to take ownership, the result will contain
- * the same references and will not take ownership either..
- */
+ * performed. It should be a reference to the struct's pointer (Scene **). Make sure that the
+ * given double pointer is not already allocated, otherwise its contents will be lost in the memory.
+ * If at least one of the given Scenes (scene1 and scene2) was constrcuted to take ownership, the
+ * Literals in the result will be copies of its parents Literals. If both were not constructed to
+ * take ownership, the result will contain the same references and will not take ownership either.
+*/
 void scene_difference(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
     if (result) {
@@ -328,11 +330,12 @@ Scene ** const restrict result) {
  * @param scene1 The first Scene to compare.
  * @param scene2 The second Scene to compare.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
- * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
- * of its parents Literals. If both were not constructed to take ownership, the result will contain
- * the same references and will not take ownership either.
- */
+ * performed. It should be a reference to the struct's pointer (Scene **). Make sure that the
+ * given double pointer is not already allocated, otherwise its contents will be lost in the memory.
+ * If at least one of the given Scenes (scene1 and scene2) was constrcuted to take ownership, the
+ * Literals in the result will be copies of its parents Literals. If both were not constructed to
+ * take ownership, the result will contain the same references and will not take ownership either.
+*/
 void scene_intersect(const Scene * const restrict scene1, const Scene * const restrict scene2,
 Scene ** const restrict result) {
     if (result) {
@@ -423,11 +426,12 @@ const Scene * const restrict scene2) {
  * @param scene1 The Scene used as ground truth.
  * @param scene2 The Scene to find the different Literals.
  * @param result The output of the operation to be returned. If NULL, the operation will not be
- * performed. It should be a reference to the struct's pointer. If at least one of the given Scenes
- * (scene1 and scene2) was constrcuted to take ownership, the Literals in the result will be copies
- * of its parents Literals. If both were not constructed to take ownership, the result will contain
- * the same references and will not take ownership either.
- */
+ * performed. It should be a reference to the struct's pointer (Scene **). Make sure that the
+ * given double pointer is not already allocated, otherwise its contents will be lost in the memory.
+ * If at least one of the given Scenes (scene1 and scene2) was constrcuted to take ownership, the
+ * Literals in the result will be copies of its parents Literals. If both were not constructed to
+ * take ownership, the result will contain the same references and will not take ownership either.
+*/
 void scene_opposed_literals(const Scene * const restrict scene1,
 const Scene * const restrict scene2, Scene ** const restrict result) {
     if (result) {
