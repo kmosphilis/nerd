@@ -314,6 +314,37 @@ void rule_hypergraph_remove_rule(RuleHyperGraph * const rule_hypergraph, Rule * 
 }
 
 /**
+ * @brief Finds all the inactive Rules in the RuleHyperGraph inside the KnowledgeBase.
+ *
+ * @param knowledge_base The KnowledgeBase which has the RuleHyperGraph to find the inactive Rules
+ * from.
+ * @param inactive_rules The output of the function to be returned. If NULL, the function will not
+ * be performed. It should be a reference to the struct's pointer (RuleQueue **). Make sure that the
+ * given double pointer is not already allocated, otherwise its contents will be lost in the merory.
+ * The RuleQueue which will be created will not have ownership of its Rules.
+*/
+void rule_hypergraph_get_inactive_rules(KnowledgeBase * const knowledge_base,
+RuleQueue ** const inactive_rules) {
+    if (knowledge_base && inactive_rules) {
+        *inactive_rules = rule_queue_constructor(false);
+        struct prb_traverser traverser;
+        Vertex *result = (Vertex *) prb_t_first(&traverser,
+        knowledge_base->hypergraph->literal_tree);
+        unsigned int i;
+        while (result) {
+            for (i = 0; i < result->number_of_edges; ++i) {
+                Rule *current_rule = result->edges[i]->rule;
+
+                if (current_rule->weight < knowledge_base->activation_threshold) {
+                    rule_queue_enqueue(*inactive_rules, &(current_rule));
+                }
+            }
+            result = (Vertex *) prb_t_next(&traverser);
+        }
+    }
+}
+
+/**
  * Enables testing. Uncomment only for testing.
 */
 // #define RULE_HYPERGRAPH_TEST
@@ -323,6 +354,7 @@ void rule_hypergraph_remove_rule(RuleHyperGraph * const rule_hypergraph, Rule * 
 
 #include "../test/helper/literal.h"
 #include "../test/helper/rule.h"
+#include "../test/helper/rule_queue.h"
 
 START_TEST(construct_destruct_hypergraph_test) {
     RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
@@ -764,9 +796,65 @@ START_TEST(removing_rules_test) {
 }
 END_TEST
 
+START_TEST(get_inactive_rules_test) {
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
+    *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
+    *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l5};
+    Rule *r1 = rule_constructor(1, &l1, &l2, 5, false),
+    *r2 = rule_constructor(1, &l3, &l4, 3, false),
+    *r3 = rule_constructor(1, &l5, &l4, 2.9, false),
+    *r4 = rule_constructor(1, &l5, &l3, 3.1, false),
+    *r5 = rule_constructor(2, l_array, &l4, 0.01, false);
+    l_array[1] = l1;
+    Rule *r6 = rule_constructor(2, l_array, &l2, 4, false);
+
+    rule_hypergraph_add_rule(knowledge_base->hypergraph, &r1);
+    rule_hypergraph_add_rule(knowledge_base->hypergraph, &r2);
+    rule_hypergraph_add_rule(knowledge_base->hypergraph, &r3);
+    rule_hypergraph_add_rule(knowledge_base->hypergraph, &r4);
+
+    RuleQueue *result = NULL;
+    ck_assert_ptr_null(result);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    ck_assert_ptr_nonnull(result);
+    ck_assert_int_eq(result->length, 1);
+    ck_assert_rule_eq(result->rules[0], r3);
+    rule_queue_destructor(&result);
+
+    rule_hypergraph_add_rule(knowledge_base->hypergraph, &r5);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    ck_assert_int_eq(result->length, 2);
+    ck_assert_rule_eq(result->rules[0], r3);
+    ck_assert_rule_eq(result->rules[1], r5);
+    rule_queue_destructor(&result);
+
+    rule_hypergraph_add_rule(knowledge_base->hypergraph, &r6);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    ck_assert_int_eq(result->length, 2);
+    ck_assert_rule_eq(result->rules[0], r3);
+    ck_assert_rule_eq(result->rules[1], r5);
+    rule_queue_destructor(&result);
+
+    rule_hypergraph_remove_rule(knowledge_base->hypergraph, r3);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    ck_assert_int_eq(result->length, 1);
+    ck_assert_rule_eq(result->rules[0], r5);
+    rule_queue_destructor(&result);
+
+    rule_hypergraph_remove_rule(knowledge_base->hypergraph, r2);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    ck_assert_int_eq(result->length, 1);
+    ck_assert_rule_eq(result->rules[0], r5);
+    rule_queue_destructor(&result);
+
+    knowledge_base_destructor(&knowledge_base);
+}
+END_TEST
+
 Suite *rule_hypergraph_suite() {
     Suite *suite;
-    TCase *create_case, *add_edges_case, *adding_and_removing_case;
+    TCase *create_case, *add_edges_case, *adding_and_removing_case, *get_inactive_case;
 
     suite = suite_create("Rule Hypergraph");
     create_case = tcase_create("Create");
@@ -783,6 +871,10 @@ Suite *rule_hypergraph_suite() {
     tcase_add_test(adding_and_removing_case, adding_rules_test);
     tcase_add_test(adding_and_removing_case, removing_rules_test);
     suite_add_tcase(suite, adding_and_removing_case);
+
+    get_inactive_case = tcase_create("Get Inactive Rules");
+    tcase_add_test(get_inactive_case, get_inactive_rules_test);
+    suite_add_tcase(suite, get_inactive_case);
 
     return suite;
 }
