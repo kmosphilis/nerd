@@ -320,7 +320,7 @@ void rule_hypergraph_remove_rule(RuleHyperGraph * const rule_hypergraph, Rule * 
  * from.
  * @param inactive_rules The output of the function to be returned. If NULL, the function will not
  * be performed. It should be a reference to the struct's pointer (RuleQueue **). Make sure that the
- * given double pointer is not already allocated, otherwise its contents will be lost in the merory.
+ * given double pointer is not already allocated, otherwise its contents will be lost in the memory.
  * The RuleQueue which will be created will not have ownership of its Rules.
 */
 void rule_hypergraph_get_inactive_rules(KnowledgeBase * const knowledge_base,
