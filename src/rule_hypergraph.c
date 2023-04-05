@@ -57,6 +57,7 @@ Vertex *vertex_constructor(Literal * const literal) {
     vertex->literal = literal;
     vertex->edges = NULL;
     vertex->number_of_edges = 0;
+    return vertex;
 }
 
 /**
