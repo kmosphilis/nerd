@@ -205,7 +205,7 @@ void vertex_remove_edge(Vertex * const vertex, unsigned int index) {
  * @brief Function to be used with the RB-Tree to deallocate the Vertices and the Edges.
 */
 void item_destructor(void *item, void *param) {
-    Vertex *v = item;
+    Vertex *v = (Vertex *) item;
     vertex_destructor(&v, true);
 }
 
@@ -214,7 +214,7 @@ void item_destructor(void *item, void *param) {
  * comparison.
 */
 int compare_literals(const void *vertex1, const void *vertex2, void *extra) {
-    const Vertex *v1 = vertex1, *v2 = vertex2;
+    const Vertex *v1 = (Vertex *) vertex1, *v2 = (Vertex *) vertex2;
     char *l1_string = literal_to_string(v1->literal), *l2_string = literal_to_string(v2->literal);
     int result = strcmp(l1_string, l2_string);
 
