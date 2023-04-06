@@ -12,6 +12,7 @@ typedef struct RuleHyperGraph RuleHyperGraph;
 
 RuleHyperGraph *rule_hypergraph_empty_constructor();
 void rule_hypergraph_destructor(RuleHyperGraph ** const rule_hypergraph);
+void rule_hypergraph_copy(RuleHyperGraph ** const destination, const RuleHyperGraph * const source);
 int rule_hypergraph_add_rule(RuleHyperGraph * const rule_hypergraph, Rule ** const rule);
 void rule_hypergraph_remove_rule(RuleHyperGraph * const rule_hypergraph, Rule * const rule);
 void rule_hypergraph_get_inactive_rules(struct KnowledgeBase * const knowledge_base,

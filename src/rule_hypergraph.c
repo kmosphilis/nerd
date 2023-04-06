@@ -253,6 +253,43 @@ void rule_hypergraph_destructor(RuleHyperGraph ** const rule_hypergraph) {
 }
 
 /**
+ * @brief Makes a copy of the given RuleHyperGraph. If any of the parameters is NULL, the process
+ * will fail.
+ *
+ * @param destination The RuleHyperGraph to save the copy. It should be a reference to the struct's
+ * pointer (to a Rule * - &(Rule *)).
+ * @param source The RuleHyperGraph to be copied.
+*/
+void rule_hypergraph_copy(RuleHyperGraph ** const destination,
+const RuleHyperGraph * const source) {
+    if (destination && source) {
+        *destination = rule_hypergraph_empty_constructor();
+
+        struct prb_traverser traverser;
+
+        Vertex *current_vertex = prb_t_first(&traverser, source->literal_tree);
+
+        unsigned int i, j;
+        while (current_vertex) {
+            for (i = 0; i < current_vertex->number_of_edges; ++i) {
+                Literal *head, **body =
+                (Literal **) malloc(sizeof(Literal *) * current_vertex->edges[i]->rule->body->size);
+                literal_copy(&head, current_vertex->edges[i]->rule->head);
+                for(j = 0; j < current_vertex->edges[i]->rule->body->size; ++j) {
+                    literal_copy(&(body[j]), current_vertex->edges[i]->rule->body->literals[j]);
+                }
+                Rule *rule =
+                rule_constructor(j, body, &head, current_vertex->edges[i]->rule->weight, true);
+                free(body);
+
+                rule_hypergraph_add_rule(*destination, &rule);
+            }
+            current_vertex = prb_t_next(&traverser);
+        }
+    }
+}
+
+/**
  * @brief Adds a Rule to the given RuleHyperGraph. This process creates the appropriate Vertices and
  * an Edge to connected them.
  *
@@ -567,6 +604,60 @@ edge_checking:
 #include "../test/helper/literal.h"
 #include "../test/helper/rule.h"
 #include "../test/helper/rule_queue.h"
+
+/**
+ * @brief Checks two Vertices to determine if they are equal or not. Do not use a duplicate of the
+ * first.
+ *
+ * @param X The first Vertex to compare.
+ * @param Y The second Vertex to compare.
+*/
+#define ck_assert_vertex_eq(X, Y) do { \
+    const Vertex * const _v1 = (X); \
+    const Vertex * const _v2 = (Y); \
+    ck_assert_ptr_nonnull(_v1); \
+    ck_assert_ptr_nonnull(_v2); \
+    ck_assert_ptr_ne(_v1, _v2); \
+    ck_assert_ptr_ne(_v1->literal, _v2->literal); \
+    ck_assert_literal_eq(_v1->literal, _v2->literal); \
+    ck_assert_int_eq(_v1->number_of_edges, _v2->number_of_edges); \
+    if (_v1->number_of_edges > 0) { \
+        ck_assert_ptr_ne(_v1->edges, _v2->edges); \
+        unsigned int i; \
+        for (i = 0; i < _v1->number_of_edges; ++i) { \
+            ck_assert_ptr_ne(_v1->edges[i], _v2->edges[i]); \
+        } \
+    } \
+} while (0)
+
+/**
+ * @brief Checks two Edges to determine if they are equal or not. Do not use a duplicate of the
+ * first.
+ *
+ * @param X The first Edge to compare.
+ * @param Y The second Edge to compare.
+*/
+#define ck_assert_edge_eq(X, Y) do { \
+    const Edge * const _e1 = (X); \
+    const Edge * const _e2 = (Y); \
+    ck_assert_ptr_nonnull(_e1); \
+    ck_assert_ptr_nonnull(_e2); \
+    ck_assert_ptr_ne(_e1, _e2); \
+    ck_assert_ptr_ne(_e1->rule, _e2->rule); \
+    ck_assert_rule_eq(_e1->rule, _e2->rule); \
+    ck_assert_ptr_ne(_e1->rule->head, _e2->rule->head); \
+    ck_assert_ptr_ne(_e1->rule->body, _e2->rule->body); \
+    unsigned int i; \
+    for (i = 0; i < _e1->rule->body->size; ++i) { \
+        ck_assert_ptr_ne(_e1->rule->body->literals[i], _e2->rule->body->literals[i]); \
+    } \
+    ck_assert_int_eq(_e1->number_of_vertices, _e2->number_of_vertices); \
+    ck_assert_ptr_ne(_e1->from, _e2->from); \
+    for (i = 0; i < _e1->number_of_vertices; ++i) { \
+        ck_assert_ptr_ne(_e1->from[i], _e2->from[i]); \
+        ck_assert_vertex_eq(_e1->from[i], _e2->from[i]); \
+    } \
+} while (0)
 
 START_TEST(construct_destruct_hypergraph_test) {
     RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
@@ -1061,6 +1152,80 @@ START_TEST(get_inactive_rules_test) {
     rule_queue_destructor(&result);
 
     knowledge_base_destructor(&knowledge_base);
+}
+END_TEST
+
+START_TEST(hypergraph_copy_test) {
+    RuleHyperGraph *hypergraph1 = rule_hypergraph_empty_constructor(), *hypergraph2 = NULL;
+    Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
+    *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
+    *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l5};
+    Rule *r1 = rule_constructor(1, &l1, &l2, 0, false),
+    *r2 = rule_constructor(1, &l3, &l4, 0, false),
+    *r3 = rule_constructor(1, &l5, &l4, 0, false),
+    *r4 = rule_constructor(1, &l5, &l3, 0, false),
+    *r5 = rule_constructor(2, l_array, &l4, 0, false);
+    l_array[1] = l1;
+    Rule *r6 = rule_constructor(2, l_array, &l2, 0, false);
+
+    rule_hypergraph_add_rule(hypergraph1, &r1);
+    rule_hypergraph_add_rule(hypergraph1, &r2);
+    rule_hypergraph_add_rule(hypergraph1, &r3);
+    rule_hypergraph_add_rule(hypergraph1, &r4);
+    rule_hypergraph_add_rule(hypergraph1, &r5);
+    rule_hypergraph_add_rule(hypergraph1, &r6);
+
+    ck_assert_ptr_null(hypergraph2);
+    rule_hypergraph_copy(&hypergraph2, hypergraph1);
+    ck_assert_ptr_nonnull(hypergraph2);
+    ck_assert_ptr_ne(hypergraph1, hypergraph2);
+    ck_assert_ptr_ne(hypergraph1->literal_tree, hypergraph2->literal_tree);
+
+    struct prb_traverser h1_traverser, h2_traverser;
+
+    Vertex *h1_vertex = prb_t_first(&h1_traverser, hypergraph1->literal_tree),
+    *h2_vertex = prb_t_first(&h2_traverser, hypergraph2->literal_tree);
+
+    unsigned int i;
+    size_t total_vertices = 0, total_edges = 0;
+    while (h1_vertex && h2_vertex) {
+        ++total_vertices;
+        ck_assert_vertex_eq(h1_vertex, h2_vertex);
+
+        total_edges += h1_vertex->number_of_edges;
+        for (i = 0; i < h1_vertex->number_of_edges; ++i) {
+            ck_assert_edge_eq(h1_vertex->edges[i], h2_vertex->edges[i]);
+        }
+
+        h1_vertex = prb_t_next(&h1_traverser);
+        h2_vertex = prb_t_next(&h2_traverser);
+    }
+
+    rule_hypergraph_destructor(&hypergraph1);
+    ck_assert_ptr_null(hypergraph1);
+    ck_assert_ptr_nonnull(hypergraph2);
+
+    h2_vertex = prb_t_first(&h2_traverser, hypergraph2->literal_tree);
+    size_t copy_total_vertices = 0, copy_total_edges = 0;
+    while (h2_vertex) {
+        ++copy_total_vertices;
+
+        copy_total_edges += h2_vertex->number_of_edges;
+
+        h2_vertex = prb_t_next(&h2_traverser);
+    }
+
+    ck_assert_int_eq(total_vertices, copy_total_vertices);
+    ck_assert_int_eq(total_edges, copy_total_edges);
+
+    rule_hypergraph_copy(NULL, hypergraph2);
+    ck_assert_ptr_nonnull(hypergraph2);
+
+    rule_hypergraph_copy(&hypergraph1, NULL);
+    ck_assert_ptr_null(hypergraph1);
+
+    rule_hypergraph_destructor(&hypergraph2);
+    ck_assert_ptr_null(hypergraph2);
 }
 END_TEST
 
@@ -1607,7 +1772,7 @@ END_TEST
 Suite *rule_hypergraph_suite() {
     Suite *suite;
     TCase *create_case, *add_edges_case, *adding_and_removing_case, *get_inactive_case,
-    *rule_update_case;
+    *copy_case, *rule_update_case;
 
     suite = suite_create("Rule Hypergraph");
     create_case = tcase_create("Create");
@@ -1628,6 +1793,10 @@ Suite *rule_hypergraph_suite() {
     get_inactive_case = tcase_create("Get Inactive Rules");
     tcase_add_test(get_inactive_case, get_inactive_rules_test);
     suite_add_tcase(suite, get_inactive_case);
+
+    copy_case = tcase_create("Copy");
+    tcase_add_test(copy_case, hypergraph_copy_test);
+    suite_add_tcase(suite, copy_case);
 
     rule_update_case = tcase_create("Rule Update");
     tcase_add_test(rule_update_case, update_rules_test);
