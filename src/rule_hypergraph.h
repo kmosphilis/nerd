@@ -1,10 +1,39 @@
-#include "rule.h"
-
 #ifndef RULE_HYPERGRAPH_H
 #define RULE_HYPERGRAPH_H
+
+/**
+ * 1 enables testing, 0 disables testing.
+*/
+#define RULE_HYPERGRAPH_TEST 0
+
 #include "rule.h"
 #include "knowledge_base.h"
 #include "rule_queue.h"
+
+/**
+ * @brief Checks two RuleHyperGraphs to determine if they are equal or not. Do not use the same
+ * pointer on both parameters.
+ *
+ * @param X The first RuleHyperGraph to compare.
+ * @param Y The second RuleHyperGraph to compare.
+*/
+#define ck_assert_rule_hypergraph_eq(X, Y)
+
+#define _ck_assert_rule_hypergraph_empty(X, OP)
+
+/**
+ * @brief Checks if a RuleHyperGraph is empty.
+ *
+ * @param X The RuleHyperGraph to check.
+*/
+#define ck_assert_rule_hypergraph_empty(X) _ck_assert_rule_hypergraph_empty(X, ==)
+
+/**
+ * @brief Checks if a RuleHyperGraph is not empty.
+ *
+ * @param X The RuleHyperGraph to check.
+*/
+#define ck_assert_rule_hypergraph_notempty(X) _ck_assert_rule_hypergraph_empty(X, !=)
 
 struct KnowledgeBase;
 

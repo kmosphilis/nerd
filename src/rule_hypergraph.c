@@ -596,21 +596,14 @@ edge_checking:
     scene_destructor(&observed_and_inferred_no_opposed);
 }
 
-/**
- * Enables testing. Uncomment only for testing.
-*/
-// #define RULE_HYPERGRAPH_TEST
-#ifdef RULE_HYPERGRAPH_TEST
-
 #include <check.h>
 
-#include "../test/helper/literal.h"
-#include "../test/helper/rule.h"
-#include "../test/helper/rule_queue.h"
+#undef ck_assert_rule_hypergraph_eq
+#undef _ck_assert_rule_hypergraph_empty
 
 /**
- * @brief Checks two Vertices to determine if they are equal or not. Do not use a duplicate of the
- * first.
+ * @brief Checks two Vertices to determine if they are equal or not. Do not use the same pointer on
+ * both parameters.
  *
  * @param X The first Vertex to compare.
  * @param Y The second Vertex to compare.
@@ -634,8 +627,8 @@ edge_checking:
 } while (0)
 
 /**
- * @brief Checks two Edges to determine if they are equal or not. Do not use a duplicate of the
- * first.
+ * @brief Checks two Edges to determine if they are equal or not. Do not use the same pointer on
+ * both parameters.
  *
  * @param X The first Edge to compare.
  * @param Y The second Edge to compare.
@@ -662,6 +655,43 @@ edge_checking:
     } \
 } while (0)
 
+#define ck_assert_rule_hypergraph_eq(X, Y) do { \
+    const RuleHyperGraph * const _h1 = (X); \
+    const RuleHyperGraph * const _h2 = (Y); \
+    ck_assert_ptr_nonnull(_h1); \
+    ck_assert_ptr_nonnull(_h2); \
+    ck_assert_ptr_ne(_h1, _h2); \
+    ck_assert_ptr_nonnull(_h1->literal_tree); \
+    ck_assert_ptr_nonnull(_h2->literal_tree); \
+    ck_assert_ptr_ne(_h1->literal_tree, _h2->literal_tree); \
+    struct prb_traverser _h1_traverser, _h2_traverser; \
+    ck_assert_int_eq(_h1->literal_tree->prb_count, _h2->literal_tree->prb_count); \
+    Vertex *_h1_current_vertex = (Vertex *) prb_t_first(&_h1_traverser, _h1->literal_tree), \
+    *_h2_current_vertex = (Vertex *) prb_t_first(&_h2_traverser, _h2->literal_tree); \
+    unsigned int i; \
+    while (_h1_current_vertex) { \
+        ck_assert_vertex_eq(_h1_current_vertex, _h2_current_vertex); \
+        for (i = 0; i < _h1_current_vertex->number_of_edges; ++i) { \
+            ck_assert_edge_eq(_h1_current_vertex->edges[i], _h2_current_vertex->edges[i]); \
+        } \
+        _h1_current_vertex = (Vertex *)  prb_t_next(&_h1_traverser); \
+        _h2_current_vertex = (Vertex *) prb_t_next(&_h2_traverser); \
+    } \
+} while (0)
+
+#define _ck_assert_rule_hypergraph_empty(X, OP) do { \
+    const RuleHyperGraph * const _h = (X); \
+    ck_assert_ptr_nonnull(_h); \
+    ck_assert_ptr_nonnull(_h->literal_tree); \
+    _ck_assert_int(_h->literal_tree->prb_count, OP, 0); \
+} while (0)
+
+#if RULE_HYPERGRAPH_TEST == 1
+
+#include "../test/helper/literal.h"
+#include "../test/helper/rule.h"
+#include "../test/helper/rule_queue.h"
+
 START_TEST(construct_destruct_hypergraph_test) {
     RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
 
@@ -670,6 +700,7 @@ START_TEST(construct_destruct_hypergraph_test) {
     ck_assert_ptr_null(hypergraph->literal_tree->prb_param);
     ck_assert_ptr_null(hypergraph->literal_tree->prb_root);
     ck_assert_ptr_eq(hypergraph->literal_tree->prb_compare, compare_literals);
+    ck_assert_rule_hypergraph_empty(hypergraph);
 
     rule_hypergraph_destructor(&hypergraph);
     ck_assert_ptr_null(hypergraph);
@@ -856,7 +887,9 @@ START_TEST(adding_rules_test) {
     Edge *current_e;
 
     ck_assert_ptr_nonnull(r1);
+    ck_assert_rule_hypergraph_empty(hypergraph);
     ck_assert_int_eq(rule_hypergraph_add_rule(hypergraph, &r1), 1);
+    ck_assert_rule_hypergraph_notempty(hypergraph);
     ck_assert_ptr_nonnull(r1);
     current_v1 = prb_find(hypergraph->literal_tree, v2);
 
@@ -1087,11 +1120,13 @@ START_TEST(removing_rules_test) {
     ck_assert_int_eq(current_v2->number_of_edges, 1);
     ck_assert_ptr_eq(current_v2->edges[0]->rule, r6);
 
+    ck_assert_rule_hypergraph_notempty(hypergraph);
     rule_hypergraph_remove_rule(hypergraph, r6);
     ck_assert_int_eq(current_v2->number_of_edges, 0);
     ck_assert_ptr_null(current_v2->edges);
     ck_assert_int_eq(current_v1->number_of_edges, 0);
     ck_assert_ptr_null(current_v1->edges);
+    ck_assert_rule_hypergraph_notempty(hypergraph);
 
     vertex_destructor(&v1, false);
     vertex_destructor(&v2, false);
@@ -1203,6 +1238,7 @@ START_TEST(hypergraph_copy_test) {
         h1_vertex = prb_t_next(&h1_traverser);
         h2_vertex = prb_t_next(&h2_traverser);
     }
+    ck_assert_rule_hypergraph_eq(hypergraph1, hypergraph2);
 
     rule_hypergraph_destructor(&hypergraph1);
     ck_assert_ptr_null(hypergraph1);
@@ -1579,7 +1615,6 @@ START_TEST(update_rules_test) {
     l_array[1] = l1;
     Rule *r8 = rule_constructor(2, l_array, &l6, 5.5, false);
     knowledge_base_add_rule(knowledge_base, &r8);
-    // scene_add_literal(inferences, &l5);
     ck_assert_float_eq_tol(r8->weight, 5.5, 0.000001);
     ck_assert_int_eq(knowledge_base->active->length, 6);
     rule_hypergraph_update_rules(knowledge_base, observations, inferences, 0.5, 1);
