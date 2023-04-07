@@ -363,7 +363,7 @@ void rule_hypergraph_remove_rule(RuleHyperGraph * const rule_hypergraph, Rule * 
  * given double pointer is not already allocated, otherwise its contents will be lost in the memory.
  * The RuleQueue which will be created will not have ownership of its Rules.
 */
-void rule_hypergraph_get_inactive_rules(KnowledgeBase * const knowledge_base,
+void rule_hypergraph_get_inactive_rules(const KnowledgeBase * const knowledge_base,
 RuleQueue ** const inactive_rules) {
     if (knowledge_base && inactive_rules) {
         *inactive_rules = rule_queue_constructor(false);
