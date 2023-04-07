@@ -294,8 +294,11 @@ const RuleHyperGraph * const source) {
  * an Edge to connected them.
  *
  * @param rule_hypergraph The RuleHyperGraph to add the Rule.
- * @param rule The Rule to be added to the RuleHyperGraph. Rules should not have the ownership of
- * the given literals.
+ * @param rule The Rule to be added to the RuleHyperGraph. If the given Rule had took ownership of
+ * its content, a new Rule will be created without taking the ownership of that content as it will
+ * belong to the internal RB-Tree. If it does not take the ownership of the its content, the content
+ * pointers might stil change, as the body and head will take the pointer of the item allocated in
+ * the RB-Tree.
  *
  * @return 1 if Rule was successfully added, 0 if it was not, and -1 if one of the parameters was
  * NULL.
