@@ -234,6 +234,10 @@ START_TEST(copy_test) {
     }
 
     rule_queue_destructor(&rule_queue1);
+    for (i = 0; i < RULES_TO_CREATE; ++i) {
+        ck_assert_ptr_nonnull(rule_queue2->rules[i]);
+        ck_assert_ptr_eq(rule_queue2->rules[i], rules_copy[i]);
+    }
     rule_queue_destructor(&rule_queue2);
     destruct_rules(rules);
     destruct_rules(rules_copy);
@@ -254,14 +258,14 @@ START_TEST(to_string_test) {
     ck_assert_str_eq(rule_queue_string, "[\n"
         "\t(penguin, bird, antarctica) => -fly (0.0000),\n"
         "\t(albatross, bird) => fly (1.0000),\n"
-        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
+        "\t(seagull, bird, harbour, ocean) => fly (2.0000)\n]");
     free(rule_queue_string);
 
     rule_queue_dequeue(rule_queue, NULL);
     rule_queue_string = rule_queue_to_string(rule_queue);
     ck_assert_str_eq(rule_queue_string, "[\n"
         "\t(albatross, bird) => fly (1.0000),\n"
-        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
+        "\t(seagull, bird, harbour, ocean) => fly (2.0000)\n]");
     free(rule_queue_string);
 
     do {

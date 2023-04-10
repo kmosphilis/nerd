@@ -35,7 +35,9 @@ void rule_queue_destructor(RuleQueue ** const rule_queue) {
             unsigned int i;
             if (((_RuleQueue *) *rule_queue)->ownership) {
                 for (i = 0; i < (*rule_queue)->length; ++i) {
-                    rule_destructor(&((*rule_queue)->rules[i]));
+                    if ((*rule_queue)->rules[i]) {
+                        rule_destructor(&((*rule_queue)->rules[i]));
+                    }
                 }
             }
 
