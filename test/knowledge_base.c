@@ -7,6 +7,7 @@
 #include "helper/rule_queue.h"
 #include "helper/rule.h"
 #include "../src/knowledge_base.h"
+#include "../src/rule_hypergraph.h"
 
 START_TEST(construct_destruct_test) {
     KnowledgeBase *knowledge_base = knowledge_base_constructor(5.0);
@@ -14,7 +15,7 @@ START_TEST(construct_destruct_test) {
     ck_assert_float_eq_tol(knowledge_base->activation_threshold, 5.0, 0.00001);
     ck_assert_knowledge_base_empty(knowledge_base);
     ck_assert_rule_queue_empty(knowledge_base->active);
-    ck_assert_rule_queue_empty(knowledge_base->inactive);
+    ck_assert_rule_hypergraph_empty(knowledge_base->hypergraph);
 
     knowledge_base_destructor(&knowledge_base);
     ck_assert_ptr_null(knowledge_base);
@@ -25,69 +26,92 @@ END_TEST
 
 START_TEST(add_rule_test) {
     KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue1 = create_rule_queue(), *rule_queue2 = NULL,
-    *rule_queue3 = rule_queue_constructor();
+    RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = NULL,
+    *rule_queue3 = rule_queue_constructor(true),
+    *inactive_rules;
 
-    rule_queue_copy(&rule_queue2, rule_queue1);
 
-    unsigned int i, rule_queue_length = rule_queue1->length;
-    for (i = 0; i < rule_queue_length; ++i) {
-        Rule *rule, *copy;
+    unsigned int i;
+    for (i = 0; i < rule_queue1->length; ++i) {
+        Rule *rule;
         rule_copy(&rule, rule_queue1->rules[i]);
-        rule_promote(rule, 3.0);
-        rule_copy(&copy, rule);
+        rule->weight += 3;
         rule_queue_enqueue(rule_queue3, &rule);
-        rule_queue_enqueue(rule_queue1, &copy);
     }
 
     for (i = 0; i < rule_queue1->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue1->rules[i]);
+        ck_assert_int_eq(knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i])), 1);
+        ck_assert_int_eq(knowledge_base_add_rule(knowledge_base, &(rule_queue3->rules[i])), 0);
     }
+    rule_queue_copy(&rule_queue2, rule_queue1);
     rule_queue_destructor(&rule_queue1);
+    rule_queue_destructor(&rule_queue3);
 
     ck_assert_knowledge_base_notempty(knowledge_base);
-    ck_assert_rule_queue_eq(knowledge_base->active, rule_queue3);
-    ck_assert_rule_queue_eq(knowledge_base->inactive, rule_queue2);
+    ck_assert_rule_queue_empty(knowledge_base->active);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    ck_assert_rule_queue_eq(inactive_rules, rule_queue2);
 
-    int old_act = knowledge_base->active->length, old_inact = knowledge_base->inactive->length;
-    knowledge_base_add_rule(knowledge_base, NULL);
-    ck_assert_int_eq(knowledge_base->active->length, old_act);
-    ck_assert_int_eq(knowledge_base->inactive->length, old_inact);
+    size_t old_actives = knowledge_base->active->length,
+    old_inactives = inactive_rules->length;
+    rule_queue_destructor(&inactive_rules);
+    ck_assert_int_eq(knowledge_base_add_rule(knowledge_base, NULL), -1);
+    ck_assert_int_eq(knowledge_base->active->length, old_actives);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    ck_assert_int_eq(inactive_rules->length, old_inactives);
+    rule_queue_destructor(&inactive_rules);
+    ck_assert_int_eq(knowledge_base_add_rule(knowledge_base, &(rule_queue2->rules[0])), 0);
+
+    rule_queue3 = create_rule_queue2();
+    rule_queue_destructor(&rule_queue2);
+
+    for (i = 0; i < rule_queue3->length; ++i) {
+        ck_assert_int_eq(knowledge_base_add_rule(knowledge_base, &(rule_queue3->rules[i])), 1);
+    }
+    rule_queue_copy(&rule_queue2, rule_queue3);
+    rule_queue_destructor(&rule_queue3);
+
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    ck_assert_int_eq(inactive_rules->length, old_inactives);
+    rule_queue_destructor(&inactive_rules);
+    ck_assert_int_ne(knowledge_base->active->length, old_actives);
+    ck_assert_rule_queue_eq(knowledge_base->active, rule_queue2);
 
     knowledge_base_destructor(&knowledge_base);
     ck_assert_ptr_null(knowledge_base);
-    knowledge_base_add_rule(knowledge_base, &rule_queue2->rules[0]);
+    ck_assert_int_eq(knowledge_base_add_rule(knowledge_base, &(rule_queue2->rules[0])), -1);
     ck_assert_ptr_null(knowledge_base);
 
     rule_queue_destructor(&rule_queue2);
-    rule_queue_destructor(&rule_queue3);
-    knowledge_base_destructor(&knowledge_base);
 }
 END_TEST
 
 START_TEST(copy_test) {
     KnowledgeBase *knowledge_base1 = knowledge_base_constructor(3.0), *knowledge_base2 = NULL;
-    RuleQueue *rule_queue = create_rule_queue();
+    RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = create_rule_queue2();
 
-    unsigned int i, rule_queue_length = rule_queue->length;
-    for (i = 0; i < rule_queue_length; ++i) {
-        Rule *rule;
-        rule_copy(&rule, rule_queue->rules[i]);
-        rule_promote(rule, 3.0);
-        rule_queue_enqueue(rule_queue, &rule);
+    unsigned int i;
+    for (i = 0; i < rule_queue1->length; ++i) {
+        knowledge_base_add_rule(knowledge_base1, &(rule_queue1->rules[i]));
     }
-
-
-    for (i = 0; i < rule_queue->length; ++i) {
-        knowledge_base_add_rule(knowledge_base1, &(rule_queue->rules[i]));
-    }
-    rule_queue_destructor(&rule_queue);
+    rule_queue_destructor(&rule_queue1);
 
     knowledge_base_copy(&knowledge_base2, knowledge_base1);
     ck_assert_knowledge_base_eq(knowledge_base1, knowledge_base2);
     ck_assert_ptr_ne(knowledge_base1, knowledge_base2);
     ck_assert_ptr_ne(knowledge_base1->active, knowledge_base2->active);
-    ck_assert_ptr_ne(knowledge_base1->inactive, knowledge_base2->inactive);
+    ck_assert_ptr_ne(knowledge_base1->hypergraph, knowledge_base2->hypergraph);
+
+    for (i = 0; i < rule_queue2->length; ++i) {
+        knowledge_base_add_rule(knowledge_base1, &(rule_queue2->rules[i]));
+    }
+    rule_queue_destructor(&rule_queue2);
+
+    ck_assert_int_ne(knowledge_base1->active->length, knowledge_base2->active->length);
+
+    knowledge_base_destructor(&knowledge_base2);
+    knowledge_base_copy(&knowledge_base2, knowledge_base1);
+    ck_assert_knowledge_base_eq(knowledge_base1, knowledge_base2);
 
     knowledge_base_destructor(&knowledge_base1);
     ck_assert_ptr_null(knowledge_base1);
@@ -100,598 +124,10 @@ START_TEST(copy_test) {
 }
 END_TEST
 
-START_TEST(applicable_rules_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue1 = create_rule_queue(), *rule_queue2 = NULL;
-    Context *context = context_constructor();
-    size_t literals_size = 4;
-    IntVector *active_applicables = NULL, *inactive_applicables = NULL;
-
-    rule_queue_copy(&rule_queue2, rule_queue1);
-
-    const char *literal_atoms[4] = {"Penguin", "Bird", "Antarctica", "Fly"};
-    const bool literal_signs[4] = {true, true, true, false};
-
-    unsigned int i;
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal = literal_constructor(literal_atoms[i], literal_signs[i]);
-        context_add_literal(context, &literal);
-    }
-
-    for (i = 0; i < rule_queue1->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i]));
-    }
-
-    knowledge_base_applicable_rules(knowledge_base, context, &active_applicables,
-    &inactive_applicables);
-    ck_assert_int_vector_empty(active_applicables);
-    ck_assert_int_vector_notempty(inactive_applicables);
-    ck_assert_int_eq(inactive_applicables->size, 1);
-    ck_assert_int_eq(inactive_applicables->items[0], 0);
-    int_vector_destructor(&active_applicables);
-    int_vector_destructor(&inactive_applicables);
-    context_destructor(&context);
-
-    context = context_constructor();
-    const char *literal_atoms2[4] = {"Seagull", "Bird", "Antarctica", "Fly"};
-
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal = literal_constructor(literal_atoms2[i], literal_signs[i]);
-        context_add_literal(context, &literal);
-    }
-
-    knowledge_base_applicable_rules(knowledge_base, context, &active_applicables,
-    &inactive_applicables);
-    ck_assert_int_vector_empty(active_applicables);
-    ck_assert_int_vector_empty(inactive_applicables);
-    int_vector_destructor(&active_applicables);
-    int_vector_destructor(&inactive_applicables);
-    context_destructor(&context);
-
-    context = context_constructor();
-    const char *literal_atoms3[5] = {"Seagull", "Bird", "Harbor", "Ocean", "Fly"};
-    const bool literal_signs2[5] = {true, true, true, true, true};
-    ++literals_size;
-
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal = literal_constructor(literal_atoms3[i], literal_signs2[i]);
-        context_add_literal(context, &literal);
-    }
-
-    knowledge_base_applicable_rules(knowledge_base, context, &active_applicables,
-    &inactive_applicables);
-    ck_assert_int_vector_empty(active_applicables);
-    ck_assert_int_eq(inactive_applicables->size, 1);
-    ck_assert_int_eq(inactive_applicables->items[0], 2);
-    int_vector_destructor(&active_applicables);
-    int_vector_destructor(&inactive_applicables);
-    context_destructor(&context);
-
-    context = context_constructor();
-
-    const char *literal_atoms4[5] = {"Albatross", "Bird", "Antarctica", "Penguin", "Fly"};
-
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal = literal_constructor(literal_atoms4[i], literal_signs2[i]);
-        context_add_literal(context, &literal);
-    }
-
-    knowledge_base_applicable_rules(knowledge_base, context, &active_applicables,
-    &inactive_applicables);
-    ck_assert_int_vector_empty(active_applicables);
-    ck_assert_int_eq(inactive_applicables->size, 2);
-    ck_assert_int_eq(inactive_applicables->items[0], 0);
-    ck_assert_int_eq(inactive_applicables->items[1], 1);
-    int_vector_destructor(&active_applicables);
-    int_vector_destructor(&inactive_applicables);
-
-    for (i = 0; i < rule_queue2->length; ++i) {
-        Rule *rule = NULL;
-        rule_copy(&rule, rule_queue2->rules[i]);
-        rule_promote(rule, 3.0);
-        knowledge_base_add_rule(knowledge_base, &rule);
-    }
-
-    knowledge_base_applicable_rules(knowledge_base, context, &active_applicables,
-    &inactive_applicables);
-    ck_assert_int_eq(active_applicables->size, 2);
-    ck_assert_int_eq(active_applicables->items[0], 0);
-    ck_assert_int_eq(active_applicables->items[1], 1);
-    ck_assert_int_eq(inactive_applicables->size, 2);
-    ck_assert_int_eq(inactive_applicables->items[0], 0);
-    ck_assert_int_eq(inactive_applicables->items[1], 1);
-    int_vector_destructor(&active_applicables);
-    int_vector_destructor(&inactive_applicables);
-
-    knowledge_base_applicable_rules(NULL, context, &active_applicables,
-    &inactive_applicables);
-    ck_assert_ptr_null(active_applicables);
-    ck_assert_ptr_null(inactive_applicables);
-
-    knowledge_base_applicable_rules(knowledge_base, NULL, &active_applicables,
-    &inactive_applicables);
-    ck_assert_ptr_null(active_applicables);
-    ck_assert_ptr_null(inactive_applicables);
-
-    knowledge_base_applicable_rules(knowledge_base, context, NULL, &inactive_applicables);
-    ck_assert_ptr_null(inactive_applicables);
-
-    knowledge_base_applicable_rules(knowledge_base, context, &active_applicables, NULL);
-    ck_assert_ptr_null(active_applicables);
-
-    int_vector_destructor(&active_applicables);
-    int_vector_destructor(&inactive_applicables);
-    rule_queue_destructor(&rule_queue1);
-    rule_queue_destructor(&rule_queue2);
-    context_destructor(&context);
-    knowledge_base_destructor(&knowledge_base);
-}
-END_TEST
-
-START_TEST(concurring_rules_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue1 = create_rule_queue(), *rule_queue2 = NULL;
-    Context *context = context_constructor();
-    size_t literals_size = 4;
-    IntVector *active_concurring = NULL, *inactive_concurring = NULL;
-
-    rule_queue_copy(&rule_queue2, rule_queue1);
-
-    const char *literal_atoms[4] = {"Penguin", "Bird", "Antarctica", "Fly"};
-    const bool literal_signs[4] = {true, true, true, false};
-
-    unsigned int i;
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal = literal_constructor(literal_atoms[i], literal_signs[i]);
-        context_add_literal(context, &literal);
-    }
-
-    for (i = 0; i < rule_queue1->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i]));
-    }
-
-    knowledge_base_concurring_rules(knowledge_base, context, &active_concurring,
-    &inactive_concurring);
-    ck_assert_int_vector_empty(active_concurring);
-    ck_assert_int_vector_notempty(inactive_concurring);
-    ck_assert_int_eq(inactive_concurring->size, 1);
-    ck_assert_int_eq(inactive_concurring->items[0], 0);
-    int_vector_destructor(&active_concurring);
-    int_vector_destructor(&inactive_concurring);
-    context_destructor(&context);
-
-    context = context_constructor();
-    const char *literal_atoms2[4] = {"Seagull", "Bird", "Antarctica", "Fly"};
-
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal = literal_constructor(literal_atoms2[i], literal_signs[i]);
-        context_add_literal(context, &literal);
-    }
-
-    knowledge_base_concurring_rules(knowledge_base, context, &active_concurring,
-    &inactive_concurring);
-    ck_assert_int_vector_empty(active_concurring);
-    ck_assert_int_vector_empty(inactive_concurring);
-    int_vector_destructor(&active_concurring);
-    int_vector_destructor(&inactive_concurring);
-    context_destructor(&context);
-
-    context = context_constructor();
-    const char *literal_atoms3[5] = {"Seagull", "Bird", "Harbor", "Ocean", "Fly"};
-    const bool literal_signs2[5] = {true, true, true, true, true};
-    ++literals_size;
-
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal = literal_constructor(literal_atoms3[i], literal_signs2[i]);
-        context_add_literal(context, &literal);
-    }
-
-    knowledge_base_concurring_rules(knowledge_base, context, &active_concurring,
-    &inactive_concurring);
-    ck_assert_int_vector_empty(active_concurring);
-    ck_assert_int_eq(inactive_concurring->size, 1);
-    ck_assert_int_eq(inactive_concurring->items[0], 2);
-    int_vector_destructor(&active_concurring);
-    int_vector_destructor(&inactive_concurring);
-    context_destructor(&context);
-
-    context = context_constructor();
-    const char *literal_atoms4[5] = {"Albatross", "Bird", "Antarctica", "Penguin", "Fly"};
-
-    for (i = 0; i < literals_size; ++i) {
-        Literal *literal  = literal_constructor(literal_atoms4[i], literal_signs2[i]);
-        context_add_literal(context, &literal);
-    }
-
-    knowledge_base_concurring_rules(knowledge_base, context, &active_concurring,
-    &inactive_concurring);
-    ck_assert_int_vector_empty(active_concurring);
-    ck_assert_int_eq(inactive_concurring->size, 1);
-    ck_assert_int_eq(inactive_concurring->items[0], 1);
-    int_vector_destructor(&active_concurring);
-    int_vector_destructor(&inactive_concurring);
-
-    for (i = 0; i < rule_queue2->length; ++i) {
-        Rule *rule = NULL;
-        rule_copy(&rule, rule_queue2->rules[i]);
-        rule_promote(rule, 3.0);
-        knowledge_base_add_rule(knowledge_base, &rule);
-    }
-
-    knowledge_base_concurring_rules(knowledge_base, context, &active_concurring,
-    &inactive_concurring);
-    ck_assert_int_eq(active_concurring->size, 1);
-    ck_assert_int_eq(active_concurring->items[0], 1);
-    ck_assert_int_eq(inactive_concurring->size, 1);
-    ck_assert_int_eq(inactive_concurring->items[0], 1);
-    int_vector_destructor(&active_concurring);
-    int_vector_destructor(&inactive_concurring);
-
-    knowledge_base_concurring_rules(NULL, context, &active_concurring, &inactive_concurring);
-    ck_assert_ptr_null(active_concurring);
-    ck_assert_ptr_null(inactive_concurring);
-
-    knowledge_base_concurring_rules(knowledge_base, NULL, &active_concurring, &inactive_concurring);
-    ck_assert_ptr_null(active_concurring);
-    ck_assert_ptr_null(inactive_concurring);
-
-    knowledge_base_concurring_rules(knowledge_base, context, NULL, &inactive_concurring);
-    ck_assert_ptr_null(inactive_concurring);
-
-
-    knowledge_base_concurring_rules(knowledge_base, context, &active_concurring, NULL);
-    ck_assert_ptr_null(active_concurring);
-
-    int_vector_destructor(&active_concurring);
-    int_vector_destructor(&inactive_concurring);
-    rule_queue_destructor(&rule_queue1);
-    rule_queue_destructor(&rule_queue2);
-    context_destructor(&context);
-    knowledge_base_destructor(&knowledge_base);
-}
-END_TEST
-
-START_TEST(promote_rules_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0), *knowledge_base2 = NULL;
-    RuleQueue *rule_queue1 = create_rule_queue(), *rule_queue2 = NULL, *copy = NULL;
-    Rule *rule = NULL;
-
-    rule_queue_copy(&rule_queue2, rule_queue1);
-    rule_queue_copy(&copy, rule_queue1);
-
-    unsigned int i;
-    for (i = 0; i < rule_queue1->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i]));
-    }
-
-    ck_assert_rule_queue_empty(knowledge_base->active);
-    ck_assert_rule_queue_notempty(knowledge_base->inactive);
-    ck_assert_int_eq(knowledge_base->active->length, 0);
-    ck_assert_int_eq(knowledge_base->inactive->length, 3);
-
-    knowledge_base_promote_rules(knowledge_base, rule_queue2, 1.0);
-    ck_assert_rule_queue_notempty(knowledge_base->active);
-    ck_assert_int_eq(knowledge_base->active->length, 1);
-    ck_assert_int_eq(knowledge_base->inactive->length, 2);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[0], copy->rules[2]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[0], copy->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[1], copy->rules[1]), 1);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 3.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 1.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 2.0, 0.00001);
-
-    rule_queue_remove_rule(rule_queue2, 2, &rule);
-    knowledge_base_promote_rules(knowledge_base, rule_queue2, 1.0);
-    ck_assert_int_eq(knowledge_base->active->length, 2);
-    ck_assert_int_eq(knowledge_base->inactive->length, 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[0], copy->rules[2]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[1], copy->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[0], copy->rules[0]), 1);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 3.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 3.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 2.0, 0.00001);
-
-    knowledge_base_promote_rules(knowledge_base, rule_queue2, 2.0);
-    ck_assert_int_eq(knowledge_base->active->length, 3);
-    ck_assert_int_eq(knowledge_base->inactive->length, 0);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[0], copy->rules[2]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[1], copy->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[2], copy->rules[0]), 1);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 3.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 5.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[2]->weight, 4.0, 0.00001);
-
-
-    rule_queue_dequeue(rule_queue2, NULL);
-    knowledge_base_promote_rules(knowledge_base, rule_queue2, 1.0);
-    ck_assert_int_eq(knowledge_base->active->length, 3);
-    ck_assert_int_eq(knowledge_base->inactive->length, 0);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 3.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 6.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[2]->weight, 4.0, 0.00001);
-
-    rule_queue_enqueue(rule_queue2, &rule);
-    knowledge_base_promote_rules(knowledge_base, rule_queue2, 3.0);
-    ck_assert_int_eq(knowledge_base->active->length, 3);
-    ck_assert_int_eq(knowledge_base->inactive->length, 0);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 6.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 9.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[2]->weight, 4.0, 0.00001);
-
-    knowledge_base_promote_rules(NULL, rule_queue2, 3.0);
-
-    knowledge_base_copy(&knowledge_base2, knowledge_base);
-
-    knowledge_base_promote_rules(knowledge_base, NULL, 1.0);
-    ck_assert_knowledge_base_eq(knowledge_base, knowledge_base2);
-
-    knowledge_base_promote_rules(knowledge_base, rule_queue2, 0);
-    ck_assert_knowledge_base_eq(knowledge_base, knowledge_base2);
-
-    knowledge_base_promote_rules(knowledge_base, rule_queue2, -1.0);
-    ck_assert_knowledge_base_eq(knowledge_base, knowledge_base2);
-
-    rule_destructor(&rule);
-    rule_queue_destructor(&rule_queue1);
-    rule_queue_destructor(&rule_queue2);
-    rule_queue_destructor(&copy);
-    knowledge_base_destructor(&knowledge_base);
-    knowledge_base_destructor(&knowledge_base2);
-}
-END_TEST
-
-START_TEST(demote_rules_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0), *knowledge_base2 = NULL;
-    RuleQueue *rule_queue1 = create_rule_queue(), *rule_queue2 = NULL, *copy = NULL;
-    Rule *rule = NULL;
-
-    rule_queue_copy(&rule_queue2, rule_queue1);
-    rule_queue_copy(&copy, rule_queue1);
-
-    unsigned int i;
-    for (i = 0; i < rule_queue1->length; ++i) {
-        rule_promote(rule_queue1->rules[i], 5);
-        knowledge_base_add_rule(knowledge_base, &rule_queue1->rules[i]);
-    }
-
-    ck_assert_rule_queue_notempty(knowledge_base->active);
-    ck_assert_rule_queue_empty(knowledge_base->inactive);
-
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, 1.0);
-    ck_assert_rule_queue_notempty(knowledge_base->active);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[0], copy->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[1], copy->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[2], copy->rules[2]), 1);
-    ck_assert_int_eq(knowledge_base->active->length, 3);
-    ck_assert_int_eq(knowledge_base->inactive->length, 0);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 5.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[2]->weight, 6.0, 0.00001);
-
-    rule_queue_dequeue(rule_queue2, &rule);
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, 1.0);
-    ck_assert_int_eq(knowledge_base->active->length, 3);
-    ck_assert_int_eq(knowledge_base->inactive->length, 0);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[0], copy->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[1], copy->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[2], copy->rules[2]), 1);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[2]->weight, 5.0, 0.00001);
-
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, 2.0);
-    ck_assert_int_eq(knowledge_base->active->length, 2);
-    ck_assert_int_eq(knowledge_base->inactive->length, 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[0], copy->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[1], copy->rules[2]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[0], copy->rules[1]), 1);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 3.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 2.0, 0.00001);
-
-
-    rule_queue_dequeue(rule_queue2, NULL);
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, 1.0);
-    ck_assert_int_eq(knowledge_base->active->length, 1);
-    ck_assert_int_eq(knowledge_base->inactive->length, 2);
-    ck_assert_int_eq(rule_equals(knowledge_base->active->rules[0], copy->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[0], copy->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[1], copy->rules[2]), 1);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 2.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 2.0, 0.00001);
-
-    rule_queue_enqueue(rule_queue2, &rule);
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, 2.0);
-    ck_assert_int_eq(knowledge_base->active->length, 0);
-    ck_assert_int_eq(knowledge_base->inactive->length, 3);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[0], copy->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[1], copy->rules[2]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[2], copy->rules[0]), 1);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 2.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 0.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[2]->weight, 2.0, 0.00001);
-
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, 2.0);
-    ck_assert_int_eq(knowledge_base->active->length, 0);
-    ck_assert_int_eq(knowledge_base->inactive->length, 3);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[0], copy->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[1], copy->rules[2]), 1);
-    ck_assert_int_eq(rule_equals(knowledge_base->inactive->rules[2], copy->rules[0]), 1);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 2.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 0.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[2]->weight, 0.0, 0.00001);
-
-
-    knowledge_base_demote_rules(NULL, rule_queue2, 3.0);
-
-    knowledge_base_copy(&knowledge_base2, knowledge_base);
-
-    knowledge_base_demote_rules(knowledge_base, NULL, 1.0);
-    ck_assert_knowledge_base_eq(knowledge_base, knowledge_base2);
-
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, 0);
-    ck_assert_knowledge_base_eq(knowledge_base, knowledge_base2);
-
-    knowledge_base_demote_rules(knowledge_base, rule_queue2, -1.0);
-    ck_assert_knowledge_base_eq(knowledge_base, knowledge_base2);
-
-    rule_destructor(&rule);
-    rule_queue_destructor(&rule_queue1);
-    rule_queue_destructor(&rule_queue2);
-    rule_queue_destructor(&copy);
-    knowledge_base_destructor(&knowledge_base);
-    knowledge_base_destructor(&knowledge_base2);
-}
-END_TEST
-
-START_TEST(promote_rule_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue = create_rule_queue(), *copy = NULL;
-
-    rule_queue_copy(&copy, rule_queue);
-
-    unsigned int i;
-    for (i = 0; i < rule_queue->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
-    }
-    rule_queue_destructor(&rule_queue);
-
-    ck_assert_rule_queue_empty(knowledge_base->active);
-    ck_assert_rule_queue_notempty(knowledge_base->inactive);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 0.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 1.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[2]->weight, 2.0, 0.00001);
-    ck_assert_int_eq(knowledge_base->inactive->length, 3);
-    ck_assert_int_eq(rule_equals(copy->rules[0], knowledge_base->inactive->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[1], knowledge_base->inactive->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[2], knowledge_base->inactive->rules[2]), 1);
-
-    knowledge_base_promote_rule(knowledge_base, ACTIVE, 0, 8);
-    ck_assert_rule_queue_empty(knowledge_base->active);
-    ck_assert_rule_queue_notempty(knowledge_base->inactive);
-    ck_assert_int_eq(knowledge_base->inactive->length, 3);
-
-    knowledge_base_promote_rule(knowledge_base, INACTIVE, 1, 8);
-    ck_assert_rule_queue_notempty(knowledge_base->active);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 9.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 0.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 2.0, 0.00001);
-    ck_assert_int_eq(rule_equals(copy->rules[0], knowledge_base->inactive->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[1], knowledge_base->active->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[2], knowledge_base->inactive->rules[1]), 1);
-
-    knowledge_base_promote_rule(knowledge_base, INACTIVE, 0, 6);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 9.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 6.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 2.0, 0.00001);
-    ck_assert_int_eq(knowledge_base->active->length, 2);
-    ck_assert_int_eq(knowledge_base->inactive->length, 1);
-    ck_assert_int_eq(rule_equals(copy->rules[0], knowledge_base->active->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[1], knowledge_base->active->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[2], knowledge_base->inactive->rules[0]), 1);
-
-    knowledge_base_promote_rule(knowledge_base, INACTIVE, 1, 9);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 9.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 6.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 2.0, 0.00001);
-    ck_assert_int_eq(knowledge_base->active->length, 2);
-    ck_assert_int_eq(knowledge_base->inactive->length, 1);
-    knowledge_base_destructor(&knowledge_base);
-
-    ck_assert_ptr_null(knowledge_base);
-    knowledge_base_promote_rule(knowledge_base, ACTIVE, 0, 5);
-    ck_assert_ptr_null(knowledge_base);
-
-    ck_assert_ptr_null(knowledge_base);
-    knowledge_base_promote_rule(knowledge_base, INACTIVE, 0, 7);
-    ck_assert_ptr_null(knowledge_base);
-
-    rule_queue_destructor(&copy);
-}
-END_TEST
-
-START_TEST(demote_rule_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue = create_rule_queue(rule_queue), *copy = NULL;
-
-    rule_queue_copy(&copy, rule_queue);
-
-    unsigned int i;
-    for (i = 0; i < rule_queue->length; ++i) {
-        rule_promote(rule_queue->rules[i], 8);
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
-    }
-    rule_queue_destructor(&rule_queue);
-
-    ck_assert_rule_queue_notempty(knowledge_base->active);
-    ck_assert_rule_queue_empty(knowledge_base->inactive);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 8.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 9.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[2]->weight, 10.0, 0.00001);
-    ck_assert_int_eq(knowledge_base->active->length, 3);
-    ck_assert_int_eq(rule_equals(copy->rules[0], knowledge_base->active->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[1], knowledge_base->active->rules[1]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[2], knowledge_base->active->rules[2]), 1);
-
-    knowledge_base_demote_rule(knowledge_base, INACTIVE, 0, 8);
-    ck_assert_rule_queue_notempty(knowledge_base->active);
-    ck_assert_rule_queue_empty(knowledge_base->inactive);
-    ck_assert_int_eq(knowledge_base->active->length, 3);
-
-    knowledge_base_demote_rule(knowledge_base, ACTIVE, 1, 8);
-    ck_assert_rule_queue_notempty(knowledge_base->inactive);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 8.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 10.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 1.0, 0.00001);
-    ck_assert_int_eq(rule_equals(copy->rules[0], knowledge_base->active->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[1], knowledge_base->inactive->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[2], knowledge_base->active->rules[1]), 1);
-
-    knowledge_base_demote_rule(knowledge_base, ACTIVE, 0, 4);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[1]->weight, 10.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 1.0, 0.00001);
-    ck_assert_int_eq(knowledge_base->active->length, 2);
-    ck_assert_int_eq(knowledge_base->inactive->length, 1);
-    ck_assert_int_eq(rule_equals(copy->rules[0], knowledge_base->active->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[1], knowledge_base->inactive->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[2], knowledge_base->active->rules[1]), 1);
-
-    knowledge_base_demote_rule(knowledge_base, ACTIVE, 1, 8);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 1.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 2.0, 0.00001);
-    ck_assert_int_eq(knowledge_base->active->length, 1);
-    ck_assert_int_eq(knowledge_base->inactive->length, 2);
-    ck_assert_int_eq(rule_equals(copy->rules[0], knowledge_base->active->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[1], knowledge_base->inactive->rules[0]), 1);
-    ck_assert_int_eq(rule_equals(copy->rules[2], knowledge_base->inactive->rules[1]), 1);
-
-    knowledge_base_demote_rule(knowledge_base, ACTIVE, 1, 9);
-    ck_assert_float_eq_tol(knowledge_base->active->rules[0]->weight, 4.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[0]->weight, 1.0, 0.00001);
-    ck_assert_float_eq_tol(knowledge_base->inactive->rules[1]->weight, 2.0, 0.00001);
-    ck_assert_int_eq(knowledge_base->active->length, 1);
-    ck_assert_int_eq(knowledge_base->inactive->length, 2);
-    knowledge_base_destructor(&knowledge_base);
-
-    ck_assert_ptr_null(knowledge_base);
-    knowledge_base_demote_rule(knowledge_base, ACTIVE, 0, 5);
-    ck_assert_ptr_null(knowledge_base);
-
-    ck_assert_ptr_null(knowledge_base);
-    knowledge_base_demote_rule(knowledge_base, INACTIVE, 0, 7);
-    ck_assert_ptr_null(knowledge_base);
-
-    rule_queue_destructor(&copy);
-}
-END_TEST
-
 START_TEST(create_new_rules_test) {
     KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue = create_rule_queue();
-    Scene *observed = scene_constructor(), *inferred = scene_constructor();
+    RuleQueue *rule_queue = create_rule_queue2(), *result;
+    Scene *observed = scene_constructor(true), *inferred = scene_constructor(true);
     Literal *literal = literal_constructor("Penguin", 1), *copy;
     scene_add_literal(observed, &literal);
 
@@ -711,47 +147,49 @@ START_TEST(create_new_rules_test) {
     literal = literal_constructor("Albatross", 1);
     scene_add_literal(observed, &literal);
 
-    unsigned int i, rule_queue_length = rule_queue->length;
-    for (i = 0; i < rule_queue_length; ++i) {
-        Rule *rule = NULL;
-        rule_copy(&rule, rule_queue->rules[i]);
-        rule_promote(rule, 3.0);
-        rule_queue_enqueue(rule_queue, &rule);
-    }
-
-
+    unsigned int i;
     for (i = 0; i < rule_queue->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
+        knowledge_base_add_rule(knowledge_base, &(rule_queue->rules[i]));
     }
+    rule_queue_destructor(&rule_queue);
 
-    unsigned int old_size, new_size;
-    old_size = knowledge_base->active->length + knowledge_base->inactive->length;
+    size_t old_size, new_size;
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    old_size = knowledge_base->active->length + result->length;
+    rule_queue_destructor(&result);
     do {
         knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5);
-        new_size = knowledge_base->active->length + knowledge_base->inactive->length;
+        rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+        new_size = knowledge_base->active->length + result->length;
+        rule_queue_destructor(&result);
     } while (old_size == new_size);
     ck_assert_int_ne(old_size, new_size);
 
     old_size = new_size;
     do {
         knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5);
-        new_size = knowledge_base->active->length + knowledge_base->inactive->length;
+        rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+        new_size = knowledge_base->active->length + result->length;
+        rule_queue_destructor(&result);
     } while (old_size == new_size);
     ck_assert_int_ne(old_size, new_size);
 
     old_size = new_size;
     knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5);
     knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5);
-    new_size = knowledge_base->active->length + knowledge_base->inactive->length;
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    new_size = knowledge_base->active->length + result->length;
+    rule_queue_destructor(&result);
     ck_assert_int_eq(old_size, new_size);
 
     knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5);
     knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5);
-    new_size = knowledge_base->active->length + knowledge_base->inactive->length;
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    new_size = knowledge_base->active->length + result->length;
+    rule_queue_destructor(&result);
     ck_assert_int_ne(old_size, new_size);
 
     knowledge_base_destructor(&knowledge_base);
-    rule_queue_destructor(&rule_queue);
     scene_destructor(&inferred);
     scene_destructor(&observed);
 }
@@ -759,19 +197,13 @@ END_TEST
 
 START_TEST(to_string_test) {
     KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue = create_rule_queue();
+    RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = create_rule_queue2();
 
-    unsigned int i, rule_queue_length = rule_queue->length;
-    for (i = 0; i < rule_queue_length; ++i) {
-        Rule *rule;
-        rule_copy(&rule, rule_queue->rules[i]);
-        rule_promote(rule, 3.0);
-        rule_queue_enqueue(rule_queue, &rule);
+    unsigned int i;
+    for (i = 0; i < rule_queue1->length; ++i) {
+        knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i]));
     }
-
-    for (i = 0; i < rule_queue_length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
-    }
+    rule_queue_destructor(&rule_queue1);
 
     char *knowledge_base_string = knowledge_base_to_string(knowledge_base);
 
@@ -781,52 +213,40 @@ START_TEST(to_string_test) {
         "Inactive Rules: [\n"
         "\t(penguin, bird, antarctica) => -fly (0.0000),\n"
         "\t(albatross, bird) => fly (1.0000),\n"
-        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
+        "\t(seagull, bird, harbour, ocean) => fly (2.0000)\n]");
     free(knowledge_base_string);
 
-    for (; i < rule_queue->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
+    for (i = 0; i < rule_queue2->length; ++i) {
+        knowledge_base_add_rule(knowledge_base, &(rule_queue2->rules[i]));
     }
-    rule_queue_destructor(&rule_queue);
+    rule_queue_destructor(&rule_queue2);
 
     knowledge_base_string = knowledge_base_to_string(knowledge_base);
     ck_assert_str_eq(knowledge_base_string, "Knowledge Base:\n"
         "Activation Threshold: 3.0000\n"
         "Active Rules: [\n"
-        "\t(penguin, bird, antarctica) => -fly (3.0000),\n"
-        "\t(albatross, bird) => fly (4.0000),\n"
-        "\t(seagull, bird, harbor, ocean) => fly (5.0000)\n]\n"
+        "\t(penguin, bird) => -fly (5.0000),\n"
+        "\t(eagle, bird) => fly (6.0000),\n"
+        "\t(bat, mammal, cave, -bird) => fly (7.0000)\n]\n"
         "Inactive Rules: [\n"
         "\t(penguin, bird, antarctica) => -fly (0.0000),\n"
         "\t(albatross, bird) => fly (1.0000),\n"
-        "\t(seagull, bird, harbor, ocean) => fly (2.0000)\n]");
-    free(knowledge_base_string);
-
-    rule_queue_destructor(&(knowledge_base->inactive));
-    knowledge_base_string = knowledge_base_to_string(knowledge_base);
-    ck_assert_pstr_eq(knowledge_base_string, NULL);
-
-    knowledge_base->inactive = rule_queue_constructor();
-    knowledge_base_string = knowledge_base_to_string(knowledge_base);
-    ck_assert_str_eq(knowledge_base_string, "Knowledge Base:\n"
-        "Activation Threshold: 3.0000\n"
-        "Active Rules: [\n"
-        "\t(penguin, bird, antarctica) => -fly (3.0000),\n"
-        "\t(albatross, bird) => fly (4.0000),\n"
-        "\t(seagull, bird, harbor, ocean) => fly (5.0000)\n]\n"
-        "Inactive Rules: [\n]");
+        "\t(seagull, bird, harbour, ocean) => fly (2.0000)\n]");
     free(knowledge_base_string);
 
     rule_queue_destructor(&(knowledge_base->active));
     knowledge_base_string = knowledge_base_to_string(knowledge_base);
     ck_assert_pstr_eq(knowledge_base_string, NULL);
 
-    knowledge_base->active = rule_queue_constructor();
+    knowledge_base->active = rule_queue_constructor(false);
     knowledge_base_string = knowledge_base_to_string(knowledge_base);
     ck_assert_str_eq(knowledge_base_string, "Knowledge Base:\n"
         "Activation Threshold: 3.0000\n"
         "Active Rules: [\n]\n"
-        "Inactive Rules: [\n]");
+        "Inactive Rules: [\n"
+        "\t(penguin, bird, antarctica) => -fly (0.0000),\n"
+        "\t(albatross, bird) => fly (1.0000),\n"
+        "\t(seagull, bird, harbour, ocean) => fly (2.0000)\n]");
     free(knowledge_base_string);
 
     knowledge_base_destructor(&knowledge_base);
@@ -837,34 +257,28 @@ END_TEST
 
 START_TEST(to_prudensjs_test) {
     KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
-    RuleQueue *rule_queue = create_rule_queue();
+    RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = create_rule_queue2();
 
-    unsigned int i, rule_queue_length = rule_queue->length;
-    for (i = 0; i < rule_queue_length; ++i) {
-        Rule *rule = NULL;
-        rule_copy(&rule, rule_queue->rules[i]);
-        rule_promote(rule, 3.0);
-        rule_queue_enqueue(rule_queue, &rule);
+    unsigned int i;
+    for (i = 0; i < rule_queue1->length; ++i) {
+        knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i]));
     }
-
-    for (i = 0; i < rule_queue_length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
-    }
+    rule_queue_destructor(&rule_queue1);
 
     const char * const expected_empty_result = "{\"type\": \"output\", \"kb\": [], \"code\": \"\", "
     "\"imports\": \"\", \"warnings\": [], \"customPriorities\": []}";
 
     const char * const expected_result = "{\"type\": \"output\", \"kb\": [{\"name\": \"Rule2\", "
-    "\"body\": [{\"name\": \"seagull\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
+    "\"body\": [{\"name\": \"bat\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"mammal\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}, {\"name\": \"harbor\", \"sign\": true, \"isJS\": false, "
+    "\"isAction\": false, \"arity\": 0}, {\"name\": \"cave\", \"sign\": true, \"isJS\": false, "
     "\"isEquality\": false, \"isInEquality\": false, \"isAction\": false, \"arity\": 0}, "
-    "{\"name\": \"ocean\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "{\"name\": \"bird\", \"sign\": false, \"isJS\": false, \"isEquality\": false, "
     "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
     "\"isAction\": false, \"arity\": 0}}, {\"name\": \"Rule1\", \"body\": ["
-    "{\"name\": \"albatross\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
+    "{\"name\": \"eagle\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
     "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"bird\", "
     "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
     "\"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", \"sign\": true, "
@@ -872,9 +286,7 @@ START_TEST(to_prudensjs_test) {
     "\"arity\": 0}}, {\"name\": \"Rule0\", \"body\": [{\"name\": \"penguin\", \"sign\": true, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
     "\"arity\": 0}, {\"name\": \"bird\", \"sign\": true, \"isJS\": false, \"isEquality\": false, "
-    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}, {\"name\": \"antarctica\", "
-    "\"sign\": true, \"isJS\": false, \"isEquality\": false, \"isInEquality\": false, "
-    "\"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", \"sign\": false, "
+    "\"isInEquality\": false, \"isAction\": false, \"arity\": 0}], \"head\": {\"name\": \"fly\", \"sign\": false, "
     "\"isJS\": false, \"isEquality\": false, \"isInEquality\": false, \"isAction\": false, "
     "\"arity\": 0}}], \"code\": \"\", \"imports\": \"\", \"warnings\": [], "
     "\"customPriorities\": []}";
@@ -883,20 +295,11 @@ START_TEST(to_prudensjs_test) {
     ck_assert_pstr_eq(knowledge_base_prudensjs_string, expected_empty_result);
     free(knowledge_base_prudensjs_string);
 
-    for (; i < rule_queue->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
+    for (i = 0; i < rule_queue2->length; ++i) {
+        knowledge_base_add_rule(knowledge_base, &(rule_queue2->rules[i]));
     }
-    rule_queue_destructor(&rule_queue);
+    rule_queue_destructor(&rule_queue2);
 
-    knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(knowledge_base);
-    ck_assert_str_eq(knowledge_base_prudensjs_string, expected_result);
-    free(knowledge_base_prudensjs_string);
-
-    rule_queue_destructor(&(knowledge_base->inactive));
-    knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(knowledge_base);
-    ck_assert_pstr_eq(knowledge_base_prudensjs_string, NULL);
-
-    knowledge_base->inactive = rule_queue_constructor();
     knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(knowledge_base);
     ck_assert_str_eq(knowledge_base_prudensjs_string, expected_result);
     free(knowledge_base_prudensjs_string);
@@ -905,7 +308,7 @@ START_TEST(to_prudensjs_test) {
     knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(knowledge_base);
     ck_assert_pstr_eq(knowledge_base_prudensjs_string, NULL);
 
-    knowledge_base->active = rule_queue_constructor();
+    knowledge_base->active = rule_queue_constructor(true);
     knowledge_base_prudensjs_string = knowledge_base_to_prudensjs(knowledge_base);
     ck_assert_pstr_eq(knowledge_base_prudensjs_string, expected_empty_result);
     free(knowledge_base_prudensjs_string);
@@ -918,8 +321,7 @@ END_TEST
 
 Suite *knowledge_base_suite() {
     Suite *suite;
-    TCase *create_case, *add_rule_case, *applicable_rule_case, *copy_case, *convert_case,
-    *rule_weight_manipulation_case, *create_new_rules_case;
+    TCase *create_case, *add_rule_case, *copy_case, *create_new_rules_case, *convert_case;
     suite = suite_create("Knowledge Base");
 
     create_case = tcase_create("Create");
@@ -930,25 +332,13 @@ Suite *knowledge_base_suite() {
     tcase_add_test(add_rule_case, add_rule_test);
     suite_add_tcase(suite, add_rule_case);
 
-    applicable_rule_case = tcase_create("Find Applicable Rules");
-    tcase_add_test(applicable_rule_case, applicable_rules_test);
-    tcase_add_test(applicable_rule_case, concurring_rules_test);
-    suite_add_tcase(suite, applicable_rule_case);
-
-    rule_weight_manipulation_case = tcase_create("Rule Weight Manipulation");
-    tcase_add_test(rule_weight_manipulation_case, promote_rules_test);
-    tcase_add_test(rule_weight_manipulation_case, demote_rules_test);
-    tcase_add_test(rule_weight_manipulation_case, promote_rule_test);
-    tcase_add_test(rule_weight_manipulation_case, demote_rule_test);
-    suite_add_tcase(suite, rule_weight_manipulation_case);
+    copy_case = tcase_create("Copy");
+    tcase_add_test(copy_case, copy_test);
+    suite_add_tcase(suite, copy_case);
 
     create_new_rules_case = tcase_create("Create New Rules");
     tcase_add_test(create_new_rules_case, create_new_rules_test);
     suite_add_tcase(suite, create_new_rules_case);
-
-    copy_case = tcase_create("Copy");
-    tcase_add_test(copy_case, copy_test);
-    suite_add_tcase(suite, copy_case);
 
     convert_case = tcase_create("Conversion");
     tcase_add_test(convert_case, to_string_test);
