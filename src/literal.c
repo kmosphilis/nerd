@@ -8,9 +8,9 @@
 /**
  * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form.
  *
- * @param literal The Literal to be constructed.
  * @param atom The name of the atom to be used.
- * @param sign Indicates whether the atom is negated or not. > 0 is positive, 0 is negative.
+ * @param sign Indicates whether the atom is negated or not. > 0 (true) is positive, 0 (false) is
+ * negative.
  *
  * @return A new Literal * or NULL if atom == NULL. Use literal_destructor to deallocate.
  */

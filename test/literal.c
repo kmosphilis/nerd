@@ -10,21 +10,35 @@ START_TEST(construct_destruct_test) {
     literal = literal_constructor("Penguin", 1);
     ck_assert_ptr_nonnull(literal);
     ck_assert_str_eq(literal->atom, "penguin");
-    ck_assert_int_eq(literal->sign, 1);
+    ck_assert_int_eq(literal->sign, true);
     ck_assert_literal_notempty(literal);
     literal_destructor(&literal);
     ck_assert_ptr_null(literal);
 
     literal = literal_constructor("Penguin", 0);
     ck_assert_str_eq(literal->atom, "penguin");
-    ck_assert_int_eq(literal->sign, 0);
+    ck_assert_int_eq(literal->sign, false);
     literal_destructor(&literal);
     ck_assert_ptr_null(literal);
 
-    literal = literal_constructor("Penguin", 9);
+    literal = literal_constructor("Penguin", true);
     ck_assert_ptr_nonnull(literal);
     ck_assert_str_eq(literal->atom, "penguin");
-    ck_assert_int_eq(literal->sign, 1);
+    ck_assert_int_eq(literal->sign, true);
+    ck_assert_literal_notempty(literal);
+    literal_destructor(&literal);
+    ck_assert_ptr_null(literal);
+
+    literal = literal_constructor("Penguin", false);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, false);
+    literal_destructor(&literal);
+    ck_assert_ptr_null(literal);
+
+    literal = literal_constructor("penguin", 9);
+    ck_assert_ptr_nonnull(literal);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
     literal_destructor(&literal);
     ck_assert_ptr_null(literal);
 
