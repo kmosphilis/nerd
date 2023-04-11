@@ -1,10 +1,10 @@
+#ifndef NERD_H
+#define NERD_H
+
 #include <stdbool.h>
 
 #include "sensor.h"
 #include "knowledge_base.h"
-
-#ifndef NERD_H
-#define NERD_H
 
 typedef struct Nerd {
     Sensor *sensor;

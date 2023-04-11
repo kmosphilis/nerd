@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "../src/nerd.h"
+#include "../src/rule_queue.h"
 #include "helper/knowledge_base.h"
 
 #define DATASET "../data/test.txt"
@@ -54,23 +55,18 @@ int compare_files(const char * const filepath1, const char * const filepath2) {
 }
 
 START_TEST(construct_destruct_test) {
-    RuleQueue *rule_queue = create_rule_queue();
+    RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = create_rule_queue2();
 
-    unsigned int i, rule_queue_length = rule_queue->length;
-    for (i = 0; i < rule_queue_length; ++i) {
-        Rule *rule = NULL;
-        rule_copy(&rule, rule_queue->rules[i]);
-        rule_promote(rule, 3.0);
-        rule_queue_enqueue(rule_queue, &rule);
-    }
+    unsigned int i;
 
     KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
 
-    for (i = 0; i < rule_queue->length; ++i) {
-        knowledge_base_add_rule(knowledge_base, &rule_queue->rules[i]);
+    for (i = 0; i < rule_queue1->length; ++i) {
+        knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i]));
+        knowledge_base_add_rule(knowledge_base, &(rule_queue2->rules[i]));
     }
-
-    rule_queue_destructor(&rule_queue);
+    rule_queue_destructor(&rule_queue1);
+    rule_queue_destructor(&rule_queue2);
 
     Nerd *nerd = nerd_constructor(DATASET, 1, 10.0, 3, 100, 50, 0.5, 1.5, 0);
     ck_assert_int_eq(nerd->breadth, 3);
@@ -125,6 +121,8 @@ START_TEST(construct_from_file) {
     nerd_destructor(&nerd);
 
     nerd = nerd_constructor_from_file("../test/data/nerd_input2.txt", 1);
+    RuleQueue *inactives;
+    rule_hypergraph_get_inactive_rules(nerd->knowledge_base, &inactives);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 1);
@@ -137,12 +135,12 @@ START_TEST(construct_from_file) {
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.000000, 0.000001);
     ck_assert_knowledge_base_notempty(nerd->knowledge_base);
     ck_assert_int_eq(nerd->knowledge_base->active->length, NUMBER_OF_ACTIVE);
-    ck_assert_int_eq(nerd->knowledge_base->inactive->length, NUMBER_OF_INACTIVE);
+    ck_assert_int_eq(inactives->length, NUMBER_OF_INACTIVE);
     char *active_rules[NUMBER_OF_ACTIVE] = {"(penguin) => -fly (21.1234)",
     "(bird, chicken) => -fly (16.0000)", "(bird) => fly (15.0055)",
     "(plane, -bird, -feathers) => fly (10.0000)"},
-    *inactive_rules[NUMBER_OF_INACTIVE] = {"(bat, -bird) => fly (9.9999)",
-    "(turkey) => -fly (9.0000)", "(feathers) => fly (1.1515)"}, *str;
+    *inactive_rules[NUMBER_OF_INACTIVE] = {"(turkey) => -fly (9.0000)",
+    "(bat, -bird) => fly (9.9999)", "(feathers) => fly (1.1515)"}, *str;
 
     unsigned int i;
     for (i = 0; i < NUMBER_OF_ACTIVE; ++i) {
@@ -151,11 +149,13 @@ START_TEST(construct_from_file) {
         free(str);
     }
 
+
     for (i = 0; i < NUMBER_OF_INACTIVE; ++i) {
-        str = rule_to_string(nerd->knowledge_base->inactive->rules[i]);
+        str = rule_to_string(inactives->rules[i]);
         ck_assert_str_eq(str, inactive_rules[i]);
         free(str);
     }
+    rule_queue_destructor(&inactives);
     nerd_destructor(&nerd);
 
     nerd = nerd_constructor_from_file(NULL, 1);
