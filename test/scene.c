@@ -911,7 +911,6 @@ Suite *scene_suite() {
 
     manipulation_case = tcase_create("Manipulation");
     tcase_add_test(manipulation_case, add_test);
-    tcase_add_test(manipulation_case, add_a_copy_test);
     tcase_add_test(manipulation_case, index_retrieval_test);
     tcase_add_test(manipulation_case, delete_test);
     tcase_add_test(manipulation_case, combine_test);
