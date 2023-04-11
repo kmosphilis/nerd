@@ -9,6 +9,7 @@ typedef struct Literal {
 } Literal;
 
 Literal *literal_constructor(const char * const atom, const bool sign);
+Literal *literal_constructor_from_string(const char * const string);
 void literal_destructor(Literal ** const literal);
 void literal_copy(Literal ** const destination, const Literal * const restrict source);
 void literal_negate(Literal * const literal);

@@ -45,6 +45,20 @@ START_TEST(construct_destruct_test) {
     literal = literal_constructor(NULL, 0);
     ck_assert_ptr_null(literal);
 
+    literal = literal_constructor_from_string("-Penguin");
+    ck_assert_ptr_nonnull(literal);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, false);
+    literal_destructor(&literal);
+    ck_assert_ptr_null(literal);
+
+    literal = literal_constructor_from_string("penguin");
+    ck_assert_ptr_nonnull(literal);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+    ck_assert_ptr_null(literal);
+
     literal_destructor(&literal);
     ck_assert_ptr_null(literal);
     literal_destructor(NULL);

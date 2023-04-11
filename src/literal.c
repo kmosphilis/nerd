@@ -29,6 +29,28 @@ Literal *literal_constructor(const char * const atom, const bool sign) {
 }
 
 /**
+ * @brief Constructs a Literal from a string (char *). The atom's characters will be converted to
+ * their lowercase form.
+ *
+ * @param string The string that the Literal will be constructed from. For a negated Literal include
+ * a dash (-) in the beginning.
+ *
+ * @return A new Literal * or NULL if string == NULL. Use literal_destructor to deallocate.
+ */
+Literal *literal_constructor_from_string(const char * const string) {
+    if (string) {
+        Literal *literal;
+        if (string[0] == '-') {
+            literal = literal_constructor(string + 1, false);
+        } else {
+            literal = literal_constructor(string, true);
+        }
+        return literal;
+    }
+    return NULL;
+}
+
+/**
  * @brief Destructs the given Literal.
  *
  * @param literal The Literal to be destructed. It should be a reference to the struct's pointer (to
