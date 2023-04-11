@@ -367,7 +367,6 @@ Scene ** const restrict result) {
     }
 }
 
-// TODO Add implementation or remove.
 /**
  * @brief Performs a set subset check on two Scenes (scene1 ⊆ scene2).
  *
@@ -376,8 +375,25 @@ Scene ** const restrict result) {
  *
  * @return 1 if scene1 ⊆ scene2, 0 if scene1 ⊈ scene2, or -1 if one of the Scenes was NULL.
 */
-void scene_subset() {
-
+int scene_is_subset(const Scene * const restrict scene1, const Scene * const restrict scene2) {
+    if (scene1 && scene2) {
+        bool found = false;
+        unsigned int i, j;
+        for (i = 0; i < scene1->size; ++i) {
+            for (j = 0; j < scene2->size; ++j) {
+                if (literal_equals(scene1->literals[i], scene2->literals[j])) {
+                    found = true;
+                    break;
+                }
+                found = false;
+            }
+            if (!found) {
+                return 0;
+            }
+        }
+        return 1;
+    }
+    return -1;
 }
 
 // TODO Add comment and test.

@@ -780,6 +780,64 @@ START_TEST(intersect_test) {
 }
 END_TEST
 
+START_TEST(subset_check_test) {
+    Scene *scene1 = scene_constructor(false), *scene2 = scene_constructor(false),
+    *scene3 = scene_constructor(false), *scene4 = scene_constructor(false),
+    *scene5 = scene_constructor(false), *scene1_copy;
+    Literal *l1 = literal_constructor("eagle", true), *l2 = literal_constructor("bird", true),
+    *l3 = literal_constructor("wings", true), *l4 = literal_constructor("feathers", true),
+    *opposed_l2 = literal_constructor("bird", false);
+
+    scene_add_literal(scene1, &l1);
+    scene_add_literal(scene2, &l1);
+    scene_add_literal(scene3, &l1);
+
+    scene_add_literal(scene1, &l2);
+    scene_add_literal(scene2, &l2);
+
+    scene_add_literal(scene1, &l3);
+    scene_add_literal(scene3, &l3);
+
+    scene_add_literal(scene1, &l4);
+    scene_add_literal(scene3, &l4);
+    scene_add_literal(scene4, &l4);
+
+    scene_add_literal(scene5, &opposed_l2);
+
+    scene_copy(&scene1_copy, scene1);
+
+    ck_assert_int_eq(scene_is_subset(scene2, scene1), 1);
+    ck_assert_int_eq(scene_is_subset(scene3, scene1), 1);
+    ck_assert_int_eq(scene_is_subset(scene4, scene3), 1);
+    ck_assert_int_eq(scene_is_subset(scene4, scene1), 1);
+    ck_assert_int_eq(scene_is_subset(scene5, scene1), 0);
+    ck_assert_int_eq(scene_is_subset(scene2, scene3), 0);
+    ck_assert_int_eq(scene_is_subset(scene3, scene2), 0);
+    ck_assert_int_eq(scene_is_subset(scene1, scene2), 0);
+    ck_assert_int_eq(scene_is_subset(scene1, scene3), 0);
+    ck_assert_int_eq(scene_is_subset(scene1, scene4), 0);
+    ck_assert_int_eq(scene_is_subset(scene1, scene5), 0);
+    ck_assert_int_eq(scene_is_subset(scene1_copy, scene1), 1);
+    ck_assert_int_eq(scene_is_subset(scene1, scene1_copy), 1);
+
+    scene_destructor(&scene1);
+
+    ck_assert_int_eq(scene_is_subset(scene2, scene1), -1);
+    ck_assert_int_eq(scene_is_subset(scene1, scene2), -1);
+
+    scene_destructor(&scene2);
+    scene_destructor(&scene3);
+    scene_destructor(&scene4);
+    scene_destructor(&scene5);
+    scene_destructor(&scene1_copy);
+    literal_destructor(&l1);
+    literal_destructor(&l2);
+    literal_destructor(&l3);
+    literal_destructor(&l4);
+    literal_destructor(&opposed_l2);
+}
+END_TEST
+
 START_TEST(opposed_literals_test) {
     Scene *scene1 = scene_constructor(true), *scene2 = scene_constructor(true),
     *expected1 = scene_constructor(true), *expected2 = scene_constructor(true), *result = NULL;
@@ -916,6 +974,7 @@ Suite *scene_suite() {
     tcase_add_test(manipulation_case, combine_test);
     tcase_add_test(manipulation_case, difference_test);
     tcase_add_test(manipulation_case, intersect_test);
+    tcase_add_test(manipulation_case, subset_check_test);
     tcase_add_test(manipulation_case, opposed_literals_test);
     suite_add_tcase(suite, manipulation_case);
 
