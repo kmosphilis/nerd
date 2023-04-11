@@ -92,7 +92,7 @@ size_t sensor_get_total_observations(const Sensor * const sensor) {
 void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output,
 const bool partial_observation, Scene ** const restrict initial_observation) {
     if (sensor && output) {
-        *output = scene_constructor();
+        *output = scene_constructor(true);
         if (sensor->environment) {
             int c = fgetc(sensor->environment);
 
