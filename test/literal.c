@@ -42,6 +42,31 @@ START_TEST(construct_destruct_test) {
     literal_destructor(&literal);
     ck_assert_ptr_null(literal);
 
+    literal = literal_constructor(" penguin", true);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+
+    literal = literal_constructor("     penguin", false);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, false);
+    literal_destructor(&literal);
+
+    literal = literal_constructor("penguin ", false);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, false);
+    literal_destructor(&literal);
+
+    literal = literal_constructor("penguin     ", true);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+
+    literal = literal_constructor("     penguin     ", true);
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+
     literal = literal_constructor(NULL, 0);
     ck_assert_ptr_null(literal);
 
@@ -58,6 +83,41 @@ START_TEST(construct_destruct_test) {
     ck_assert_int_eq(literal->sign, true);
     literal_destructor(&literal);
     ck_assert_ptr_null(literal);
+
+    literal = literal_constructor_from_string(" penguin");
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+
+    literal = literal_constructor_from_string("     penguin");
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+
+    literal = literal_constructor_from_string("     -penguin");
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, false);
+    literal_destructor(&literal);
+
+    literal = literal_constructor_from_string("penguin ");
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+
+    literal = literal_constructor_from_string("-penguin     ");
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, false);
+    literal_destructor(&literal);
+
+    literal = literal_constructor_from_string("     penguin     ");
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, true);
+    literal_destructor(&literal);
+
+    literal = literal_constructor_from_string("     -penguin     ");
+    ck_assert_str_eq(literal->atom, "penguin");
+    ck_assert_int_eq(literal->sign, false);
+    literal_destructor(&literal);
 
     literal_destructor(&literal);
     ck_assert_ptr_null(literal);

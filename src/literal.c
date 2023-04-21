@@ -6,6 +6,31 @@
 #include "literal.h"
 
 /**
+ * @brief Removes all the whitespaces from both ends of the given string.
+ *
+ * @param string The string to filter.
+ *
+ * @return A newly allocated trimmed string. Use free to deallocate.
+*/
+char *_trim(const char * const string) {
+    char *trimmed_string = strdup(string), *temp;
+    size_t length = strlen(trimmed_string) + 1;
+
+    while (trimmed_string[0] == ' ') {
+        temp = trimmed_string;
+        trimmed_string = (char *) malloc(--length * sizeof(char));
+        memcpy(trimmed_string, temp + 1, length * sizeof(char));
+        free(temp);
+    }
+
+    while (trimmed_string[length - 2] == ' ') {
+        trimmed_string[length - 2] = '\0';
+        trimmed_string = realloc(trimmed_string, --length * sizeof(char));
+    }
+    return trimmed_string;
+}
+
+/**
  * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form.
  *
  * @param atom The name of the atom to be used.
@@ -17,9 +42,9 @@
 Literal *literal_constructor(const char * const atom, const bool sign) {
     if (atom) {
         Literal *literal = (Literal *) malloc(sizeof(Literal));
-        literal->atom = strdup(atom);
+        literal->atom = _trim(atom);
         unsigned int i;
-        for (i = 0; i < strlen(atom); ++i) {
+        for (i = 0; i < strlen(literal->atom); ++i) {
             literal->atom[i] = tolower(literal->atom[i]);
         }
         literal->sign = sign > 0;
@@ -40,11 +65,13 @@ Literal *literal_constructor(const char * const atom, const bool sign) {
 Literal *literal_constructor_from_string(const char * const string) {
     if (string) {
         Literal *literal;
-        if (string[0] == '-') {
-            literal = literal_constructor(string + 1, false);
+        char *trimmed_string = _trim(string);
+        if (trimmed_string[0] == '-') {
+            literal = literal_constructor(trimmed_string + 1, false);
         } else {
-            literal = literal_constructor(string, true);
+            literal = literal_constructor(trimmed_string, true);
         }
+        free(trimmed_string);
         return literal;
     }
     return NULL;
