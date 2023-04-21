@@ -1,0 +1,4 @@
+penguin, bird, aptenodytes, forsteri
+imperial eagle, aquila, heliaca
+aquila, bird
+penguin, bird

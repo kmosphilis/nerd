@@ -13,9 +13,11 @@ typedef struct Sensor {
     FILE *environment;
     bool reuse;
     char *filepath;
+    char delimiter;
 } Sensor;
 
-Sensor *sensor_constructor_from_file(const char * const filepath, const bool reuse);
+Sensor *sensor_constructor_from_file(const char * const filepath, const char delimiter,
+const bool reuse);
 void sensor_destructor(Sensor ** const sensor);
 size_t sensor_get_total_observations(const Sensor * const sensor);
 void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output,

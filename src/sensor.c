@@ -9,15 +9,16 @@
 /**
  * @brief Constructs a Sensor from a file.
  *
- * @param sensor The Sensor to be constructed. If NULL is given, nothing will happen.
  * @param filepath The path to the file. If NULL is given, the sensor will not be constructed.
+ * @param delimiter The delimiter which separates each observation in the given file.
  * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF.
- * Use > 0 to indicate yes, and 0 to indicate no.
+ * Use > 0 (true) to indicate yes, and 0 (false) to indicate no.
  *
  * @return A new Sensor *, or NULL if filepath is NULL or does not exist. Use sensor_destructor to
  * deallocate.
  */
-Sensor *sensor_constructor_from_file(const char * const filepath, const bool reuse) {
+Sensor *sensor_constructor_from_file(const char * const filepath, const char delimiter,
+const bool reuse) {
     if (filepath) {
         FILE *environment = fopen(filepath, "rb");
         if (environment != NULL) {
@@ -25,6 +26,7 @@ Sensor *sensor_constructor_from_file(const char * const filepath, const bool reu
             sensor->environment = environment;
             sensor->reuse = reuse;
             sensor->filepath = strdup(filepath);
+            sensor->delimiter = delimiter;
             return sensor;
         }
     }
@@ -44,6 +46,7 @@ void sensor_destructor(Sensor ** const sensor) {
             (*sensor)->reuse = 0;
             free((*sensor)->filepath);
             (*sensor)->filepath = NULL;
+            (*sensor)->delimiter = '\0';
         }
         free(*sensor);
         *sensor = NULL;
@@ -111,15 +114,11 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
             Literal *literal = NULL;
 
             while ((c != EOF) && (c != '\n')) {
-                if (!isspace((char) c)) {
+                if (!((c == sensor->delimiter) || (c == '\n'))) {
                     buffer[i] = (char) c;
                     ++i;
                 } else {
-                    if (buffer[0] == '-') {
-                        literal = literal_constructor(buffer + 1, 0);
-                    } else {
-                        literal = literal_constructor(buffer, 1);
-                    }
+                    literal = literal_constructor_from_string(buffer);
                     scene_add_literal(*output, &literal);
                     memset(buffer, 0, BUFFER_SIZE);
                     i = 0;
@@ -128,11 +127,7 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
                 c = fgetc(sensor->environment);
             }
 
-            if (buffer[0] == '-') {
-                literal = literal_constructor(buffer + 1, 0);
-            } else {
-                literal = literal_constructor(buffer, 1);
-            }
+            literal = literal_constructor_from_string(buffer);
             scene_add_literal(*output, &literal);
 
             free(buffer);
