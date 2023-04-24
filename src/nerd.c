@@ -49,7 +49,8 @@ const bool partial_observation) {
 }
 
 /**
- * @brief Constructs a Nerd structure (object) using an existing nerd file.
+ * @brief Constructs a Nerd structure (object) using an existing nerd file. If the file has an
+ * incorrect format or there are missing information, the process will fail.
  *
  * @param filepath The path to the file that contains previous a Nerd structure parameters (except
  * the number of epochs) and the learnt KnowledgeBase.
@@ -64,26 +65,52 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
             return NULL;
         }
         Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
+        nerd->knowledge_base = NULL;
+        nerd->sensor = NULL;
+
         size_t buffer_size = BUFFER_SIZE;
         char *buffer = (char *) malloc(buffer_size * sizeof(char)), sensor_delimiter;
         unsigned short partial_observation, sensor_reuse;
         float activation_threshold;
 
-        fscanf(file, "breadth: %zu\n", &(nerd->breadth));
-        fscanf(file, "depth: %zu\n", &(nerd->depth));
-        fscanf(file, "promotion_weight: %f\n", &(nerd->promotion_weight));
-        fscanf(file, "demotion_weight: %f\n", &(nerd->demotion_weight));
-        fscanf(file, "partial_observation: %hu\n", &partial_observation);
+        if (fscanf(file, "breadth: %zu\n", &(nerd->breadth)) != 1) {
+            goto failed1;
+        }
+        if (fscanf(file, "depth: %zu\n", &(nerd->depth)) != 1) {
+            goto failed1;
+        }
+        if (fscanf(file, "promotion_weight: %f\n", &(nerd->promotion_weight)) != 1) {
+            goto failed1;
+        }
+        if (fscanf(file, "demotion_weight: %f\n", &(nerd->demotion_weight)) != 1) {
+            goto failed1;
+        }
+        if (fscanf(file, "partial_observation: %hu\n", &partial_observation) != 1) {
+            goto failed1;
+        }
         nerd->partial_observation = partial_observation;
-        fscanf(file, "sensor: %s '%c' %hu\n", buffer, &sensor_delimiter, &sensor_reuse);
+        if (fscanf(file, "sensor: %s '%c' %hu\n", buffer, &sensor_delimiter, &sensor_reuse) != 3) {
+            goto failed1;
+        }
         nerd->sensor = sensor_constructor_from_file(buffer, sensor_delimiter, sensor_reuse);
-        free(buffer);
 
+        long int previous_position = ftell(file);
         fscanf(file, "knowledge_base:\n");
-        fscanf(file, "\tactivation_threshold: %f\n", &activation_threshold);
-        nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
+        if (previous_position == ftell(file)) {
+            goto failed2;
+        }
+        if (fscanf(file, "activation_threshold: %f\n", &activation_threshold) != 1) {
+            goto failed2;
+        }
 
-        fscanf(file, "\trules:\n");
+        previous_position = ftell(file);
+        fscanf(file, "rules:\n");
+        if (previous_position == ftell(file)) {
+            goto failed2;
+        }
+
+        free(buffer);
+        nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
 
         fpos_t position;
         fgetpos(file, &position);
@@ -139,6 +166,12 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
         fclose(file);
         nerd->epochs = epochs;
         return nerd;
+failed2:
+    sensor_destructor(&(nerd->sensor));
+failed1:
+    free(nerd);
+    free(buffer);
+    fclose(file);
     }
     return NULL;
 }

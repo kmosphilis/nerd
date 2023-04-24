@@ -9,6 +9,7 @@
 #define DATASET "../data/test.txt"
 #define NUMBER_OF_ACTIVE 4
 #define NUMBER_OF_INACTIVE 3
+#define NUMBER_OF_ERROR_INPUTS 19
 
 /**
  * @brief Compares two files.
@@ -163,6 +164,13 @@ START_TEST(construct_from_file) {
     }
     rule_queue_destructor(&inactives);
     nerd_destructor(&nerd);
+
+    for (i = 0; i < NUMBER_OF_ERROR_INPUTS; ++i) {
+        char file[BUFFER_SIZE];
+        sprintf(file, "../test/data/nerd_input_error%u.txt", i + 1);
+        nerd = nerd_constructor_from_file(file, 1);
+        ck_assert_ptr_null(nerd);
+    }
 
     nerd = nerd_constructor_from_file(NULL, 1);
     ck_assert_ptr_null(nerd);
