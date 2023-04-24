@@ -14,7 +14,7 @@ typedef struct Nerd {
     bool partial_observation;
 } Nerd;
 
-Nerd *nerd_constructor(const char * const filepath, const bool reuse,
+Nerd *nerd_constructor(const char * const filepath, const char delimiter, const bool reuse,
 const float activation_threshold, const unsigned int breadth, const unsigned int depth,
 const unsigned int epochs, const float promotion_weight, const float demotion_weight,
 const bool partial_observation);

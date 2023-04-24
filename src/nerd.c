@@ -11,6 +11,7 @@
  * @brief Constructs a Nerd structure (object).
  *
  * @param filepath The path to the file containing the learning instances for the Nerd algorithm.
+ * @param delimiter The delimiter which separates each observation in the given file.
  * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF.
  * Use > 0 to indicate yes, and <= 0 to indicate no. In the case that it should not reuse the file,
  * the algorithm will ignore the given epochs.
@@ -26,21 +27,23 @@
  *
  * @return A new Nerd object *. Use nerd_destructor to deallocate.
  */
-Nerd *nerd_constructor(const char * const filepath, const bool reuse,
+Nerd *nerd_constructor(const char * const filepath, const char delimiter, const bool reuse,
 const float activation_threshold, const unsigned int breadth, const unsigned int depth,
 const unsigned int epochs, const float promotion_weight, const float demotion_weight,
 const bool partial_observation) {
     if (filepath) {
         Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
-        nerd->sensor = sensor_constructor_from_file(filepath, reuse);
-        nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
-        nerd->breadth = breadth;
-        nerd->depth = depth;
-        nerd->epochs = epochs;
-        nerd->promotion_weight = promotion_weight;
-        nerd->demotion_weight = demotion_weight;
-        nerd->partial_observation = partial_observation;
-        return nerd;
+        if ((nerd->sensor = sensor_constructor_from_file(filepath, delimiter, reuse))) {
+            nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
+            nerd->breadth = breadth;
+            nerd->depth = depth;
+            nerd->epochs = epochs;
+            nerd->promotion_weight = promotion_weight;
+            nerd->demotion_weight = demotion_weight;
+            nerd->partial_observation = partial_observation;
+            return nerd;
+        }
+        free(nerd);
     }
     return NULL;
 }
@@ -62,7 +65,7 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
         }
         Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
         size_t buffer_size = BUFFER_SIZE;
-        char *buffer = (char *) malloc(buffer_size * sizeof(char));
+        char *buffer = (char *) malloc(buffer_size * sizeof(char)), sensor_delimiter;
         unsigned short partial_observation, sensor_reuse;
         float activation_threshold;
 
@@ -72,8 +75,8 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
         fscanf(file, "demotion_weight: %f\n", &(nerd->demotion_weight));
         fscanf(file, "partial_observation: %hu\n", &partial_observation);
         nerd->partial_observation = partial_observation;
-        fscanf(file, "sensor: %[^, ], %hu\n", buffer, &sensor_reuse);
-        nerd->sensor = sensor_constructor_from_file(buffer, sensor_reuse);
+        fscanf(file, "sensor: %s '%c' %hu\n", buffer, &sensor_delimiter, &sensor_reuse);
+        nerd->sensor = sensor_constructor_from_file(buffer, sensor_delimiter, sensor_reuse);
         free(buffer);
 
         fscanf(file, "knowledge_base:\n");
@@ -303,7 +306,8 @@ void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
     fprintf(file, "promotion_weight: %f\n", nerd->promotion_weight);
     fprintf(file, "demotion_weight: %f\n", nerd->demotion_weight);
     fprintf(file, "partial_observation: %hu\n", nerd->partial_observation);
-    fprintf(file, "sensor: %s, %hu\n", nerd->sensor->filepath, nerd->sensor->reuse);
+    fprintf(file, "sensor: %s '%c' %hu\n", nerd->sensor->filepath, nerd->sensor->delimiter,
+    nerd->sensor->reuse);
 
     fprintf(file, "knowledge_base:\n");
     fprintf(file, "  activation_threshold: %f\n", nerd->knowledge_base->activation_threshold);
