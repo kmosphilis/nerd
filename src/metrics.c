@@ -17,20 +17,20 @@ float * const overall_success) {
     if (!(observation && nerd)) {
         return;
     }
-    Scene test_scene, inferred;
+    Scene *test_scene, *inferred;
     float success = 0;
     unsigned int i;
 
-    scene_constructor(&test_scene);
-    scene_constructor(&inferred);
+    test_scene = scene_constructor(false);
+    inferred = scene_constructor(false);
 
     for (i = 0; i < observation->size; ++i) {
         scene_copy(&test_scene, observation);
-        scene_remove_literal(&test_scene, i);
+        scene_remove_literal(test_scene, i, NULL);
 
-        prudensjs_inference(&(nerd->knowledge_base), &test_scene, &inferred);
-        
-        success += scene_number_of_similar_literals(&inferred, observation) /
+        prudensjs_inference(nerd->knowledge_base, test_scene, &inferred);
+
+        success += scene_number_of_similar_literals(inferred, observation) /
         (float) observation->size;
         scene_destructor(&test_scene);
         scene_destructor(&inferred);
