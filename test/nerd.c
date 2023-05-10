@@ -98,6 +98,25 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
+    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 3, 100, 50, 0.5, 1.5, 0);
+    ck_assert_int_eq(nerd->breadth, 3);
+    ck_assert_int_eq(nerd->depth, 100);
+    ck_assert_int_eq(nerd->epochs, 1);
+    ck_assert_float_eq_tol(nerd->promotion_weight, 0.5, 0.000001);
+    ck_assert_float_eq_tol(nerd->demotion_weight, 1.5, 0.000001);
+    ck_assert_float_eq(nerd->promotion_weight, 0.5);
+    ck_assert_int_eq(nerd->partial_observation, false);
+    ck_assert_ptr_nonnull(nerd->sensor->environment);
+    ck_assert_int_eq(nerd->sensor->delimiter, ' ');
+    ck_assert_int_eq(nerd->sensor->reuse, false);
+    ck_assert_str_eq(nerd->sensor->filepath, DATASET);
+    ck_assert_ptr_null(nerd->sensor->header);
+    ck_assert_int_eq(nerd->sensor->header_size, 0);
+    ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.0, 0.000001);
+    ck_assert_knowledge_base_empty(nerd->knowledge_base);
+    nerd_destructor(&nerd);
+    ck_assert_ptr_null(nerd);
+
     nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, 0);
     ck_assert_ptr_null(nerd);
 
@@ -116,7 +135,7 @@ START_TEST(construct_from_file) {
     Nerd *nerd = nerd_constructor_from_file("../test/data/nerd_input1.txt", 2);
     ck_assert_int_eq(nerd->breadth, 2);
     ck_assert_int_eq(nerd->depth, 50);
-    ck_assert_int_eq(nerd->epochs, 2);
+    ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.750000, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 2.250000, 0.000001);
     ck_assert_float_eq(nerd->promotion_weight, 0.750000);

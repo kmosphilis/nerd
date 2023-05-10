@@ -39,7 +39,11 @@ const float demotion_weight, const bool partial_observation) {
             nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
             nerd->breadth = breadth;
             nerd->depth = depth;
-            nerd->epochs = epochs;
+            if (reuse) {
+                nerd->epochs = epochs;
+            } else {
+                nerd->epochs = 1;
+            }
             nerd->promotion_weight = promotion_weight;
             nerd->demotion_weight = demotion_weight;
             nerd->partial_observation = partial_observation;
@@ -97,6 +101,12 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
         }
         nerd->sensor = sensor_constructor_from_file(buffer, sensor_delimiter, sensor_reuse,
         sensor_header);
+
+        if (nerd->sensor->reuse) {
+            nerd->epochs = epochs;
+        } else {
+            nerd->epochs = 1;
+        }
 
         long int previous_position = ftell(file);
         fscanf(file, "knowledge_base:\n");
@@ -168,7 +178,6 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
         free(buffer);
 
         fclose(file);
-        nerd->epochs = epochs;
         return nerd;
 failed2:
     sensor_destructor(&(nerd->sensor));
