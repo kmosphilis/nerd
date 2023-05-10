@@ -9,7 +9,7 @@
 #define DATASET "../data/test.txt"
 #define NUMBER_OF_ACTIVE 4
 #define NUMBER_OF_INACTIVE 3
-#define NUMBER_OF_ERROR_INPUTS 19
+#define NUMBER_OF_ERROR_INPUTS 20
 
 /**
  * @brief Compares two files.
@@ -69,18 +69,20 @@ START_TEST(construct_destruct_test) {
     rule_queue_destructor(&rule_queue1);
     rule_queue_destructor(&rule_queue2);
 
-    Nerd *nerd = nerd_constructor(DATASET, ' ', 1, 10.0, 3, 100, 50, 0.5, 1.5, 0);
+    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, false);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 50);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.5, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.5, 0.000001);
     ck_assert_float_eq(nerd->promotion_weight, 0.5);
-    ck_assert_int_eq(nerd->partial_observation, 0);
+    ck_assert_int_eq(nerd->partial_observation, false);
     ck_assert_ptr_nonnull(nerd->sensor->environment);
     ck_assert_int_eq(nerd->sensor->delimiter, ' ');
-    ck_assert_int_eq(nerd->sensor->reuse, 1);
+    ck_assert_int_eq(nerd->sensor->reuse, true);
     ck_assert_str_eq(nerd->sensor->filepath, DATASET);
+    ck_assert_ptr_null(nerd->sensor->header);
+    ck_assert_int_eq(nerd->sensor->header_size, 0);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.0, 0.000001);
     ck_assert_knowledge_base_empty(nerd->knowledge_base);
 
@@ -96,10 +98,11 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(NULL, ' ', 1, 10.0, 3, 100, 50, 0.5, 1.5, 0);
+    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, 0);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor("file-that-does-not-exist.txt", ',', 1, 10.0, 3, 100, 50, 0.5, 1.5, 0);
+    nerd = nerd_constructor("file-that-does-not-exist.txt", ',', true, false, 10.0, 3, 100, 50, 0.5,
+    1.5, 0);
     ck_assert_ptr_null(nerd);
 
     nerd_destructor(&nerd);
@@ -122,6 +125,8 @@ START_TEST(construct_from_file) {
     ck_assert_int_eq(nerd->sensor->delimiter, ' ');
     ck_assert_int_eq(nerd->sensor->reuse, 0);
     ck_assert_str_eq(nerd->sensor->filepath, "../data/test.txt");
+    ck_assert_ptr_nonnull(nerd->sensor->header);
+    ck_assert_int_ne(nerd->sensor->header_size, 0);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 6.000000, 0.000001);
     ck_assert_knowledge_base_empty(nerd->knowledge_base);
     nerd_destructor(&nerd);
@@ -139,6 +144,8 @@ START_TEST(construct_from_file) {
     ck_assert_int_eq(nerd->sensor->delimiter, ',');
     ck_assert_int_eq(nerd->sensor->reuse, 1);
     ck_assert_str_eq(nerd->sensor->filepath, "../data/test.txt");
+    ck_assert_ptr_null(nerd->sensor->header);
+    ck_assert_int_eq(nerd->sensor->header_size, 0);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.000000, 0.000001);
     ck_assert_knowledge_base_notempty(nerd->knowledge_base);
     ck_assert_int_eq(nerd->knowledge_base->active->length, NUMBER_OF_ACTIVE);
@@ -181,7 +188,7 @@ START_TEST(construct_from_file) {
 END_TEST
 
 START_TEST(to_file_test) {
-    Nerd *nerd = nerd_constructor(DATASET, ' ', 1, 15.0, 3, 50, 1, 1.5, 4.5, 1);
+    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, 1);
 
     nerd_to_file(nerd, "../bin/nerd_output1.txt");
     ck_assert_int_eq(compare_files("../bin/nerd_output1.txt",

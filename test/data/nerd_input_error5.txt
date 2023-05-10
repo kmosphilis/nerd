@@ -3,7 +3,7 @@ depth: 100
 promotion_weight:
 demotion_weight: 1.500000
 partial_observation: 0
-sensor: ../data/test.txt ',' 1
+sensor: ../data/test.txt ',' 1 0
 knowledge_base:
   activation_threshold: 10.000000
   rules:

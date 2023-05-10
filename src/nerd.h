@@ -15,9 +15,9 @@ typedef struct Nerd {
 } Nerd;
 
 Nerd *nerd_constructor(const char * const filepath, const char delimiter, const bool reuse,
-const float activation_threshold, const unsigned int breadth, const unsigned int depth,
-const unsigned int epochs, const float promotion_weight, const float demotion_weight,
-const bool partial_observation);
+const bool header , const float activation_threshold, const unsigned int breadth,
+const unsigned int depth, const unsigned int epochs, const float promotion_weight,
+const float demotion_weight, const bool partial_observation);
 Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int epochs);
 void nerd_destructor(Nerd ** const nerd);
 void prudensjs_inference(const KnowledgeBase * const knowledge_base,
