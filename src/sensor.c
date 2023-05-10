@@ -2,7 +2,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include <stdbool.h>
 
 #include "sensor.h"
 
@@ -11,22 +10,66 @@
  *
  * @param filepath The path to the file. If NULL is given, the sensor will not be constructed.
  * @param delimiter The delimiter which separates each observation in the given file.
- * @param reuse Specifies whether to reuse the stream from the beginning when it reaches the EOF.
- * Use > 0 (true) to indicate yes, and 0 (false) to indicate no.
+ * @param reuse Indicates whether to reuse the stream from the beginning when it reaches the EOF.
+ * Use true (> 0) to indicate yes, and false (0) to indicate no.
+ * @param header Indicates whether the file contains a header or no. Use true (> 0) for yes, and
+ * false (0) for no.
  *
  * @return A new Sensor *, or NULL if filepath is NULL or does not exist. Use sensor_destructor to
  * deallocate.
  */
 Sensor *sensor_constructor_from_file(const char * const filepath, const char delimiter,
-const bool reuse) {
+const bool reuse, const bool header) {
     if (filepath) {
         FILE *environment = fopen(filepath, "rb");
         if (environment != NULL) {
             Sensor *sensor = (Sensor *) malloc(sizeof(Sensor));
             sensor->environment = environment;
-            sensor->reuse = reuse;
             sensor->filepath = strdup(filepath);
             sensor->delimiter = delimiter;
+            sensor->reuse = reuse;
+            sensor->header = NULL;
+            sensor->header_size = 0;
+
+            if (header) {
+                size_t buffer_size = BUFFER_SIZE;
+                char *buffer = (char *) malloc(buffer_size * sizeof(char));
+                memset(buffer, 0, buffer_size);
+                unsigned int i = 0;
+                int c = fgetc(sensor->environment);
+                bool end_of_line = false;
+
+                while (!end_of_line) {
+                    if (c != sensor->delimiter) {
+                        if (i + 1 == buffer_size) {
+                            buffer_size *= 2;
+                            buffer = (char *) realloc(buffer, buffer_size);
+                        }
+
+                        buffer[i++] = (char) c;
+                    } else {
+save_header:
+                        sensor->header = (char **) realloc(sensor->header,
+                        ++sensor->header_size * sizeof(char *));
+                        sensor->header[sensor->header_size - 1] = strdup(buffer);
+                        memset(buffer, 0, strlen(buffer));
+                        i = 0;
+
+                        if(end_of_line) {
+                            goto end_header_loop;
+                        }
+                    }
+                    c = fgetc(sensor->environment);
+
+                    if ((c == EOF) || (c == '\n')) {
+                        end_of_line = true;
+                        goto save_header;
+                    }
+end_header_loop:
+                }
+
+                free(buffer);
+            }
             return sensor;
         }
     }
@@ -43,10 +86,17 @@ void sensor_destructor(Sensor ** const sensor) {
         if ((*sensor)->environment) {
             fclose((*sensor)->environment);
             (*sensor)->environment = NULL;
-            (*sensor)->reuse = 0;
             free((*sensor)->filepath);
             (*sensor)->filepath = NULL;
             (*sensor)->delimiter = '\0';
+            (*sensor)->reuse = false;
+            unsigned int i;
+            for (i = 0 ; i < (*sensor)->header_size; ++i) {
+                free((*sensor)->header[i]);
+            }
+            free((*sensor)->header);
+            (*sensor)->header = NULL;
+            (*sensor)->header_size = 0;
         }
         free(*sensor);
         *sensor = NULL;
@@ -75,6 +125,9 @@ size_t sensor_get_total_observations(const Sensor * const sensor) {
         }
         fsetpos(sensor->environment, &current_possition);
 
+        if (sensor->header) {
+            --total_observations;
+        }
         return total_observations;
     }
 
@@ -108,27 +161,54 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
                 }
             }
 
-            char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
-            memset(buffer, 0, BUFFER_SIZE);
-            unsigned int i = 0;
+            size_t buffer_size = BUFFER_SIZE;
+            char *buffer = (char *) malloc(buffer_size * sizeof(char));
+            memset(buffer, 0, buffer_size);
+            unsigned int i = 0, read_literals = 0;
             Literal *literal = NULL;
+            bool end_of_line = false;
 
-            while ((c != EOF) && (c != '\n')) {
-                if (!((c == sensor->delimiter) || (c == '\n'))) {
-                    buffer[i] = (char) c;
-                    ++i;
+            while (!end_of_line) {
+                if (c != sensor->delimiter) {
+                    if (i + 1 == buffer_size) {
+                        buffer_size *= 2;
+                        buffer = (char *) realloc(buffer, buffer_size);
+                    }
+
+                    buffer[i++] = (char) c;
                 } else {
+save_literal:
+                    if (sensor->header) {
+                        size_t header_size = strlen(sensor->header[read_literals]);
+                        if (i + header_size + 1 >= buffer_size) {
+                            buffer_size *= 2;
+                            buffer = (char *) realloc(buffer, buffer_size);
+                        }
+
+                        memcpy((buffer + header_size + 1), buffer, strlen(buffer));
+                        memcpy(buffer, sensor->header[read_literals], header_size);
+                        memcpy(buffer + header_size, "_", 1);
+                        ++read_literals;
+                    }
+
                     literal = literal_constructor_from_string(buffer);
                     scene_add_literal(*output, &literal);
-                    memset(buffer, 0, BUFFER_SIZE);
+                    memset(buffer, 0, buffer_size);
                     i = 0;
+
+                    if (end_of_line) {
+                        goto end_literal_loop;
+                    }
                 }
 
                 c = fgetc(sensor->environment);
-            }
 
-            literal = literal_constructor_from_string(buffer);
-            scene_add_literal(*output, &literal);
+                if ((c == EOF) || (c == '\n')) {
+                    end_of_line = true;
+                    goto save_literal;
+                }
+end_literal_loop:
+            }
 
             free(buffer);
 

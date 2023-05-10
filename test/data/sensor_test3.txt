@@ -1,0 +1,5 @@
+animal,flies?
+penguin,yes
+imperial eagle,no
+bat,yes
+human,no
