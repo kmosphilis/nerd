@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <pcg_variants.h>
 
 #include "knowledge_base.h"
 
@@ -107,27 +108,30 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
         scene_difference(observed, inferred, &uncovered);
         scene_union(observed, inferred, &combined);
 
-        srand(time(NULL));
+        pcg32_random_t seed;
+        pcg32_srandom_r(&seed, time(NULL), 42u);
 
-        unsigned int i, j, body_size, rules_to_create = (rand() % max_number_of_rules) + 1;
+        unsigned int i, j, body_size,
+        rules_to_create = (pcg32_random_r(&seed) % max_number_of_rules) + 1;
+        int chosen_head_index, head_index, remaining_randoms, random_chosen,chosen_index,
+        *random_indices;
 
         for (i = 0; i < rules_to_create; ++i) {
             if ((uncovered->size != 0) && (combined->size > 1)) {
 
-                srand(time(NULL) + i);
                 body = context_constructor(true);
-                int chosen_head_index = rand() % uncovered->size;
+                chosen_head_index = pcg32_random_r(&seed) % uncovered->size;
                 literal_copy(&head, uncovered->literals[chosen_head_index]);
 
-                int head_index = scene_literal_index(combined, head);
+                head_index = scene_literal_index(combined, head);
                 if (head_index >= 0) {
                     scene_remove_literal(combined, head_index, NULL);
                 }
 
-                body_size = (rand() % max_body_size) + 1;
-                int remaining_randoms = combined->size, random_chosen, chosen_index;
+                body_size = (pcg32_random_r(&seed) % max_body_size) + 1;
+                remaining_randoms = combined->size;
 
-                int *random_indices = (int *) calloc(combined->size, sizeof(int));
+                random_indices = (int *) calloc(combined->size, sizeof(int));
 
                 for (j = 0; j < combined->size; ++j) {
                     random_indices[j] = j;
@@ -138,7 +142,7 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
                 }
 
                 for (j = 0; j < body_size; ++j) {
-                    random_chosen = rand() % remaining_randoms;
+                    random_chosen = pcg32_random_r(&seed) % remaining_randoms;
                     chosen_index = random_indices[random_chosen];
                     random_indices[random_chosen] = random_indices[remaining_randoms - 1];
                     remaining_randoms--;
