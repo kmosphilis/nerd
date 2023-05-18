@@ -1,6 +1,34 @@
+#include <stdlib.h>
 #include <string.h>
 
-#include "int_vector.h"
+#include "nerd_utils.h"
+
+/**
+ * @brief Removes all the whitespaces from both ends of the given string.
+ *
+ * @param string The string to filter.
+ *
+ * @return A newly allocated trimmed string. Use free to deallocate.
+*/
+char *trim(const char * const string) {
+    char *trimmed_string = strdup(string), *temp;
+    size_t length = strlen(trimmed_string) + 1;
+
+    while (trimmed_string[0] == ' ') {
+        temp = trimmed_string;
+        trimmed_string = (char *) malloc(--length * sizeof(char));
+        memcpy(trimmed_string, temp + 1, length * sizeof(char));
+        free(temp);
+    }
+
+    while (trimmed_string[length - 2] == ' ') {
+        trimmed_string[length - 2] = '\0';
+        trimmed_string = realloc(trimmed_string, --length * sizeof(char));
+    }
+    return trimmed_string;
+}
+
+/* IntVector implementation. */
 
 /**
  * @brief Constructs an IntVector.

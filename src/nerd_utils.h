@@ -1,7 +1,9 @@
-#include <stdlib.h>
+#ifndef NERD_UTILS_H
+#define NERD_UTILS_H
 
-#ifndef INT_VECTOR__H
-#define INT_VECTOR__H
+char *trim(const char * const string);
+
+/* IntVector */
 
 typedef struct IntVector {
     int *items;

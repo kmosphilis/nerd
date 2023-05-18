@@ -1,9 +1,9 @@
 #include <check.h>
 
-#include "../../src/int_vector.h"
+#include "../../src/nerd_utils.h"
 
-#ifndef INT_VECTOR_HELPER_H
-#define INT_VECTOR_HELPER_H
+#ifndef NERD_UTILS_HELPER_H
+#define NERD_UTILS_HELPER_H
 
 /**
  * @brief Check if two IntVectors are equal (int_vector1 == int_vector2).

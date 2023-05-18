@@ -1,7 +1,7 @@
 #ifndef KNOWLEDGE_BASE_H
 #define KNOWLEDGE_BASE_H
 
-#include "int_vector.h"
+#include "nerd_utils.h"
 #include "rule_queue.h"
 #include "scene.h"
 #include "context.h"

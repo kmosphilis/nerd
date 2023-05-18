@@ -2,7 +2,7 @@
 #include <check.h>
 #include <stdbool.h>
 
-#include "helper/int_vector.h"
+#include "helper/nerd_utils.h"
 #include "helper/knowledge_base.h"
 #include "helper/rule_queue.h"
 #include "helper/rule.h"

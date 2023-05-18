@@ -1,10 +1,77 @@
 #include <check.h>
 #include <stdlib.h>
 
-#include "../src/int_vector.h"
-#include "helper/int_vector.h"
+#include "../src/nerd_utils.h"
+#include "helper/nerd_utils.h"
 
-START_TEST(construct_destruct_test) {
+START_TEST(trim_test) {
+    const char *expected1 = "test", *expected2 = "test 1", *expected3 = "test     1";
+    char *str = strdup("test");
+    char *trimmed = trim(str);
+    ck_assert_str_eq(trimmed, str);
+    ck_assert_str_eq(trimmed, expected1);
+    free(str);
+    free(trimmed);
+
+    str = strdup(" test");
+    trimmed = trim(str);
+    ck_assert_str_ne(trimmed, str);
+    ck_assert_str_eq(trimmed, expected1);
+    free(str);
+    free(trimmed);
+
+    str = strdup ("     test");
+    trimmed = trim(str);
+    ck_assert_str_ne(trimmed, str);
+    ck_assert_str_eq(trimmed, expected1);
+    free(str);
+    free(trimmed);
+
+    str = strdup("test ");
+    trimmed = trim(str);
+    ck_assert_str_ne(trimmed, str);
+    ck_assert_str_eq(trimmed, expected1);
+    free(str);
+    free(trimmed);
+
+    str = strdup("test     ");
+    trimmed = trim(str);
+    ck_assert_str_ne(trimmed, str);
+    ck_assert_str_eq(trimmed, expected1);
+    free(str);
+    free(trimmed);
+
+    str = strdup("     test     ");
+    trimmed = trim(str);
+    ck_assert_str_ne(trimmed, str);
+    ck_assert_str_eq(trimmed, expected1);
+    free(str);
+    free(trimmed);
+
+    str = strdup("test 1");
+    trimmed = trim(str);
+    ck_assert_str_eq(trimmed, str);
+    ck_assert_str_eq(trimmed, expected2);
+    free(str);
+    free(trimmed);
+
+    str = strdup("     test 1     ");
+    trimmed = trim(str);
+    ck_assert_str_ne(trimmed, str);
+    ck_assert_str_eq(trimmed, expected2);
+    free(str);
+    free(trimmed);
+
+    str = strdup("     test     1     ");
+    trimmed = trim(str);
+    ck_assert_str_ne(trimmed, str);
+    ck_assert_str_eq(trimmed, expected3);
+    free(str);
+    free(trimmed);
+}
+END_TEST
+
+START_TEST(IV_construct_destruct_test) {
     IntVector *int_vector = NULL;
 
     int_vector = int_vector_constructor();
@@ -20,7 +87,7 @@ START_TEST(construct_destruct_test) {
 }
 END_TEST
 
-START_TEST(resize_test) {
+START_TEST(IV_resize_test) {
     IntVector *int_vector = NULL;
 
     int_vector = int_vector_constructor();
@@ -58,7 +125,7 @@ START_TEST(resize_test) {
 }
 END_TEST
 
-START_TEST(push_test) {
+START_TEST(IV_push_test) {
     IntVector *int_vector = NULL;
 
     int_vector = int_vector_constructor();
@@ -86,7 +153,7 @@ START_TEST(push_test) {
 }
 END_TEST
 
-START_TEST(insert_test) {
+START_TEST(IV_insert_test) {
     IntVector *int_vector = int_vector_constructor();
 
     int_vector_push(int_vector, 5);
@@ -165,7 +232,7 @@ START_TEST(insert_test) {
 }
 END_TEST
 
-START_TEST(delete_test) {
+START_TEST(IV_delete_test) {
     IntVector *int_vector = NULL;
 
     int_vector = int_vector_constructor();
@@ -202,7 +269,7 @@ START_TEST(delete_test) {
 }
 END_TEST
 
-START_TEST(get_test) {
+START_TEST(IV_get_test) {
     IntVector *int_vector = NULL;
 
     int_vector = int_vector_constructor();
@@ -231,7 +298,7 @@ START_TEST(get_test) {
 }
 END_TEST
 
-START_TEST(set_test) {
+START_TEST(IV_set_test) {
     IntVector *int_vector = NULL;
 
     int_vector = int_vector_constructor();
@@ -255,7 +322,7 @@ START_TEST(set_test) {
 }
 END_TEST
 
-START_TEST(copy_test) {
+START_TEST(IV_copy_test) {
     IntVector *int_vec1 = NULL, *int_vec2 = NULL;
 
     int_vec1 = int_vector_constructor();
@@ -279,35 +346,45 @@ START_TEST(copy_test) {
 }
 END_TEST
 
+Suite *functions_suite() {
+    Suite *suite = suite_create("Functions");
+    TCase *trim_function_case = tcase_create("Trim");
+
+    tcase_add_test(trim_function_case, trim_test);
+    suite_add_tcase(suite, trim_function_case);
+
+    return suite;
+}
+
 Suite *int_vector_suite() {
     Suite *suite;
     TCase *create_case, *copy_case, *manipulation_case;
     suite = suite_create("Int Vector");
     create_case = tcase_create("Create");
-    tcase_add_test(create_case, construct_destruct_test);
+    tcase_add_test(create_case, IV_construct_destruct_test);
     suite_add_tcase(suite, create_case);
 
     manipulation_case = tcase_create("Manipulation");
-    tcase_add_test(manipulation_case, resize_test);
-    tcase_add_test(manipulation_case, push_test);
-    tcase_add_test(manipulation_case, insert_test);
-    tcase_add_test(manipulation_case, delete_test);
-    tcase_add_test(manipulation_case, get_test);
-    tcase_add_test(manipulation_case, set_test);
+    tcase_add_test(manipulation_case, IV_resize_test);
+    tcase_add_test(manipulation_case, IV_push_test);
+    tcase_add_test(manipulation_case, IV_insert_test);
+    tcase_add_test(manipulation_case, IV_delete_test);
+    tcase_add_test(manipulation_case, IV_get_test);
+    tcase_add_test(manipulation_case, IV_set_test);
     suite_add_tcase(suite, manipulation_case);
 
     copy_case = tcase_create("Copy");
-    tcase_add_test(copy_case, copy_test);
+    tcase_add_test(copy_case, IV_copy_test);
     suite_add_tcase(suite, copy_case);
 
     return suite;
 }
 
 int main() {
-    Suite* suite = int_vector_suite();
-    SRunner* s_runner;
+    Suite *suite = int_vector_suite();
+    SRunner *s_runner = srunner_create(suite);
 
-    s_runner = srunner_create(suite);
+    srunner_add_suite(s_runner, functions_suite());
     srunner_set_fork_status(s_runner, CK_NOFORK);
 
     srunner_run_all(s_runner, CK_ENV);

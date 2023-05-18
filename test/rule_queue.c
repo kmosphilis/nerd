@@ -2,9 +2,9 @@
 #include <check.h>
 
 #include "../src/rule_queue.h"
+#include "helper/nerd_utils.h"
 #include "helper/rule_queue.h"
 #include "helper/rule.h"
-#include "helper/int_vector.h"
 
 START_TEST(construct_destruct_test) {
     RuleQueue *rule_queue = rule_queue_constructor(true);

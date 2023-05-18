@@ -4,9 +4,9 @@
 
 #include "../src/sensor.h"
 
-#define SENSOR_TEST_DATA1 "./test/data/sensor_test1.txt"
-#define SENSOR_TEST_DATA2 "./test/data/sensor_test2.txt"
-#define SENSOR_TEST_DATA3 "./test/data/sensor_test3.txt"
+#define SENSOR_TEST_DATA1 "../test/data/sensor_test1.txt"
+#define SENSOR_TEST_DATA2 "../test/data/sensor_test2.txt"
+#define SENSOR_TEST_DATA3 "../test/data/sensor_test3.txt"
 
 START_TEST(construct_destruct_test) {
     Sensor *sensor = sensor_constructor_from_file(SENSOR_TEST_DATA1, ' ', 0, 0);
