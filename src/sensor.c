@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <pcg_variants.h>
 
 #include "sensor.h"
 
@@ -216,13 +217,14 @@ end_literal_loop:
                 if (initial_observation){
                     scene_copy(initial_observation, *output);
                 }
-                srand(time(NULL));
-                size_t number_of_literals = (*output)->size - (rand() % (*output)->size);
+                pcg32_random_t seed;
+                pcg32_srandom_r(&seed, time(NULL), 314159U);
+                size_t number_of_literals = (*output)->size - (pcg32_random_r(&seed) % (*output)->size);
 
                 if (number_of_literals == (*output)->size) {
                     return;
                 } else if (number_of_literals == 1) {
-                    scene_remove_literal(*output, rand() % (*output)->size, NULL);
+                    scene_remove_literal(*output, pcg32_random_r(&seed) % (*output)->size, NULL);
                     return;
                 }
 
@@ -234,8 +236,7 @@ end_literal_loop:
                 }
 
                 for (i = 0; i < number_of_literals; ++i) {
-                    int index = rand() % number_of_literals;
-                    --number_of_literals;
+                    int index = pcg32_random_r(&seed) % number_of_literals--;
                     scene_remove_literal(*output, random_literals[index], NULL);
                     random_literals[index] = random_literals[number_of_literals];
                 }
