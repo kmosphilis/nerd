@@ -1,4 +1,7 @@
-#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <string.h>
+#include <pcg_variants.h>
 
 #include "metrics.h"
 
@@ -9,8 +12,8 @@
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param scene The scene to evaluate the learnt KnowledgeBase with.
- * @param overall_success Pointer to save the overall success of KnowledbeBase to predict the
- * observation. It can vary from [0, 1].
+ * @param overall_success A float pointer to save the overall success of KnowledbeBase to predict
+ * the observation. It can vary from [0, 1].
 */
 void evaluate_all_literals(const Nerd * const nerd, const Scene * const observation,
 float * const overall_success) {
@@ -19,11 +22,8 @@ float * const overall_success) {
     }
     Scene *test_scene, *inferred;
     float success = 0;
+
     unsigned int i;
-
-    test_scene = scene_constructor(false);
-    inferred = scene_constructor(false);
-
     for (i = 0; i < observation->size; ++i) {
         scene_copy(&test_scene, observation);
         scene_remove_literal(test_scene, i, NULL);
@@ -36,37 +36,220 @@ float * const overall_success) {
         scene_destructor(&inferred);
     }
 
-    scene_destructor(&test_scene);
-    scene_destructor(&inferred);
     *overall_success = success / observation->size;
 }
 
-// TODO Rethink.
-// void evaluate_hidden_literals(const Nerd * const nerd, const Scene * const observation,
-// const float ratio_of_hidden_literals, float * const overall_success) {
-//     if (!(nerd && observation && (ratio_of_hidden_literals >= 0.0) && 
-//     (ratio_of_hidden_literals < 1.0))) {
-//         return;
-//     }
-//     Scene test_scene, inferred;
-//     unsigned int i;
-//     int literal_to_hide = (int) (observation->size * ratio_of_hidden_literals);
-//     if (literal_to_hide == 0) {
-//         ++literal_to_hide;
-//     }
+/**
+ * @brief Evalaute whether the Nerd's learnt KnowledgeBase can predict (recover) the random Literals
+ * that will be hidden (removed) by the algorithm.
+ *
+ * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
+ * @param file_to_evaluate The filepath containing the evaluation samples.
+ * @param ratio
+ * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
+ * has hidden.
+ * @param total_recovered A size_t pointer to save the total number of correctly recovered hidden
+ * Literals.
+ * @param total_incorrectly_recovered A size_t pointer to save the total number of incorrectly
+ * recovered hidden Literals (opposed Literals). If NULL, the number will ne discarded.
+ * @param total_not_recovered A size_t pointer to save the total number of hidden Literals that were
+ * not recovered. If NULL, the number will be discarded.
+ *
+ * @return 0 if the function was executed successfully, or -1 if one of the given parameters was
+ * NULL or the ratio is not in the range (0, 1).
+*/
+int evaluate_random_literals(const Nerd * const nerd, const char * const file_to_evaluate,
+const float ratio, size_t * const restrict total_hidden, size_t * const restrict total_recovered,
+size_t * const restrict total_incorrectly_recovered, size_t * const restrict total_not_recovered) {
+    if (!(nerd && file_to_evaluate && total_hidden && total_recovered && (ratio > 0) && (ratio < 1)
+    )) {
+        return -1;
+    }
 
-//     scene_constructor(&test_scene);
-//     scene_constructor(&inferred);
-//     scene_copy(&test_scene, observation);
+    // TODO add a sensor check if NULL;
+    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
+    nerd->sensor->delimiter, 0, nerd->sensor->header != NULL);
 
-//     for (i = 0; i < literal_to_hide; ++i) {
-//         scene_remove_literal(&test_scene, rand() % test_scene.size);
-//     }
+    if (!evaluation_sensor) {
+        return -2;
+    }
 
-//     prudensjs_inference(&(nerd->knowledge_base), &test_scene, &inferred);
-//     *overall_success = scene_number_of_similar_literals(&inferred, observation) /
-//     (float) observation->size;
+    const size_t total_observations = sensor_get_total_observations(evaluation_sensor);
 
-//     scene_destructor(&test_scene);
-//     scene_destructor(&inferred);
-// }
+    Literal *removed_literal = NULL;
+    Scene *removed_literals = NULL, *observation = NULL, *inference = NULL;
+    pcg32_random_t seed;
+    pcg32_srandom_r(&seed, time(NULL), 314159U);
+
+    int equals_result;
+    size_t total_hidden_ = 0, total_recovered_ = 0, total_incorrectly_recovered_ = 0,
+    total_not_recovered_ = 0, remaining, new_size;
+    unsigned int i, j, k, *possible_indices = NULL;
+    for (i = 0; i < total_observations; ++i) {
+        removed_literals = scene_constructor(true);
+        sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
+        const size_t observation_size = observation->size;
+
+        possible_indices = (unsigned int *) malloc(observation_size * sizeof(int));
+        for (j = 0; j < observation_size; ++j) {
+            possible_indices[j] = j;
+        }
+
+        new_size = observation_size - (observation_size * ratio);
+        remaining = observation->size;
+
+        while (removed_literals->size != new_size) {
+            scene_remove_literal(observation, possible_indices[pcg32_random_r(&seed) % remaining--],
+            &removed_literal);
+            scene_add_literal(removed_literals, &removed_literal);
+        }
+        free(possible_indices);
+        possible_indices = NULL;
+
+        prudensjs_inference(nerd->knowledge_base, observation, &inference);
+
+        total_hidden_ += removed_literals->size;
+
+        for (j = 0; j < removed_literals->size; ++j) {
+            removed_literal = removed_literals->literals[j];
+            size_t header_size = 0;
+            char *expected_header = NULL;
+            if (evaluation_sensor->header) {
+                header_size = strchr(removed_literal->atom, '_') - removed_literal->atom + 1;
+                expected_header = (char *) malloc(header_size * sizeof(char));
+                strncpy(expected_header, removed_literal->atom, header_size - 1);
+                expected_header[header_size - 1] = '\0';
+            }
+            for (k = 0; k < inference->size; ++k) {
+                equals_result =
+                literal_equals(removed_literal, inference->literals[k]);
+                if (equals_result == 1) {
+                    ++total_recovered_;
+                    goto next_literal;
+                } else if (equals_result == 0) {
+                    if ((literal_opposed(removed_literal, inference->literals[k]) == 1) ||
+                    ((evaluation_sensor->header) &&
+                    strstr(inference->literals[k]->atom, expected_header))) {
+                        ++total_incorrectly_recovered_;
+                        goto next_literal;
+                    }
+                }
+            }
+            ++total_not_recovered_;
+next_literal:
+            free(expected_header);
+        }
+
+        scene_destructor(&observation);
+        scene_destructor(&removed_literals);
+        scene_destructor(&inference);
+    }
+
+    *total_hidden = total_hidden_;
+    *total_recovered = total_recovered_;
+
+    if (total_incorrectly_recovered) {
+        *total_incorrectly_recovered = total_incorrectly_recovered_;
+    }
+
+    if (total_not_recovered) {
+        *total_not_recovered = total_not_recovered_;
+    }
+
+    sensor_destructor(&evaluation_sensor);
+
+    return 0;
+}
+
+/**
+ * @brief Evaluates the Nerd's learnt KnowledgeBase by checking whether it can find the
+ * corresponding Literal marked as a label. The labels are given as a Context with the
+ * literals_to_evaluate. The algorithm will find the label from the original observation, and then
+ * it will use the integrated inference engine to find out whether the engine can infer that Literal
+ * or not.
+ *
+ * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
+ * @param file_to_evaluate The filepath containing the evaluation samples.
+ * @param literals_to_evaluate The Context containing all the Literals that act a labels.
+ * @param accuracy A pointer to a float variable to save the overall accuracy of the KnowledgeBase
+ * over the given samples.
+ * @param abstain_ratio A pointer to a float variable to save the abstain ratio of the KnowledgeBase
+ * over the given samples. Abstain means that with the given KnowledgeBase a label cannot be
+ * predicted, either correct or incorrect. If NULL is given, this ration will not be saved.
+ *
+ * @return 0 if the evaluation ended successfully, -1 if it one of the parameters was NULL (expect
+ * abstain_ratio), > 0 which will be the index of the first observation that does not have a
+ * provided label (index calculated from the given file).
+*/
+int evaluate_one_specific_literal(const Nerd * const nerd, const char * const file_to_evaluate,
+const Context * const literals_to_evaluate, float * const restrict accuracy,
+float * const restrict abstain_ratio) {
+    if (!(nerd && file_to_evaluate && literals_to_evaluate && accuracy)) {
+        return -1;
+    }
+
+    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
+    nerd->sensor->delimiter, 0, nerd->sensor->header != NULL);
+
+    if (!evaluation_sensor) {
+        return -2;
+    }
+
+    const size_t total_observations = sensor_get_total_observations(evaluation_sensor);
+
+    Scene *observation = NULL, *inference = NULL;
+    unsigned int positives = 0, negatives = 0, unobserved = 0;
+    bool found = false;
+
+    int current_index, label_index;
+    unsigned int j, i, evaluation_literal_index;
+    for (j = 0; j < total_observations; ++j) {
+        sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
+        for (i = 0; i < literals_to_evaluate->size; ++i) {
+            if ((label_index = scene_literal_index(observation, literals_to_evaluate->literals[i]))
+            > -1) {
+                evaluation_literal_index = i;
+                scene_remove_literal(observation, label_index, NULL);
+                break;
+            }
+        }
+
+        if (label_index < 0) {
+            scene_destructor(&observation);
+            sensor_destructor(&evaluation_sensor);
+            return j + 1;
+        }
+
+        prudensjs_inference(nerd->knowledge_base, observation, &inference);
+
+        for (i = 0; i < literals_to_evaluate->size; ++i) {
+            current_index = scene_literal_index(inference, literals_to_evaluate->literals[i]);
+            if (current_index > -1) {
+                if (evaluation_literal_index == i) {
+                    ++positives;
+                } else {
+                    ++negatives;
+                }
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            ++unobserved;
+        }
+
+        scene_destructor(&observation);
+        scene_destructor(&inference);
+    }
+
+    sensor_destructor(&evaluation_sensor);
+
+    *accuracy = ((float) positives) / total_observations;
+
+    if (abstain_ratio) {
+        *abstain_ratio = ((float) unobserved) / total_observations;
+    }
+
+    return 0;
+}
