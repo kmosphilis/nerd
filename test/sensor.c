@@ -46,9 +46,9 @@ START_TEST(construct_destruct_test) {
     ck_assert_str_eq(sensor->filepath, SENSOR_TEST_DATA3);
     ck_assert_int_eq(sensor->delimiter, ',');
     ck_assert_ptr_ne(sensor->header, NULL);
-    ck_assert_int_eq(sensor->header_size, 2);
+    ck_assert_int_eq(sensor->header_size, 3);
     unsigned int i;
-    const char* header[2] = {"animal", "flies?"};
+    const char* header[3] = {"animal", "class", "flies?"};
     for (i = 0; i < sensor->header_size; ++i) {
         ck_assert_str_eq(sensor->header[i], header[i]);
     }
@@ -216,11 +216,11 @@ START_TEST(get_scene_test) {
 
     sensor = sensor_constructor_from_file(SENSOR_TEST_DATA3, ',', true, false);
 
-    const char *data3_no_header[5][2] = {{"animal", "flies?"}, {"penguin", "yes"},
-    {"imperial eagle", "no"}, {"bat", "yes"}, {"human", "no"}};
-    const char *data3_with_header[4][2] = {{"animal_penguin", "flies?_yes"},
-    {"animal_imperial eagle", "flies?_no"}, {"animal_bat", "flies?_yes"}, {"animal_human",
-    "flies?_no"}};
+    const char *data3_no_header[5][3] = {{"animal", "class", "flies?"}, {"penguin", "bird", "no"},
+    {"imperial eagle", "bird", "yes"}, {"bat", "mammal", "yes"}, {"human", "mammal", "no"}};
+    const char *data3_with_header[4][3] = {{"animal_penguin", "class_bird", "flies?_no"},
+    {"animal_imperial eagle", "class_bird", "flies?_yes"},
+    {"animal_bat", "class_mammal", "flies?_yes"}, {"animal_human", "class_mammal", "flies?_no"}};
 
     sensor_get_next_scene(sensor, &scene, false, NULL);
     for (i = 0; i < scene->size; ++i) {

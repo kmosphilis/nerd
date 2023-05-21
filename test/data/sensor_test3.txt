@@ -1,5 +1,5 @@
-animal,flies?
-penguin,yes
-imperial eagle,no
-bat,yes
-human,no
+animal,class,flies?
+penguin,bird,no
+imperial eagle,bird,yes
+bat,mammal,yes
+human,mammal,no
