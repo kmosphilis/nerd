@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <prb.h>
 
-#include "../libs/avl-2.0.3/prb.h"
 #include "rule_hypergraph.h"
 
 typedef struct Vertex Vertex;
