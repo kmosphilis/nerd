@@ -169,13 +169,10 @@ int main(int argc, char *argv[]) {
             fputc(c, file_to_write);
         } while (c != '\n');
     }
-
     free(test_indices);
     fclose(train);
     fclose(test);
     fclose(dataset);
-
-    printf("%c, %d\n", delimiter, has_header);
 
     Nerd *nerd =
     nerd_constructor(TRAIN, delimiter, true, has_header, threshold, 3, 1, 1, promotion, demotion,
@@ -187,6 +184,5 @@ int main(int argc, char *argv[]) {
 
     remove(TEST);
     remove(TRAIN);
-
     return EXIT_SUCCESS;
 }

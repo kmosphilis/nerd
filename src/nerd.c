@@ -270,22 +270,14 @@ void nerd_start_learning(Nerd * const nerd) {
     if (!nerd) {
         return;
     }
-    /*  1 - Create rules with heads that do not exist in effective rules (rules that were applicable and were correct).
-        2 - Promote rules applicable on inferred that concur with observed. Promote both active and inactive rules.
-            If head is the same as observed, promote, else demote it if it opposed.
-        3 - Weak priority (it is implemented by default).
-        4 - Demote applicable rules that oppose observed literals.
-        5 - No priority for newly inactive rules (implemented by default).
-    */
 
     Scene *observation = NULL, *inferred = NULL, *uncovered = NULL;
     size_t epoch, iteration;
     const size_t total_observations = sensor_get_total_observations(nerd->sensor);
 
-    char *str = knowledge_base_to_string(nerd->knowledge_base);
-    printf("%s\n", str);
-    free(str);
-    time_t start = time(NULL);
+    struct timespec start, end, prudens_start_time, prudens_end_time;
+    double prudens_total_time = 0;
+    timespec_get(&start, TIME_UTC);
 
     for (epoch = 0; epoch < nerd->epochs; ++epoch) {
         for (iteration = 0; iteration < total_observations; ++iteration) {
@@ -293,49 +285,32 @@ void nerd_start_learning(Nerd * const nerd) {
             iteration + 1, total_observations);
 
             sensor_get_next_scene(nerd->sensor, &observation, nerd->partial_observation, NULL);
+            timespec_get(&prudens_start_time, TIME_UTC);
             prudensjs_inference(nerd->knowledge_base, observation, &inferred);
+            timespec_get(&prudens_end_time, TIME_UTC);
+
+            prudens_total_time += (prudens_end_time.tv_sec - prudens_start_time.tv_sec) * 1e3 +
+            (prudens_end_time.tv_nsec - prudens_start_time.tv_nsec) / 1e6;
 
             knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred,
             nerd->breadth, 5);
 
             scene_difference(observation, inferred, &uncovered);
 
-            str = scene_to_string(observation);
-            printf("Observed: %s\n", str);
-            free(str);
-            str = scene_to_string(inferred);
-            printf("Inferred: %s\n", str);
-            free(str);
-            str = scene_to_string(uncovered);
-            printf("Observed ∖ Inferred: %s\n", str);
-            free(str);
-
             rule_hypergraph_update_rules(nerd->knowledge_base, observation, inferred,
             nerd->promotion_weight, nerd->demotion_weight);
-
-            str = knowledge_base_to_string(nerd->knowledge_base);
-            printf("%s\n", str);
-            free(str);
 
             scene_destructor(&uncovered);
             scene_destructor(&observation);
             scene_destructor(&inferred);
         }
-
-        // float total_accuracy = 0, accuracy;
-
-        // for (index = 0; index < total_observations; ++index) {
-        //     sensor_get_next_scene(&(nerd->sensor), &observation, 0, NULL);
-        //     evaluate_all_literals(nerd, &observation, &accuracy);
-        //     total_accuracy += accuracy;
-        //     scene_destructor(&observation);
-        // }
-
-
-        // printf("Epoch %d KnolwedgeBase accuracy: %f\n", epoch + 1,
-        // total_accuracy / total_observations);
     }
-    printf("Total time: %.f\n", difftime(time(NULL), start));
+
+    timespec_get(&end, TIME_UTC);
+    double total_time = (end.tv_sec - start.tv_sec) * 1e3 + (end.tv_nsec - start.tv_nsec) / 1e6;
+    printf("Time spend on nerd: %f ms\n", total_time - prudens_total_time);
+    printf("Time spent on prudens: %f ms\n", prudens_total_time);
+    printf("Total time: %f ms\n", total_time);
 }
 
 /**
