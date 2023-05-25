@@ -616,6 +616,8 @@ finished:
     scene_destructor(&observed_and_inferred_no_opposed);
 }
 
+#if (RULE_HYPERGRAPH_TEST_FUNCTION == 1) || (RULE_HYPERGRAPH_TEST == 1)
+
 #include <check.h>
 
 #undef ck_assert_rule_hypergraph_eq
@@ -705,6 +707,8 @@ finished:
     ck_assert_ptr_nonnull(_h->literal_tree); \
     _ck_assert_int(_h->literal_tree->prb_count, OP, 0); \
 } while (0)
+
+#endif
 
 #if RULE_HYPERGRAPH_TEST == 1
 

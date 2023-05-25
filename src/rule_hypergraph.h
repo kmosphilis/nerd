@@ -2,13 +2,20 @@
 #define RULE_HYPERGRAPH_H
 
 /**
- * 1 enables testing, 0 disables testing.
+ * 1 enables testing, 0 disables testing. This enables test functions too.
 */
 #define RULE_HYPERGRAPH_TEST 0
+
+/**
+ * 1 enables the testing functions, 0 disables them.
+*/
+#define RULE_HYPERGRAPH_TEST_FUNCTIONS 0
 
 #include "rule.h"
 #include "knowledge_base.h"
 #include "rule_queue.h"
+
+#if (RULE_HYPERGRAPH_TEST_FUNCTIONS == 1) || (RULE_HYPERGRAPH_TEST == 1)
 
 /**
  * @brief Checks two RuleHyperGraphs to determine if they are equal or not. Do not use the same
@@ -34,6 +41,8 @@
  * @param X The RuleHyperGraph to check.
 */
 #define ck_assert_rule_hypergraph_notempty(X) _ck_assert_rule_hypergraph_empty(X, !=)
+
+#endif
 
 struct KnowledgeBase;
 
