@@ -6,7 +6,8 @@ fs.readFile(".temp", (err, data) => {
     if (!err) {
         const passed_data = data.toString().split("\n");
         let kB = JSON.parse(passed_data[0]);
-        kB["constraints"] = new Map();
+        kB["constraints"] = parsers.parseConstraints("");
+
         const result = prudens.forwardChaining(kB, JSON.parse(passed_data[1])["context"]);
 
         const inferred = new Set();

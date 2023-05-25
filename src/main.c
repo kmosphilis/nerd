@@ -14,14 +14,24 @@ int compare(const void *a, const void *b) {
     return (*(int *) a - *(int *) b);
 }
 
+int close_dataset(FILE *dataset) {
+    if (dataset) {
+        fclose(dataset);
+    }
+    return EXIT_FAILURE;
+}
+
 int main(int argc, char *argv[]) {
-    if (argc != 9) {
-        printf("Parameters required -f <filepath>, -t <float> > 0, -p <float> > 0 and -d <float> "
-        "> 0.\n");
+    if (argc != 11) {
+        printf("Parameters required -f <filepath> The path of the file,\n-h <bool> Does the file "
+        "have a header or not?,\n-t <float> > 0 Threshold value. Must be bigger than 0,\n-p <float>"
+        " > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be "
+        "greater than 0.\n");
         return EXIT_FAILURE;
     }
 
-    char opt;
+    bool has_header = false;
+    char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
     unsigned int i;
@@ -34,35 +44,54 @@ int main(int argc, char *argv[]) {
                             printf("'-f' value '%s' does not exit.\n", argv[i]);
                             return EXIT_FAILURE;
                         }
+                        if (strstr(argv[i], ".csv")) {
+                            delimiter = ',';
+                        } else {
+                            delimiter = ' ';
+                        }
+                        break;
+                    case 'h':
+                        if (strcmp(argv[++i], "true") == 0) {
+                            has_header = true;
+                        } else if (strcmp(argv[i], "false") == 0) {
+                            has_header = false;
+                        } else {
+                            printf("'-h' has a wrong value '%s'. It must be a boolean value, 'true'"
+                            " or 'false'\n", argv[i]);
+                            return close_dataset(dataset);
+                        }
                         break;
                     case 't':
                         threshold = atof(argv[++i]);
                         if (threshold <= 0) {
-                            printf("'-t' has a wrong value %s. It must be more than 0.0\n", argv[i]);
-                            return EXIT_FAILURE;
+                            printf("'-t' has a wrong value '%s'. It must be greater than 0.0\n",
+                            argv[i]);
+                            return close_dataset(dataset);
                         }
                         break;
                     case 'p':
                         promotion = atof(argv[++i]);
                         if (promotion <= 0) {
-                            printf("'-p' has a wrong value %s. It must be more than 0.0\n", argv[i]);
-                            return EXIT_FAILURE;
+                            printf("'-p' has a wrong value '%s'. It must be greater than 0.0\n",
+                            argv[i]);
+                            return close_dataset(dataset);
                         }
                         break;
                     case 'd':
                         demotion = atof(argv[++i]);
                         if (demotion <= 0) {
-                            printf("'-d' has a wrong value %s. It must be more than 0.0\n", argv[i]);
-                            return EXIT_FAILURE;
+                            printf("'-d' has a wrong value '%s'. It must be greater than 0.0\n",
+                            argv[i]);
+                            return close_dataset(dataset);
                         }
                         break;
                     default:
                         printf("Option '-%c' is not available.\n", opt);
-                        return EXIT_FAILURE;
+                            return close_dataset(dataset);
                 }
             } else {
                 printf("Invalid parameters.\n");
-                return EXIT_FAILURE;
+                return close_dataset(dataset);
             }
         }
     }
@@ -135,7 +164,10 @@ int main(int argc, char *argv[]) {
     fclose(test);
     fclose(dataset);
 
-    Nerd *nerd = nerd_constructor(TRAIN, ',', false, true, 10.0, 3, 1, 10, 1, 9, true);
+    printf("%c, %d\n", delimiter, has_header);
+
+    Nerd *nerd =
+    nerd_constructor(TRAIN, delimiter, true, has_header, threshold, 3, 1, 1, promotion, demotion, true);
 
     nerd_start_learning(nerd);
 

@@ -773,4 +773,5 @@ module.exports = {
     contextToString,
     graphToString,
     dilemmasToString,
+    parseConstraints
 }
