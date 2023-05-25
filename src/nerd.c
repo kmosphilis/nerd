@@ -24,6 +24,8 @@
  * @param epochs The number of epochs the algorithm should learn for.
  * @param promotion_weight The amount that a Rule should be promoted with. It should be > 0.
  * @param demotion_weight The amount that a Rule should be demoted with. It should be > 0.
+ * @param use_backward_chaining A boolean value which indicates whether the hypergraph should demoted
+ * rules using the backward chaining algorithm or not.
  * @param partial_observation If partial_observation is > 0, the initial observation will be saved
  * here. If NULL is given, it will not be saved.
  *
@@ -32,11 +34,12 @@
 Nerd *nerd_constructor(const char * const filepath, const char delimiter, const bool reuse,
 const bool header, const float activation_threshold, const unsigned int breadth,
 const unsigned int depth, const unsigned int epochs, const float promotion_weight,
-const float demotion_weight, const bool partial_observation) {
+const float demotion_weight, const bool use_backward_chaining, const bool partial_observation) {
     if (filepath) {
         Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
         if ((nerd->sensor = sensor_constructor_from_file(filepath, delimiter, reuse, header))) {
-            nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
+            nerd->knowledge_base =
+            knowledge_base_constructor(activation_threshold, use_backward_chaining);
             nerd->breadth = breadth;
             nerd->depth = depth;
             if (reuse) {
@@ -61,10 +64,13 @@ const float demotion_weight, const bool partial_observation) {
  * @param filepath The path to the file that contains previous a Nerd structure parameters (except
  * the number of epochs) and the learnt KnowledgeBase.
  * @param epochs The number of epochs the algorithm should learn for.
+ * @param use_backward_chaining A boolean value which indicates whether the hypergraph should demoted
+ * rules using the backward chaining algorithm or not.
  *
  * @return A new Nerd object * from the given filepath. Use nerd_destructor to deallocate.
 */
-Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int epochs) {
+Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int epochs,
+const bool use_backward_chaining) {
     if (filepath) {
         FILE *file = fopen(filepath, "rb");
         if (!file) {
@@ -124,7 +130,8 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int
         }
 
         free(buffer);
-        nerd->knowledge_base = knowledge_base_constructor(activation_threshold);
+        nerd->knowledge_base =
+        knowledge_base_constructor(activation_threshold, use_backward_chaining);
 
         fpos_t position;
         fgetpos(file, &position);

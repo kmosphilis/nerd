@@ -22,15 +22,15 @@ int close_dataset(FILE *dataset) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 11) {
+    if (argc != 13) {
         printf("Parameters required -f <filepath> The path of the file,\n-h <bool> Does the file "
         "have a header or not?,\n-t <float> > 0 Threshold value. Must be bigger than 0,\n-p <float>"
         " > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be "
-        "greater than 0.\n");
+        "greater than 0 and,\n-b <bool> Should it use back-chaining demotion or not?");
         return EXIT_FAILURE;
     }
 
-    bool has_header = false;
+    bool has_header = false, use_back_chaining = false;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
@@ -82,6 +82,17 @@ int main(int argc, char *argv[]) {
                         if (demotion <= 0) {
                             printf("'-d' has a wrong value '%s'. It must be greater than 0.0\n",
                             argv[i]);
+                            return close_dataset(dataset);
+                        }
+                        break;
+                    case 'b':
+                        if (strcmp(argv[++i], "true") == 0) {
+                            use_back_chaining = true;
+                        } else if (strcmp(argv[i], "false") == 0) {
+                            use_back_chaining = false;
+                        } else {
+                            printf("'-h' has a wrong value '%s'. It must be a boolean value, 'true'"
+                            " or 'false'\n", argv[i]);
                             return close_dataset(dataset);
                         }
                         break;
@@ -167,7 +178,8 @@ int main(int argc, char *argv[]) {
     printf("%c, %d\n", delimiter, has_header);
 
     Nerd *nerd =
-    nerd_constructor(TRAIN, delimiter, true, has_header, threshold, 3, 1, 1, promotion, demotion, true);
+    nerd_constructor(TRAIN, delimiter, true, has_header, threshold, 3, 1, 1, promotion, demotion,
+    use_back_chaining, true);
 
     nerd_start_learning(nerd);
 

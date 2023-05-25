@@ -39,7 +39,7 @@ struct KnowledgeBase;
 
 typedef struct RuleHyperGraph RuleHyperGraph;
 
-RuleHyperGraph *rule_hypergraph_empty_constructor();
+RuleHyperGraph *rule_hypergraph_empty_constructor(const bool use_back_chaining);
 void rule_hypergraph_destructor(RuleHyperGraph ** const rule_hypergraph);
 void rule_hypergraph_copy(RuleHyperGraph ** const destination, const RuleHyperGraph * const source);
 int rule_hypergraph_add_rule(RuleHyperGraph * const rule_hypergraph, Rule ** const rule);

@@ -23,6 +23,7 @@ typedef struct prb_table prb_table;
 
 struct RuleHyperGraph {
     prb_table *literal_tree;
+    bool use_backward_chaining;
 };
 
 
@@ -227,12 +228,16 @@ int compare_literals(const void *vertex1, const void *vertex2, void *extra) {
 /**
  * @brief Costructs an empty RuleHyperGraph with an empty RB-Tree.
  *
+ * @param use_backward_chaining A boolean value which indicates whether the hypergraph should demoted
+ * rules using the backward chaining algorithm or not.
+ *
  * @return A new RuleHyperGraph *. Use rule_hypergraph_destructor to deallocate.
 */
-RuleHyperGraph *rule_hypergraph_empty_constructor() {
+RuleHyperGraph *rule_hypergraph_empty_constructor(const bool use_backward_chaining) {
     RuleHyperGraph *hypergraph = (RuleHyperGraph *) malloc(sizeof(RuleHyperGraph));
 
     hypergraph->literal_tree = prb_create(compare_literals, NULL, NULL);
+    hypergraph->use_backward_chaining = use_backward_chaining;
 
     return hypergraph;
 }
@@ -263,7 +268,7 @@ void rule_hypergraph_destructor(RuleHyperGraph ** const rule_hypergraph) {
 void rule_hypergraph_copy(RuleHyperGraph ** const destination,
 const RuleHyperGraph * const source) {
     if (destination && source) {
-        *destination = rule_hypergraph_empty_constructor();
+        *destination = rule_hypergraph_empty_constructor(source->use_backward_chaining);
 
         struct prb_traverser traverser;
 
@@ -384,7 +389,6 @@ RuleQueue ** const inactive_rules) {
     }
 }
 
-// TODO Make backward chaining demotion to be selectable and not default.
 /**
  * @brief Updates the weight of (Promotes or Demotes) each rule according to the given observations
  * and inferences.
@@ -421,7 +425,7 @@ const float demotion_rate) {
         current_vertex = prb_find(knowledge_base->hypergraph->literal_tree, vertex_to_find);
         vertex_destructor(&vertex_to_find, false);
 
-        if (current_vertex) {
+        if (current_vertex && (current_vertex->number_of_edges != 0)) {
             for (i = 0; i < current_vertex->number_of_edges; ++i) {
                 current_rule = current_vertex->edges[i]->rule;
                 // Checks if the Rule is applicable given the inferred and observed Literals.
@@ -446,6 +450,25 @@ const float demotion_rate) {
         vertex_destructor(&vertex_to_find, false);
 
         if (current_vertex && (current_vertex->number_of_edges != 0)) {
+            if (!knowledge_base->hypergraph->use_backward_chaining) {
+                for (i = 0; i < current_vertex->number_of_edges; ++i) {
+                    current_rule = current_vertex->edges[i]->rule;
+                    // Checks if the Rule is applicable given the inferred and observed Literals.
+                    if (rule_applicable(current_rule, observed_and_inferred)) {
+                        bool is_active =
+                        current_rule->weight >= knowledge_base->activation_threshold;
+                        current_rule->weight -= promotion_rate;
+
+                        if (is_active &&
+                        (current_rule->weight < knowledge_base->activation_threshold)) {
+                            rule_queue_remove_rule(knowledge_base->active,
+                            rule_queue_find(knowledge_base->active, current_rule), NULL);
+                        }
+                    }
+                }
+                goto finished;
+            }
+
             IntVector *vertex_edge_position = int_vector_constructor(),
             *edges_per_vertex = int_vector_constructor();
 
@@ -587,6 +610,7 @@ edge_checking:
         }
     }
 
+finished:
     scene_destructor(&observed_and_inferred);
     scene_destructor(&opposed);
     scene_destructor(&observed_and_inferred_no_opposed);
@@ -689,7 +713,7 @@ edge_checking:
 #include "../test/helper/rule_queue.h"
 
 START_TEST(construct_destruct_hypergraph_test) {
-    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
+    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor(true);
 
     ck_assert_ptr_nonnull(hypergraph);
     ck_assert_int_eq(hypergraph->literal_tree->prb_count, 0);
@@ -746,7 +770,7 @@ START_TEST(construct_destruct_edge_test) {
     Rule *r1 = rule_constructor(1, &l1, &l2, 0, false),
     *r2 = rule_constructor(2, l_array, &l2, 0, false),
     *r3 = rule_constructor(1, &c2, &c1, 0, false);
-    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
+    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor(true);
 
     prb_insert(hypergraph->literal_tree, v1);
     prb_insert(hypergraph->literal_tree, v2);
@@ -812,7 +836,7 @@ START_TEST(construct_destruct_edge_test) {
 END_TEST
 
 START_TEST(adding_edges_test) {
-    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
+    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor(true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true), *l_array[2] = {l1, l3};
     Vertex *v2 = vertex_constructor(l2), *v3 = vertex_constructor(l3);
@@ -864,7 +888,7 @@ START_TEST(adding_edges_test) {
 END_TEST
 
 START_TEST(adding_rules_test) {
-    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
+    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor(true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
     *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l2}, *c1, *c2;
@@ -1048,7 +1072,7 @@ START_TEST(adding_rules_test) {
 END_TEST
 
 START_TEST(removing_rules_test) {
-    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor();
+    RuleHyperGraph *hypergraph = rule_hypergraph_empty_constructor(true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
     *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l5};
@@ -1134,7 +1158,7 @@ START_TEST(removing_rules_test) {
 END_TEST
 
 START_TEST(get_inactive_rules_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0, true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
     *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l5};
@@ -1190,7 +1214,7 @@ START_TEST(get_inactive_rules_test) {
 END_TEST
 
 START_TEST(hypergraph_copy_test) {
-    RuleHyperGraph *hypergraph1 = rule_hypergraph_empty_constructor(), *hypergraph2 = NULL;
+    RuleHyperGraph *hypergraph1 = rule_hypergraph_empty_constructor(true), *hypergraph2 = NULL;
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
     *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l5};
@@ -1265,7 +1289,7 @@ START_TEST(hypergraph_copy_test) {
 END_TEST
 
 START_TEST(update_rules_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0, true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
     *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l5};

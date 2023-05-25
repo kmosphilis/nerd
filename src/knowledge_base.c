@@ -12,14 +12,17 @@
  *
  * @param activation_threshold The threshold which determines whether a rule should get activated or
  * deactivated.
+ * @param use_backward_chaining A boolean value which indicates whether the hypergraph should demoted
+ * rules using the backward chaining algorithm or not.
  *
  * @return A new KnowledgeBase object *. Use knowledge_base_destructor to deallocate.
  */
-KnowledgeBase *knowledge_base_constructor(const float activation_threshold) {
+KnowledgeBase *knowledge_base_constructor(const float activation_threshold,
+const bool use_backward_chaining) {
     KnowledgeBase *knowledge_base = (KnowledgeBase *) malloc(sizeof(KnowledgeBase));
     knowledge_base->activation_threshold = activation_threshold;
     knowledge_base->active = rule_queue_constructor(false);
-    knowledge_base->hypergraph = rule_hypergraph_empty_constructor();
+    knowledge_base->hypergraph = rule_hypergraph_empty_constructor(use_backward_chaining);
     return knowledge_base;
 }
 
@@ -232,15 +235,16 @@ char *knowledge_base_to_string(const KnowledgeBase * const knowledge_base) {
 char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
     if (knowledge_base && knowledge_base->active && knowledge_base->hypergraph) {
         if (knowledge_base->active->rules) {
-            char const *end = "], \"code\": \"\", \"imports\": \"\", "
-            "\"warnings\": [], \"customPriorities\": []}";
+            char const *end = "], \"code\": \"\", \"imports\": \"\", \"warnings\": [], "
+            "\"customPriorities\": []}";
             char *result = strdup("{\"type\": \"output\", \"kb\": ["), *temp,
             *rule_prudensjs_string;
             size_t result_size = strlen(result) + 1;
 
             unsigned int i;
-            for (i = knowledge_base->active->length - 1; i > 0; --i) {
-                rule_prudensjs_string = rule_to_prudensjs(knowledge_base->active->rules[i], i);
+            for (i = knowledge_base->active->length; i > 0; --i) {
+                rule_prudensjs_string =
+                rule_to_prudensjs(knowledge_base->active->rules[i - 1], i - 1);
                 result_size += strlen(rule_prudensjs_string) + 2;
                 temp = strdup(result);
                 result = (char *) realloc(result, result_size);
@@ -249,12 +253,13 @@ char *knowledge_base_to_prudensjs(const KnowledgeBase * const knowledge_base) {
                 free(temp);
             }
 
-            rule_prudensjs_string = rule_to_prudensjs(knowledge_base->active->rules[i], i);
-            result_size += strlen(rule_prudensjs_string) + strlen(end);
+            memset(result + result_size - 3, '\0', 2);
+            result_size += strlen(end) - 2;
+
             temp = strdup(result);
-            result = (char *) realloc(result, result_size);
-            sprintf(result, "%s%s%s", temp, rule_prudensjs_string, end);
-            free(rule_prudensjs_string);
+
+            result = (char *) realloc(result, result_size * sizeof(char));
+            sprintf(result, "%s%s", temp, end);
             free(temp);
 
             return result;

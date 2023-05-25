@@ -9,7 +9,7 @@
 #define DATASET2 "../test/data/sensor_test3.txt"
 
 START_TEST(all_literals_evaluation_test) {
-    Nerd *nerd = nerd_constructor(DATASET1, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, 1);
+    Nerd *nerd = nerd_constructor(DATASET1, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, true, true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true);
     Rule *r1 = rule_constructor(1, &l1, &l2, 15.0, false),
@@ -33,7 +33,7 @@ START_TEST(all_literals_evaluation_test) {
 END_TEST
 
 START_TEST(random_literals_evaluation_test) {
-    Nerd *nerd = nerd_constructor(DATASET2, ',', true, true, 15.0, 3, 50, 1, 1.5, 4.5, 1);
+    Nerd *nerd = nerd_constructor(DATASET2, ',', true, true, 15.0, 3, 50, 1, 1.5, 4.5, true, true);
     Literal *l1 = literal_constructor("class_bird", true),
     *l2 = literal_constructor("flies?_yes", true), *l3 = literal_constructor("class_mammal", true),
     *l4 = literal_constructor("flies?_no", true);
@@ -86,7 +86,7 @@ START_TEST(random_literals_evaluation_test) {
 END_TEST
 
 START_TEST(one_specific_literal_evaluation_test) {
-    Nerd *nerd = nerd_constructor(DATASET2, ',', true, true, 15.0, 3, 50, 1, 1.5, 4.5, 1);
+    Nerd *nerd = nerd_constructor(DATASET2, ',', true, true, 15.0, 3, 50, 1, 1.5, 4.5, true, true);
     Literal *l1 = literal_constructor("animal_bat", true),
     *l2 = literal_constructor("flies?_yes", true), *l3 = literal_constructor("animal_human", true),
     *l4 = literal_constructor("flies?_no", true);

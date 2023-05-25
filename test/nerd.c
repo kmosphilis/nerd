@@ -60,7 +60,7 @@ START_TEST(construct_destruct_test) {
 
     unsigned int i;
 
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0, true);
 
     for (i = 0; i < rule_queue1->length; ++i) {
         knowledge_base_add_rule(knowledge_base, &(rule_queue1->rules[i]));
@@ -69,7 +69,8 @@ START_TEST(construct_destruct_test) {
     rule_queue_destructor(&rule_queue1);
     rule_queue_destructor(&rule_queue2);
 
-    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, false);
+    Nerd *nerd =
+    nerd_constructor(DATASET, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, false);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 50);
@@ -98,7 +99,7 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 3, 100, 50, 0.5, 1.5, 0);
+    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 3, 100, 50, 0.5, 1.5, true, 0);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 1);
@@ -117,11 +118,11 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, 0);
+    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, 0);
     ck_assert_ptr_null(nerd);
 
     nerd = nerd_constructor("file-that-does-not-exist.txt", ',', true, false, 10.0, 3, 100, 50, 0.5,
-    1.5, 0);
+    1.5, true, 0);
     ck_assert_ptr_null(nerd);
 
     nerd_destructor(&nerd);
@@ -132,7 +133,7 @@ START_TEST(construct_destruct_test) {
 END_TEST
 
 START_TEST(construct_from_file) {
-    Nerd *nerd = nerd_constructor_from_file("../test/data/nerd_input1.txt", 2);
+    Nerd *nerd = nerd_constructor_from_file("../test/data/nerd_input1.txt", 2, true);
     ck_assert_int_eq(nerd->breadth, 2);
     ck_assert_int_eq(nerd->depth, 50);
     ck_assert_int_eq(nerd->epochs, 1);
@@ -150,7 +151,7 @@ START_TEST(construct_from_file) {
     ck_assert_knowledge_base_empty(nerd->knowledge_base);
     nerd_destructor(&nerd);
 
-    nerd = nerd_constructor_from_file("../test/data/nerd_input2.txt", 1);
+    nerd = nerd_constructor_from_file("../test/data/nerd_input2.txt", 1, true);
     RuleQueue *inactives;
     rule_hypergraph_get_inactive_rules(nerd->knowledge_base, &inactives);
     ck_assert_int_eq(nerd->breadth, 3);
@@ -194,20 +195,20 @@ START_TEST(construct_from_file) {
     for (i = 0; i < NUMBER_OF_ERROR_INPUTS; ++i) {
         char file[BUFFER_SIZE];
         sprintf(file, "../test/data/nerd_input_error%u.txt", i + 1);
-        nerd = nerd_constructor_from_file(file, 1);
+        nerd = nerd_constructor_from_file(file, 1, true);
         ck_assert_ptr_null(nerd);
     }
 
-    nerd = nerd_constructor_from_file(NULL, 1);
+    nerd = nerd_constructor_from_file(NULL, 1, true);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor_from_file("../file-that-does-not-exist.txt", 1);
+    nerd = nerd_constructor_from_file("../file-that-does-not-exist.txt", 1, true);
     ck_assert_ptr_null(nerd);
 }
 END_TEST
 
 START_TEST(to_file_test) {
-    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, 1);
+    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, true, 1);
 
     nerd_to_file(nerd, "../bin/nerd_output1.txt");
     ck_assert_int_eq(compare_files("../bin/nerd_output1.txt",

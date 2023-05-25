@@ -14,7 +14,8 @@ typedef struct KnowledgeBase {
     struct RuleHyperGraph *hypergraph;
 } KnowledgeBase;
 
-KnowledgeBase *knowledge_base_constructor(const float activation_threshold);
+KnowledgeBase *knowledge_base_constructor(const float activation_threshold,
+const bool use_backward_chaining);
 void knowledge_base_destructor(KnowledgeBase ** const knowledge_base);
 void knowledge_base_copy(KnowledgeBase ** const restrict destination,
 const KnowledgeBase * const restrict source);

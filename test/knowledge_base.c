@@ -10,7 +10,7 @@
 #include "../src/rule_hypergraph.h"
 
 START_TEST(construct_destruct_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(5.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(5.0, true);
 
     ck_assert_float_eq_tol(knowledge_base->activation_threshold, 5.0, 0.00001);
     ck_assert_knowledge_base_empty(knowledge_base);
@@ -25,7 +25,7 @@ START_TEST(construct_destruct_test) {
 END_TEST
 
 START_TEST(add_rule_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0, true);
     RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = NULL,
     *rule_queue3 = rule_queue_constructor(true),
     *inactive_rules;
@@ -87,7 +87,7 @@ START_TEST(add_rule_test) {
 END_TEST
 
 START_TEST(copy_test) {
-    KnowledgeBase *knowledge_base1 = knowledge_base_constructor(3.0), *knowledge_base2 = NULL;
+    KnowledgeBase *knowledge_base1 = knowledge_base_constructor(3.0, true), *knowledge_base2 = NULL;
     RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = create_rule_queue2();
 
     unsigned int i;
@@ -125,7 +125,7 @@ START_TEST(copy_test) {
 END_TEST
 
 START_TEST(create_new_rules_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0, true);
     RuleQueue *rule_queue = create_rule_queue2(), *result;
     Scene *observed = scene_constructor(true), *inferred = scene_constructor(true);
     Literal *literal = literal_constructor("Penguin", 1), *copy;
@@ -196,7 +196,7 @@ START_TEST(create_new_rules_test) {
 END_TEST
 
 START_TEST(to_string_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0, true);
     RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = create_rule_queue2();
 
     unsigned int i;
@@ -256,7 +256,7 @@ START_TEST(to_string_test) {
 END_TEST
 
 START_TEST(to_prudensjs_test) {
-    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0);
+    KnowledgeBase *knowledge_base = knowledge_base_constructor(3.0, true);
     RuleQueue *rule_queue1 = create_rule_queue1(), *rule_queue2 = create_rule_queue2();
 
     unsigned int i;
