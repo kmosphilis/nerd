@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include <ctype.h>
 #include <pcg_variants.h>
 
 #include "nerd.h"
@@ -22,11 +23,13 @@ int close_dataset(FILE *dataset) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 13) {
-        printf("Parameters required -f <filepath> The path of the file,\n-h <bool> Does the file "
+    if (argc != 15) {
+        printf("Parameters required:\n-f <filepath> The path of the file,\n-h <bool> Does the file "
         "have a header or not?,\n-t <float> > 0 Threshold value. Must be bigger than 0,\n-p <float>"
         " > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be "
-        "greater than 0 and,\n-b <bool> Should it use back-chaining demotion or not?");
+        "greater than 0,\n-c <bool> Should it use back-chaining demotion or not? and\n-b <unsigned "
+        "int> Maximum number of literals per rule. Must be positive. If more that the maximum "
+        "number or 0 are given, it will use the maximum value (max - 1).\n");
         return EXIT_FAILURE;
     }
 
@@ -34,7 +37,7 @@ int main(int argc, char *argv[]) {
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
-    unsigned int i;
+    unsigned int i, breadth = 0;
     for (i = 1; i < (unsigned int) argc; ++i) {
         if (i % 2 == 1) {
             if (sscanf(argv[i], "-%c", &opt) == 1) {
@@ -85,17 +88,28 @@ int main(int argc, char *argv[]) {
                             return close_dataset(dataset);
                         }
                         break;
-                    case 'b':
+                    case 'c':
                         if (strcmp(argv[++i], "true") == 0) {
                             use_back_chaining = true;
                         } else if (strcmp(argv[i], "false") == 0) {
                             use_back_chaining = false;
                         } else {
-                            printf("'-h' has a wrong value '%s'. It must be a boolean value, 'true'"
+                            printf("'-c' has a wrong value '%s'. It must be a boolean value, 'true'"
                             " or 'false'\n", argv[i]);
                             return close_dataset(dataset);
                         }
                         break;
+                    case 'b':
+                        if (isdigit(argv[++i][0])) {
+                            int temp = atoi(argv[i]);
+                            printf("%d\n", temp);
+                            if (temp >= 0) {
+                                breadth = temp;
+                                break;
+                            }
+                        }
+                        printf("'-b' has a wrong value '%s'. It must be an unsigned int\n", argv[i]);
+                        return close_dataset(dataset);
                     default:
                         printf("Option '-%c' is not available.\n", opt);
                             return close_dataset(dataset);
@@ -175,7 +189,7 @@ int main(int argc, char *argv[]) {
     fclose(dataset);
 
     Nerd *nerd =
-    nerd_constructor(TRAIN, delimiter, true, has_header, threshold, 3, 1, 1, promotion, demotion,
+    nerd_constructor(TRAIN, delimiter, true, has_header, threshold, breadth, 1, 1, promotion, demotion,
     use_back_chaining, true);
 
     nerd_start_learning(nerd);
