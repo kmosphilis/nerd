@@ -1,12 +1,30 @@
-const prudens = require('../prudens-js/prudens');
-const parsers = require('../prudens-js/parsers');
+const prudens = require('./prudens');
+const parsers = require('./parsers');
 const fs = require('fs');
 
-fs.readFile(".temp", (err, data) => {
+let filepath = ".temp";
+let constraints = "";
+
+switch (process.argv.length) {
+    case 4:
+        constraints = process.argv[3];
+    case 3:
+        filepath = process.argv[2];
+        break;
+    default:
+        break;
+}
+
+fs.readFile(filepath, (err, data) => {
     if (!err) {
         const passed_data = data.toString().split("\n");
         let kB = JSON.parse(passed_data[0]);
-        kB["constraints"] = parsers.parseConstraints("");
+        try {
+            let constraints_data = fs.readFileSync(constraints, 'utf-8').toString().trim();
+            kB["constraints"] = parsers.parseConstraints(constraints_data);
+        } catch (err) {
+            kB["constraints"] = new Map();
+        }
 
         const result = prudens.forwardChaining(kB, JSON.parse(passed_data[1])["context"]);
 
@@ -36,11 +54,11 @@ fs.readFile(".temp", (err, data) => {
             }
         }
 
-        fs.writeFile(".temp", Array.from(inferred.values()).join(" "), (err) => {
+        fs.writeFile(filepath, Array.from(inferred.values()).join(" "), (err) => {
             if (err) throw err;
             return;
         });
     } else {
-        console.log("File not found.");
+        console.log(`File '${filepath}' not found.`);
     }
 });

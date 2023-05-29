@@ -6,6 +6,19 @@
 #include "sensor.h"
 #include "knowledge_base.h"
 
+// Optional parameter to be defined in the file with the main function if file will not be runned
+// under the src/ directory.
+extern char *nerd_current_directory;
+
+// Optional parameter to be defined in the file with the main function to save the temporary file
+// used for Prudens JS and the output of Nerd at each epoch.
+extern char *test_directory;
+
+// Optional parameter to be defined in the file with the main function which should contain the path
+// of a file with defined incompatibility rules (Generalised Conflict Semantic rules) as defined
+// under Prudens JS.
+extern char *constraints_file;
+
 typedef struct Nerd {
     Sensor *sensor;
     KnowledgeBase *knowledge_base;

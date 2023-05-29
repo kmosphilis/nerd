@@ -7,6 +7,19 @@
 #include "nerd.h"
 #include "metrics.h"
 
+#define SECONDS_TO_MILLISECONDS 1e3
+#define NANOSECONDS_TO_MILLISECONDS 1e-6
+
+char *nerd_current_directory = NULL;
+char *test_directory = NULL;
+char *constraints_file = NULL;
+
+static const char * const _temp_filename = ".temp";
+static const char * const _node = "node ";
+static const char * const _prudens = "../prudens-js/prudens-infer.js";
+static char *temp_filename = ".temp";
+static char *prudens = "node ../prudens-js/prudens-infer.js";
+
 /**
  * @brief Constructs a Nerd structure (object).
  *
@@ -228,7 +241,6 @@ void nerd_destructor(Nerd ** const nerd) {
 */
 void prudensjs_inference(const KnowledgeBase * const knowledge_base,
 const Scene * const restrict observation, Scene ** const inferred) {
-    const char * const temp_filename = ".temp";
     char *knowledge_base_prudensjs = knowledge_base_to_prudensjs(knowledge_base),
     *context_prudensjs = context_to_prudensjs(observation);
     if (!(knowledge_base_prudensjs && context_prudensjs)) {
@@ -241,7 +253,7 @@ const Scene * const restrict observation, Scene ** const inferred) {
     free(knowledge_base_prudensjs);
     free(context_prudensjs);
     fclose(file);
-    system("node prudens-infer.js");
+    system(prudens);
 
     file = fopen(temp_filename, "rb");
     if (feof(file)) {
@@ -271,12 +283,40 @@ void nerd_start_learning(Nerd * const nerd) {
         return;
     }
 
+    if (test_directory != NULL) {
+        temp_filename = (char *) malloc((strlen(test_directory) + strlen(_temp_filename) + 1)
+        * sizeof(char));
+        sprintf(temp_filename, "%s%s", test_directory, _temp_filename);
+    } else {
+        temp_filename = strdup(_temp_filename);
+    }
+
+    if (nerd_current_directory != NULL) {
+        const size_t nerd_current_directory_size = strlen(nerd_current_directory),
+        prudens_size = nerd_current_directory_size + strlen(_node) + strlen(_prudens) - 3 + 1
+        + strlen(temp_filename) + 1 + strlen(constraints_file) + 1;
+        prudens = (char *) malloc(prudens_size * sizeof(char));
+        size_t allocated = 0;
+
+        memset(prudens, '\0', prudens_size);
+        memcpy(prudens, _node, strlen(_node));
+        memcpy(prudens + (allocated += strlen(_node)), nerd_current_directory, nerd_current_directory_size);
+        memcpy(prudens + (allocated += nerd_current_directory_size), _prudens + 3, strlen(_prudens) - 3);
+        memcpy(prudens + (allocated += strlen(_prudens) - 3), " ", 1);
+        memcpy(prudens + (++allocated), temp_filename, strlen(temp_filename));
+        memcpy(prudens + (allocated += strlen(temp_filename)), " ", 1);
+        memcpy(prudens + (++allocated), constraints_file, strlen(constraints_file));
+    } else {
+        prudens = strdup(_prudens);
+    }
+
     Scene *observation = NULL, *inferred = NULL, *uncovered = NULL;
     size_t epoch, iteration;
     const size_t total_observations = sensor_get_total_observations(nerd->sensor);
 
-    struct timespec start, end, prudens_start_time, prudens_end_time;
-    double prudens_total_time = 0;
+    struct timespec start, end, prudens_start_time, prudens_end_time, start_convert, end_convert;
+    size_t prudens_total_time = 0, convert_total = 0;
+    char *nerd_at_epoch = NULL;
     timespec_get(&start, TIME_UTC);
 
     for (epoch = 0; epoch < nerd->epochs; ++epoch) {
@@ -289,8 +329,9 @@ void nerd_start_learning(Nerd * const nerd) {
             prudensjs_inference(nerd->knowledge_base, observation, &inferred);
             timespec_get(&prudens_end_time, TIME_UTC);
 
-            prudens_total_time += (prudens_end_time.tv_sec - prudens_start_time.tv_sec) * 1e3 +
-            (prudens_end_time.tv_nsec - prudens_start_time.tv_nsec) / 1e6;
+            prudens_total_time +=
+            (prudens_end_time.tv_sec - prudens_start_time.tv_sec) * SECONDS_TO_MILLISECONDS
+            + (prudens_end_time.tv_nsec - prudens_start_time.tv_nsec) * NANOSECONDS_TO_MILLISECONDS;
 
             knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred,
             nerd->breadth, 5);
@@ -304,13 +345,31 @@ void nerd_start_learning(Nerd * const nerd) {
             scene_destructor(&observation);
             scene_destructor(&inferred);
         }
+
+        timespec_get(&start_convert, TIME_UTC);
+        if (test_directory) {
+            nerd_at_epoch = (char *) malloc((strlen(test_directory) + strlen("epoch") +
+            snprintf(NULL, 0, "%zu", epoch) + 1) * sizeof(char));
+            sprintf(nerd_at_epoch, "%sepoch%zu", test_directory, epoch + 1);
+            nerd_to_file(nerd, nerd_at_epoch);
+            free(nerd_at_epoch);
+        }
+        timespec_get(&end_convert, TIME_UTC);
+        convert_total += (end_convert.tv_sec - start_convert.tv_sec) * SECONDS_TO_MILLISECONDS
+        + (end_convert.tv_nsec - start_convert.tv_nsec) * NANOSECONDS_TO_MILLISECONDS;
     }
 
     timespec_get(&end, TIME_UTC);
-    double total_time = (end.tv_sec - start.tv_sec) * 1e3 + (end.tv_nsec - start.tv_nsec) / 1e6;
-    printf("Time spend on nerd: %f ms\n", total_time - prudens_total_time);
-    printf("Time spent on prudens: %f ms\n", prudens_total_time);
-    printf("Total time: %f ms\n", total_time);
+    size_t total_time = ((end.tv_sec - start.tv_sec) * SECONDS_TO_MILLISECONDS
+    + (end.tv_nsec - start.tv_nsec) * NANOSECONDS_TO_MILLISECONDS) - convert_total;
+    printf("Time spend on nerd: %zu ms\n", total_time - prudens_total_time);
+    printf("Time spent on prudens: %zu ms\n", prudens_total_time);
+    printf("Total time: %zu ms\n", total_time);
+
+    free(temp_filename);
+    free(prudens);
+    temp_filename = _temp_filename;
+    prudens = _prudens;
 }
 
 /**
