@@ -45,7 +45,7 @@ float * const overall_success) {
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param file_to_evaluate The filepath containing the evaluation samples.
- * @param ratio
+ * @param ratio A float variable which indicates the ratio of the Literals to be hidden.
  * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
  * has hidden.
  * @param total_recovered A size_t pointer to save the total number of correctly recovered hidden
@@ -55,8 +55,9 @@ float * const overall_success) {
  * @param total_not_recovered A size_t pointer to save the total number of hidden Literals that were
  * not recovered. If NULL, the number will be discarded.
  *
- * @return 0 if the function was executed successfully, or -1 if one of the given parameters was
- * NULL or the ratio is not in the range (0, 1).
+ * @return 0 if the function was executed successfully, -1 if one of the given parameters was NULL
+ * or the ratio was not in the range (0, 1), or -2 if a non existant path was given to
+ * file_to_evaluate.
 */
 int evaluate_random_literals(const Nerd * const nerd, const char * const file_to_evaluate,
 const float ratio, size_t * const restrict total_hidden, size_t * const restrict total_recovered,
@@ -66,7 +67,6 @@ size_t * const restrict total_incorrectly_recovered, size_t * const restrict tot
         return -1;
     }
 
-    // TODO add a sensor check if NULL;
     Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
     nerd->sensor->delimiter, 0, nerd->sensor->header != NULL);
 
@@ -79,7 +79,11 @@ size_t * const restrict total_incorrectly_recovered, size_t * const restrict tot
     Literal *removed_literal = NULL;
     Scene *removed_literals = NULL, *observation = NULL, *inference = NULL;
     pcg32_random_t seed;
-    pcg32_srandom_r(&seed, time(NULL), 314159U);
+    if (global_seed) {
+        seed = *global_seed;
+    } else {
+        pcg32_srandom_r(&seed, time(NULL), 314159U);
+    }
 
     int equals_result;
     size_t total_hidden_ = 0, total_recovered_ = 0, total_incorrectly_recovered_ = 0,
@@ -115,7 +119,7 @@ size_t * const restrict total_incorrectly_recovered, size_t * const restrict tot
             size_t header_size = 0;
             char *expected_header = NULL;
             if (evaluation_sensor->header) {
-                header_size = strchr(removed_literal->atom, '_') - removed_literal->atom + 1;
+                header_size = strchr(removed_literal->atom, '_') - removed_literal->atom + 2;
                 expected_header = (char *) malloc(header_size * sizeof(char));
                 strncpy(expected_header, removed_literal->atom, header_size - 1);
                 expected_header[header_size - 1] = '\0';
@@ -128,8 +132,8 @@ size_t * const restrict total_incorrectly_recovered, size_t * const restrict tot
                     goto next_literal;
                 } else if (equals_result == 0) {
                     if ((literal_opposed(removed_literal, inference->literals[k]) == 1) ||
-                    ((evaluation_sensor->header) &&
-                    strstr(inference->literals[k]->atom, expected_header))) {
+                    (evaluation_sensor->header &&
+                    (strstr(inference->literals[k]->atom, expected_header) && !removed_literal->sign))) {
                         ++total_incorrectly_recovered_;
                         goto next_literal;
                     }
@@ -175,7 +179,7 @@ next_literal:
  * over the given samples.
  * @param abstain_ratio A pointer to a float variable to save the abstain ratio of the KnowledgeBase
  * over the given samples. Abstain means that with the given KnowledgeBase a label cannot be
- * predicted, either correct or incorrect. If NULL is given, this ration will not be saved.
+ * predicted, either correct or incorrect. If NULL is given, this ratio will not be saved.
  *
  * @return 0 if the evaluation ended successfully, -1 if it one of the parameters was NULL (expect
  * abstain_ratio), > 0 which will be the index of the first observation that does not have a

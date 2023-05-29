@@ -217,9 +217,16 @@ end_literal_loop:
                 if (initial_observation){
                     scene_copy(initial_observation, *output);
                 }
+
                 pcg32_random_t seed;
-                pcg32_srandom_r(&seed, time(NULL), 314159U);
-                size_t number_of_literals = (*output)->size - (pcg32_random_r(&seed) % (*output)->size);
+                if (global_seed) {
+                    seed = *global_seed;
+                } else {
+                    pcg32_srandom_r(&seed, time(NULL), 0U);
+                }
+
+                size_t number_of_literals = (*output)->size -
+                (pcg32_random_r(&seed) % (*output)->size);
 
                 if (number_of_literals == (*output)->size) {
                     return;

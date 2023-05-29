@@ -6,6 +6,8 @@
 #include "literal.h"
 #include "nerd_utils.h"
 
+pcg32_random_t *global_seed = NULL;
+
 /**
  * @brief Constructs a Literal. The atom's characters will be converted to their lowercase form.
  *

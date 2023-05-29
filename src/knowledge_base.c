@@ -112,7 +112,11 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
         scene_union(observed, inferred, &combined);
 
         pcg32_random_t seed;
-        pcg32_srandom_r(&seed, time(NULL), 42u);
+        if (global_seed) {
+            seed = *global_seed;
+        } else {
+            pcg32_srandom_r(&seed, time(NULL), 42u);
+        }
 
         unsigned int i, j, body_size,
         rules_to_create = (pcg32_random_r(&seed) % max_number_of_rules) + 1;
