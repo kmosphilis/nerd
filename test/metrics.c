@@ -14,21 +14,54 @@ START_TEST(all_literals_evaluation_test) {
     *l3 = literal_constructor("bird", true);
     Rule *r1 = rule_constructor(1, &l1, &l2, 15.0, false),
     *r2 = rule_constructor(1, &l3, &l1, 16.0, false);
-    Context *observation;
-    sensor_get_next_scene(nerd->sensor, &observation, false, NULL);
 
-    float overall_success, old_overall;
-    evaluate_all_literals(nerd, observation, &overall_success);
-    ck_assert_double_eq(overall_success, 0);
+    FILE *file = fopen(DATASET1, "r");
+    if (!file) {
+        ck_abort_msg("%s does not exist.", DATASET1);
+    }
+    char buffer[BUFFER_SIZE];
+    size_t total_read_attributes = 0;
+    while (fscanf(file, "%s", buffer) != EOF) {
+        ++total_read_attributes;
+    }
+    fclose(file);
+
+    size_t total_hidden, total_recovered, total_incorrectly_recovered, total_not_recovered;
+    ck_assert_int_eq(evaluate_all_literals(nerd, DATASET1, &total_hidden, &total_recovered,
+    &total_incorrectly_recovered, &total_not_recovered), 0);
+    ck_assert_int_ne(total_hidden, 0);
+    ck_assert_int_eq(total_hidden, total_read_attributes);
+    ck_assert_int_eq(total_recovered, 0);
+    ck_assert_int_eq(total_incorrectly_recovered, 0);
+    ck_assert_int_eq(total_not_recovered, total_hidden);
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    old_overall = overall_success;
-    evaluate_all_literals(nerd, observation, &overall_success);
-    ck_assert_double_ne(overall_success, old_overall);
+    ck_assert_int_eq(evaluate_all_literals(nerd, DATASET1, &total_hidden, &total_recovered,
+    &total_incorrectly_recovered, &total_not_recovered), 0);
+    ck_assert_int_eq(total_hidden, total_read_attributes);
+    ck_assert_int_gt(total_recovered, 0);
+    ck_assert_int_ge(total_incorrectly_recovered, 0);
+    ck_assert_int_lt(total_not_recovered, total_hidden);
 
-    context_destructor(&observation);
+    size_t old_hidden = total_hidden, old_recovered = total_recovered;
+    ck_assert_int_eq(evaluate_all_literals(nerd, DATASET1, &total_hidden, &total_recovered, NULL,
+    NULL), 0);
+    ck_assert_int_eq(old_hidden, total_hidden);
+    ck_assert_int_eq(old_recovered, total_recovered);
+
+    ck_assert_int_eq(evaluate_all_literals(NULL, DATASET1, &total_hidden, &total_recovered, NULL,
+    NULL), -1);
+    ck_assert_int_eq(evaluate_all_literals(nerd, NULL, &total_hidden, &total_recovered, NULL, NULL),
+    -1);
+    ck_assert_int_eq(evaluate_all_literals(nerd, "path-does-not-exist", &total_hidden,
+    &total_recovered, NULL, NULL), -2);
+    ck_assert_int_eq(evaluate_all_literals(nerd, DATASET1, NULL, &total_recovered, NULL, NULL), -1);
+    ck_assert_int_eq(evaluate_all_literals(nerd, DATASET1, &total_hidden, NULL, NULL, NULL), -1);
+
     nerd_destructor(&nerd);
+    ck_assert_int_eq(evaluate_all_literals(nerd, DATASET1, &total_hidden, &total_recovered, NULL,
+    NULL), -1);
 }
 END_TEST
 
@@ -68,6 +101,8 @@ START_TEST(random_literals_evaluation_test) {
     NULL, NULL), -1);
     ck_assert_int_eq(evaluate_random_literals(nerd, NULL, 0.3, &total_hidden, &total_recovered,
     NULL, NULL), -1);
+    ck_assert_int_eq(evaluate_random_literals(nerd, "path-does-not-exit", 0.3, &total_hidden,
+    &total_recovered, NULL, NULL), -2);
     ck_assert_int_eq(evaluate_random_literals(nerd, DATASET2, 0, &total_hidden, &total_recovered,
     NULL, NULL), -1);
     ck_assert_int_eq(evaluate_random_literals(nerd, DATASET2, 1.01, &total_hidden, &total_recovered,

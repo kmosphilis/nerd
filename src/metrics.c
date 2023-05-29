@@ -12,31 +12,99 @@
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param scene The scene to evaluate the learnt KnowledgeBase with.
- * @param overall_success A float pointer to save the overall success of KnowledbeBase to predict
- * the observation. It can vary from [0, 1].
+ * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
+ * has hidden.
+ * @param total_recovered A size_t pointer to save the total number of correctly recovered hidden
+ * Literals.
+ * @param total_incorrectly_recovered A size_t pointer to save the total number of incorrectly
+ * recovered hidden Literals (opposed Literals). If NULL, the number will ne discarded.
+ * @param total_not_recovered A size_t pointer to save the total number of hidden Literals that were
+ * not recovered. If NULL, the number will be discarded.
+ *
+ * @return 0 if the function was executed successfully, -1 if one of the given parameters was NULL,
+ * -2 if a non existant path was given to file_to_evaluate, or -3 if an error has occurred.
 */
-void evaluate_all_literals(const Nerd * const nerd, const Scene * const observation,
-float * const overall_success) {
-    if (!(observation && nerd)) {
-        return;
-    }
-    Scene *test_scene, *inferred;
-    float success = 0;
-
-    unsigned int i;
-    for (i = 0; i < observation->size; ++i) {
-        scene_copy(&test_scene, observation);
-        scene_remove_literal(test_scene, i, NULL);
-
-        prudensjs_inference(nerd->knowledge_base, test_scene, &inferred);
-
-        success += scene_number_of_similar_literals(inferred, observation) /
-        (float) observation->size;
-        scene_destructor(&test_scene);
-        scene_destructor(&inferred);
+int evaluate_all_literals(const Nerd * const nerd, const char * const file_to_evaluate,
+size_t * const restrict total_hidden, size_t * const restrict total_recovered,
+size_t * const restrict total_incorrectly_recovered, size_t * const restrict total_not_recovered) {
+    if (!(nerd && file_to_evaluate && total_hidden && total_recovered)) {
+        return -1;
     }
 
-    *overall_success = success / observation->size;
+    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
+    nerd->sensor->delimiter, 0, nerd->sensor->header != NULL);
+
+    if (!evaluation_sensor) {
+        return -2;
+    }
+
+    const size_t total_observations = sensor_get_total_observations(evaluation_sensor);
+
+    Literal *removed_literal;
+    Scene *observation, *inference;
+
+    char *expected_header = NULL;
+    size_t j, total_hidden_ = 0, total_recovered_ = 0, total_incorrectly_recovered_ = 0,
+    total_not_recovered_ = 0;
+    unsigned int i, k;
+    for (j = 0; j < total_observations; ++j) {
+        sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
+
+        total_hidden_ += observation->size;
+        for (i = 0; i < observation->size; ++i) {
+            scene_remove_literal(observation, 0, &removed_literal);
+
+            prudensjs_inference(nerd->knowledge_base, observation, &inference);
+
+            if (evaluation_sensor->header) {
+                expected_header = (char *) malloc((strstr(removed_literal->atom, "_")
+                - removed_literal->atom + 2) * sizeof(char));
+            }
+            for (k = 0; k < inference->size; ++k) {
+                switch (literal_equals(removed_literal, inference->literals[k])) {
+                    case 1:
+                        ++total_recovered_;
+                        goto finished;
+                    case 0:
+                        if ((literal_opposed(removed_literal, inference->literals[k]) == 1) ||
+                        (expected_header &&
+                        (strstr(removed_literal->atom, expected_header) && !removed_literal->sign))) {
+                            ++total_incorrectly_recovered_;
+                            goto finished;
+                        }
+                        break;
+                    default:
+                        sensor_destructor(&evaluation_sensor);
+                        scene_destructor(&observation);
+                        scene_destructor(&inference);
+                        free(expected_header);
+                        return -3;
+                }
+            }
+            ++total_not_recovered_;
+finished:
+            free(expected_header);
+            scene_destructor(&inference);
+            scene_add_literal(observation, &removed_literal);
+        }
+
+        scene_destructor(&observation);
+    }
+
+    *total_hidden = total_hidden_;
+    *total_recovered = total_recovered_;
+
+    if (total_incorrectly_recovered) {
+        *total_incorrectly_recovered = total_incorrectly_recovered_;
+    }
+
+    if (total_not_recovered) {
+        *total_not_recovered = total_not_recovered_;
+    }
+
+    sensor_destructor(&evaluation_sensor);
+
+    return 0;
 }
 
 /**

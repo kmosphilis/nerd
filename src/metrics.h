@@ -6,8 +6,9 @@
 #include "scene.h"
 #include "context.h"
 
-void evaluate_all_literals(const Nerd * const nerd, const Scene * const observation,
-float * const overall_success);
+int evaluate_all_literals(const Nerd * const nerd, const char * const file_to_evaluate,
+size_t * const restrict total_hidden, size_t * const restrict total_recovered,
+size_t * const restrict total_incorrectly_recovered, size_t * const restrict total_not_recovered);
 int evaluate_random_literals(const Nerd * const nerd, const char * const file_to_evaluate,
 const float ratio, size_t * const restrict total_hidden, size_t * const restrict total_recovered,
 size_t * const restrict total_incorrectly_recovered, size_t * const restrict total_not_recovered);
