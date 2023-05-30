@@ -27,10 +27,6 @@ int close_dataset(FILE *dataset) {
 }
 
 int main(int argc, char *argv[]) {
-    size_t current_directory_size = strstr(argv[0], "bin/main") - argv[0];
-    nerd_current_directory = (char *) malloc((current_directory_size + 1) * sizeof(char));
-    memcpy(nerd_current_directory, argv[0], current_directory_size);
-
     if (argc < 17) {
         printf("Parameters required:\n-f <filepath> The path of the file,\n-i <filepath> The path "
         "of a file containing incompatibility rules in the form of prudens-js,\n-h <bool> Does the "
@@ -38,16 +34,20 @@ int main(int argc, char *argv[]) {
         "<float> > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be"
         " greater than 0,\n-c <bool> Should it use back-chaining demotion or not? and\n-b <unsigned"
         " int> Maximum number of literals per rule. Must be positive. If more that the maximum "
-        "number or 0 are given, it will use the maximum value (max - 1).\nBy adding an additional "
+        "number or 0 are given, it will use the maximum value (max - 1).\n(Optional) -e <unsigned "
+        "long> Number of epochs that Nerd should train for. Must be greater than 0. By default the "
+        "epochs are set to 1.\n(Optional) -o <bool> Should the file be trained using partial "
+        "observations? By default the value is set to 'true'.\n(Optional) By adding an additional "
         "number at the end of these parameters, you can change the seed of the random algorithm\n");
         return EXIT_FAILURE;
     }
 
-    bool has_header = false, use_back_chaining = false;
+    bool has_header = false, use_back_chaining = false, partial_observation = true;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
     unsigned int i, breadth = 0;
+    size_t epochs = 1;
     for (i = 1;
     i < (((unsigned int) argc % 2 == 0) ? (unsigned int) (argc - 1) : (unsigned int) argc); ++i) {
         if (i % 2 == 1) {
@@ -86,24 +86,24 @@ int main(int argc, char *argv[]) {
                     case 't':
                         threshold = atof(argv[++i]);
                         if (threshold <= 0) {
-                            printf("'-t' has a wrong value '%s'. It must be greater than 0.0\n",
-                            argv[i]);
+                            printf("'-t' has a wrong value '%s'. It must be a float greater than "
+                            "0.0\n", argv[i]);
                             return close_dataset(dataset);
                         }
                         break;
                     case 'p':
                         promotion = atof(argv[++i]);
                         if (promotion <= 0) {
-                            printf("'-p' has a wrong value '%s'. It must be greater than 0.0\n",
-                            argv[i]);
+                            printf("'-p' has a wrong value '%s'. It must be a float greater than "
+                            "0.0\n", argv[i]);
                             return close_dataset(dataset);
                         }
                         break;
                     case 'd':
                         demotion = atof(argv[++i]);
                         if (demotion <= 0) {
-                            printf("'-d' has a wrong value '%s'. It must be greater than 0.0\n",
-                            argv[i]);
+                            printf("'-d' has a wrong value '%s'. It must be a float greater than "
+                            "0.0\n", argv[i]);
                             return close_dataset(dataset);
                         }
                         break;
@@ -119,15 +119,34 @@ int main(int argc, char *argv[]) {
                         }
                         break;
                     case 'b':
-                        if (isdigit(argv[++i][0])) {
-                            int temp = atoi(argv[i]);
-                            if (temp >= 0) {
-                                breadth = temp;
+                        if ((isdigit(argv[++i][0])) || (isdigit(argv[i][1]))) {
+                            breadth = atoi(argv[i]);
+                            break;
+                        }
+                        printf("'-b' has a wrong value '%s'. It must be an unsigned int\n",
+                        argv[i]);
+                        return close_dataset(dataset);
+                    case 'e':
+                        if ((isdigit(argv[++i][0])) || (isdigit(argv[i][1]))) {
+                            epochs = (size_t) atol(argv[i]);
+                            if (epochs > 0) {
                                 break;
                             }
                         }
-                        printf("'-b' has a wrong value '%s'. It must be an unsigned int\n", argv[i]);
+                        printf("'-e' has a wrong value '%s'. It must be an unsigned long greater "
+                        "than 0\n", argv[i]);
                         return close_dataset(dataset);
+                    case 'o':
+                        if (strcmp(argv[++i], "true") == 0) {
+                            partial_observation = true;
+                        } else if (strcmp(argv[i], "false") == 0) {
+                            use_back_chaining = false;
+                        } else {
+                            printf("'-o' has a wrong value '%s'. It must be a boolean value, 'true'"
+                            " or 'false'\n", argv[i]);
+                            return close_dataset(dataset);
+                        }
+                        break;
                     default:
                         printf("Option '-%c' is not available.\n", opt);
                             return close_dataset(dataset);
@@ -139,15 +158,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    size_t current_directory_size = strstr(argv[0], "bin/main") - argv[0];
+    nerd_current_directory = (char *) malloc((current_directory_size + 1) * sizeof(char));
+    memcpy(nerd_current_directory, argv[0], current_directory_size);
+
     pcg32_random_t seed;
 
     pcg32_srandom_r(&seed, time(NULL), 314159U);
 
     char *directory = NULL;
-    if (argc == 18) {
-        if (isdigit(argv[17][0])) {
+    if ((argc >= 18) && (argc % 2 == 0)) {
+        if (isdigit(argv[argc - 1][0])) {
             struct timespec current_time;
-            int given_number = atoi(argv[17]);
+            int given_number = atoi(argv[argc - 1]);
             size_t time_milliseconds = 0, random_seed = 314159U + given_number;
             char *file_info;
 
@@ -252,8 +275,8 @@ int main(int argc, char *argv[]) {
     fclose(dataset);
 
     Nerd *nerd =
-    nerd_constructor(train_path, delimiter, true, has_header, threshold, breadth, 1, 1, promotion,
-    demotion, use_back_chaining, true);
+    nerd_constructor(train_path, delimiter, true, has_header, threshold, breadth, 1, epochs,
+    promotion, demotion, use_back_chaining, partial_observation);
 
     nerd_start_learning(nerd);
 
