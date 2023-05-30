@@ -77,8 +77,8 @@ const float demotion_weight, const bool use_backward_chaining, const bool partia
  * @param filepath The path to the file that contains previous a Nerd structure parameters (except
  * the number of epochs) and the learnt KnowledgeBase.
  * @param epochs The number of epochs the algorithm should learn for.
- * @param use_backward_chaining A boolean value which indicates whether the hypergraph should demoted
- * rules using the backward chaining algorithm or not.
+ * @param use_backward_chaining A boolean value which indicates whether the hypergraph should
+ * demoted rules using the backward chaining algorithm or not.
  *
  * @return A new Nerd object * from the given filepath. Use nerd_destructor to deallocate.
 */
@@ -300,8 +300,10 @@ void nerd_start_learning(Nerd * const nerd) {
 
         memset(prudens, '\0', prudens_size);
         memcpy(prudens, _node, strlen(_node));
-        memcpy(prudens + (allocated += strlen(_node)), nerd_current_directory, nerd_current_directory_size);
-        memcpy(prudens + (allocated += nerd_current_directory_size), _prudens + 3, strlen(_prudens) - 3);
+        memcpy(prudens + (allocated += strlen(_node)), nerd_current_directory,
+        nerd_current_directory_size);
+        memcpy(prudens + (allocated += nerd_current_directory_size), _prudens + 3,
+        strlen(_prudens) - 3);
         memcpy(prudens + (allocated += strlen(_prudens) - 3), " ", 1);
         memcpy(prudens + (++allocated), temp_filename, strlen(temp_filename));
         memcpy(prudens + (allocated += strlen(temp_filename)), " ", 1);
@@ -349,10 +351,11 @@ void nerd_start_learning(Nerd * const nerd) {
         timespec_get(&start_convert, TIME_UTC);
         if (test_directory) {
             nerd_at_epoch = (char *) malloc((strlen(test_directory) + strlen("epoch") +
-            snprintf(NULL, 0, "%zu", epoch) + 1) * sizeof(char));
+            snprintf(NULL, 0, "%zu", epoch + 1) + 1) * sizeof(char));
             sprintf(nerd_at_epoch, "%sepoch%zu", test_directory, epoch + 1);
             nerd_to_file(nerd, nerd_at_epoch);
             free(nerd_at_epoch);
+            nerd_at_epoch = NULL;
         }
         timespec_get(&end_convert, TIME_UTC);
         convert_total += (end_convert.tv_sec - start_convert.tv_sec) * SECONDS_TO_MILLISECONDS
@@ -373,8 +376,8 @@ void nerd_start_learning(Nerd * const nerd) {
 }
 
 /**
- * @brief Saves/Converts the Nerd structure to a file which all the parameters that were used and the learnt
- * KnowledgeBase are saved, except the number of epochs.
+ * @brief Saves/Converts the Nerd structure to a file which all the parameters that were used and
+ * the learnt KnowledgeBase are saved, except the number of epochs.
  *
  * @param nerd The Nerd structure to be saved/converted to a file.
  * @param filepath The path and the name of the file which the Nerd structure will be saved to.
