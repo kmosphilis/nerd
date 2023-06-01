@@ -3,8 +3,8 @@
 #include "../../src/rule_queue.h"
 #include "rule.h"
 
-#ifndef RULE_QUEUE_HELPER_H
-#define RULE_QUEUE_HELPER_H
+#ifndef RULE_QUEUE_TEST_HELPER_H
+#define RULE_QUEUE_TEST_HELPER_H
 
 #define RULES_TO_CREATE 3
 

@@ -2,8 +2,8 @@
 
 #include "../../src/scene.h"
 
-#ifndef SCENE_HELPER_H
-#define SCENE_HELPER_H
+#ifndef SCENE_TEST_HELPER_H
+#define SCENE_TEST_HELPER_H
 
 /**
  * @brief Check two Scenes to determine if they are equal (X == Y).

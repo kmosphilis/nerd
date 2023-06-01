@@ -4,8 +4,8 @@
 #include "../../src/rule_hypergraph.h"
 #include "rule_queue.h"
 
-#ifndef KNOWLEDGE_BASE_HELPER_H
-#define KNOWLEDGE_BASE_HELPER_H
+#ifndef KNOWLEDGE_BASE_TEST_HELPER_H
+#define KNOWLEDGE_BASE_TEST_HELPER_H
 
 /**
  * @brief Check two KnowledgeBases to determine if they are equal (X == Y).

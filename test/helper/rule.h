@@ -4,8 +4,8 @@
 #include "literal.h"
 #include "scene.h"
 
-#ifndef RULE_HELPER_H
-#define RULE_HELPER_H
+#ifndef RULE_TEST_HELPER_H
+#define RULE_TEST_HELPER_H
 
 /**
  * @brief Check two Rules to determine if they are equal (X == Y).
