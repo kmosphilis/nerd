@@ -11,6 +11,7 @@
  * accordingly.
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
+ * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
  * @param scene The scene to evaluate the learnt KnowledgeBase with.
  * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
  * has hidden.
@@ -24,10 +25,11 @@
  * @return 0 if the function was executed successfully, -1 if one of the given parameters was NULL,
  * -2 if a non existant path was given to file_to_evaluate, or -3 if an error has occurred.
 */
-int evaluate_all_literals(const Nerd * const nerd, const char * const file_to_evaluate,
-size_t * const restrict total_hidden, size_t * const restrict total_recovered,
-size_t * const restrict total_incorrectly_recovered, size_t * const restrict total_not_recovered) {
-    if (!(nerd && file_to_evaluate && total_hidden && total_recovered)) {
+int evaluate_all_literals(const Nerd * const nerd, const PrudensSettings_ptr settings,
+const char * const file_to_evaluate, size_t * const restrict total_hidden,
+size_t * const restrict total_recovered, size_t * const restrict total_incorrectly_recovered,
+size_t * const restrict total_not_recovered) {
+    if (!(nerd && settings && file_to_evaluate && total_hidden && total_recovered)) {
         return -1;
     }
 
@@ -54,7 +56,7 @@ size_t * const restrict total_incorrectly_recovered, size_t * const restrict tot
         for (i = 0; i < observation->size; ++i) {
             scene_remove_literal(observation, 0, &removed_literal);
 
-            prudensjs_inference(nerd->knowledge_base, observation, &inference);
+            prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
 
             if (evaluation_sensor->header) {
                 expected_header = (char *) malloc((strstr(removed_literal->atom, "_")
@@ -112,6 +114,7 @@ finished:
  * that will be hidden (removed) by the algorithm.
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
+ * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
  * @param file_to_evaluate The filepath containing the evaluation samples.
  * @param ratio A float variable which indicates the ratio of the Literals to be hidden.
  * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
@@ -127,10 +130,12 @@ finished:
  * or the ratio was not in the range (0, 1), or -2 if a non existant path was given to
  * file_to_evaluate.
 */
-int evaluate_random_literals(const Nerd * const nerd, const char * const file_to_evaluate,
-const float ratio, size_t * const restrict total_hidden, size_t * const restrict total_recovered,
-size_t * const restrict total_incorrectly_recovered, size_t * const restrict total_not_recovered) {
-    if (!(nerd && file_to_evaluate && total_hidden && total_recovered && (ratio > 0) && (ratio < 1)
+int evaluate_random_literals(const Nerd * const nerd, const PrudensSettings_ptr settings,
+const char * const file_to_evaluate, const float ratio, size_t * const restrict total_hidden,
+size_t * const restrict total_recovered, size_t * const restrict total_incorrectly_recovered,
+size_t * const restrict total_not_recovered) {
+    if (!(nerd && file_to_evaluate && settings && total_hidden && total_recovered
+    && (ratio > 0) && (ratio < 1)
     )) {
         return -1;
     }
@@ -178,7 +183,7 @@ size_t * const restrict total_incorrectly_recovered, size_t * const restrict tot
         free(possible_indices);
         possible_indices = NULL;
 
-        prudensjs_inference(nerd->knowledge_base, observation, &inference);
+        prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
 
         total_hidden_ += removed_literals->size;
 
@@ -241,6 +246,7 @@ next_literal:
  * or not.
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
+ * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
  * @param file_to_evaluate The filepath containing the evaluation samples.
  * @param literals_to_evaluate The Context containing all the Literals that act a labels.
  * @param accuracy A pointer to a float variable to save the overall accuracy of the KnowledgeBase
@@ -253,10 +259,10 @@ next_literal:
  * abstain_ratio), > 0 which will be the index of the first observation that does not have a
  * provided label (index calculated from the given file).
 */
-int evaluate_one_specific_literal(const Nerd * const nerd, const char * const file_to_evaluate,
-const Context * const literals_to_evaluate, float * const restrict accuracy,
-float * const restrict abstain_ratio) {
-    if (!(nerd && file_to_evaluate && literals_to_evaluate && accuracy)) {
+int evaluate_one_specific_literal(const Nerd * const nerd, const PrudensSettings_ptr settings,
+const char * const file_to_evaluate, const Context * const literals_to_evaluate,
+float * const restrict accuracy, float * const restrict abstain_ratio) {
+    if (!(nerd && settings && file_to_evaluate && literals_to_evaluate && accuracy)) {
         return -1;
     }
 
@@ -292,7 +298,7 @@ float * const restrict abstain_ratio) {
             return j + 1;
         }
 
-        prudensjs_inference(nerd->knowledge_base, observation, &inference);
+        prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
 
         for (i = 0; i < literals_to_evaluate->size; ++i) {
             current_index = scene_literal_index(inference, literals_to_evaluate->literals[i]);

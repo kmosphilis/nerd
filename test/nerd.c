@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "../src/nerd.h"
+#include "../src/nerd_helper.h"
 #include "../src/rule_queue.h"
 #include "helper/knowledge_base.h"
 
@@ -10,6 +11,8 @@
 #define NUMBER_OF_ACTIVE 4
 #define NUMBER_OF_INACTIVE 3
 #define NUMBER_OF_ERROR_INPUTS 20
+
+PrudensSettings_ptr settings = NULL;
 
 /**
  * @brief Compares two files.
@@ -214,7 +217,7 @@ START_TEST(to_file_test) {
     ck_assert_int_eq(compare_files("../bin/nerd_output1.txt",
     "../test/data/nerd_expected_output.txt"), 0);
 
-    nerd_start_learning(nerd);
+    nerd_start_learning(nerd, settings, NULL);
     nerd_to_file(nerd, "../bin/nerd_output2.txt");
     ck_assert_int_eq(compare_files("../bin/nerd_output2.txt",
     "../test/data/nerd_expected_output.txt"), -1);
@@ -246,7 +249,8 @@ Suite *nerd_suite() {
     return suite;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    prudensjs_settings_constructor(&settings, argv[0], NULL, NULL);
     Suite *suite = nerd_suite();
     SRunner *s_runner;
 
@@ -256,6 +260,7 @@ int main() {
     srunner_run_all(s_runner, CK_ENV);
     int number_failed = srunner_ntests_failed(s_runner);
     srunner_free(s_runner);
+    prudensjs_settings_destructor(&settings);
 
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

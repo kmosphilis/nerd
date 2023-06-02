@@ -10,16 +10,6 @@
 #define SECONDS_TO_MILLISECONDS 1e3
 #define NANOSECONDS_TO_MILLISECONDS 1e-6
 
-char *nerd_current_directory = NULL;
-char *test_directory = NULL;
-char *constraints_file = NULL;
-
-static const char * const _temp_filename = ".temp";
-static const char * const _node = "node ";
-static const char * const _prudens = "../prudens-js/prudens-infer.js";
-static char *temp_filename = ".temp";
-static char *prudens = "node ../prudens-js/prudens-infer.js";
-
 /**
  * @brief Constructs a Nerd structure (object).
  *
@@ -231,85 +221,15 @@ void nerd_destructor(Nerd ** const nerd) {
 }
 
 /**
- * @brief Calls prudens-js using node-js. It create a file with a converted KnowledgeBase and a
- * Scene/Context, which holds an observation and saves the inferred Literals.
- *
- * @param knowledge_base The KnowledgeBase to be used in prudens-js.
- * @param observation A Scene/Context, which includes all the observed Literals.
- * @param inferred A Scene to save the inferred Literals by prudens-js. Deallocate using
- * scene_destructor.
-*/
-void prudensjs_inference(const KnowledgeBase * const knowledge_base,
-const Scene * const restrict observation, Scene ** const inferred) {
-    char *knowledge_base_prudensjs = knowledge_base_to_prudensjs(knowledge_base),
-    *context_prudensjs = context_to_prudensjs(observation);
-    if (!(knowledge_base_prudensjs && context_prudensjs)) {
-        return;
-    }
-
-    FILE *file = fopen(temp_filename, "wb");
-
-    fprintf(file, "%s\n%s", knowledge_base_prudensjs, context_prudensjs);
-    free(knowledge_base_prudensjs);
-    free(context_prudensjs);
-    fclose(file);
-    system(prudens);
-
-    file = fopen(temp_filename, "rb");
-    if (feof(file)) {
-        fclose(file);
-        return;
-    }
-
-    char buffer[BUFFER_SIZE];
-    *inferred = scene_constructor(true);
-    Literal *literal;
-    while (fscanf(file, "%s", buffer) != EOF) {
-        literal = literal_constructor_from_string(buffer);
-        scene_add_literal(*inferred, &literal);
-    }
-
-    fclose(file);
-    remove(temp_filename);
-}
-
-/**
  * @brief Initiates the learning.
  *
  * @param nerd The Nerd structure containing all the info for learn new Rules.
+ * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
  */
-void nerd_start_learning(Nerd * const nerd) {
+void nerd_start_learning(Nerd * const nerd, const PrudensSettings_ptr settings,
+const char * const test_directory) {
     if (!nerd) {
         return;
-    }
-
-    if (test_directory != NULL) {
-        temp_filename = (char *) malloc((strlen(test_directory) + strlen(_temp_filename) + 1)
-        * sizeof(char));
-        sprintf(temp_filename, "%s%s", test_directory, _temp_filename);
-    } else {
-        temp_filename = strdup(_temp_filename);
-    }
-
-    if (nerd_current_directory != NULL) {
-        const size_t nerd_current_directory_size = strlen(nerd_current_directory),
-        prudens_size = nerd_current_directory_size + strlen(_node) + strlen(_prudens) - 3 + 1
-        + strlen(temp_filename) + 1 + strlen(constraints_file) + 1;
-        prudens = (char *) malloc(prudens_size * sizeof(char));
-        size_t allocated = 0;
-
-        memset(prudens, '\0', prudens_size);
-        memcpy(prudens, _node, strlen(_node));
-        memcpy(prudens + (allocated += strlen(_node)), nerd_current_directory,
-        nerd_current_directory_size);
-        memcpy(prudens + (allocated += nerd_current_directory_size), _prudens + 3,
-        strlen(_prudens) - 3);
-        memcpy(prudens + (allocated += strlen(_prudens) - 3), " ", 1);
-        memcpy(prudens + (++allocated), temp_filename, strlen(temp_filename));
-        memcpy(prudens + (allocated += strlen(temp_filename)), " ", 1);
-        memcpy(prudens + (++allocated), constraints_file, strlen(constraints_file));
-    } else {
-        prudens = strdup(_prudens);
     }
 
     Scene *observation = NULL, *inferred = NULL, *uncovered = NULL;
@@ -328,7 +248,7 @@ void nerd_start_learning(Nerd * const nerd) {
 
             sensor_get_next_scene(nerd->sensor, &observation, nerd->partial_observation, NULL);
             timespec_get(&prudens_start_time, TIME_UTC);
-            prudensjs_inference(nerd->knowledge_base, observation, &inferred);
+            prudensjs_inference(settings, nerd->knowledge_base, observation, &inferred);
             timespec_get(&prudens_end_time, TIME_UTC);
 
             prudens_total_time +=
@@ -368,11 +288,6 @@ void nerd_start_learning(Nerd * const nerd) {
     printf("Time spend on nerd: %zu ms\n", total_time - prudens_total_time);
     printf("Time spent on prudens: %zu ms\n", prudens_total_time);
     printf("Total time: %zu ms\n", total_time);
-
-    free(temp_filename);
-    free(prudens);
-    temp_filename = _temp_filename;
-    prudens = _prudens;
 }
 
 /**
