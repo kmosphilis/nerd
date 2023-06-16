@@ -616,7 +616,7 @@ finished:
     scene_destructor(&observed_and_inferred_no_opposed);
 }
 
-#if (RULE_HYPERGRAPH_TEST_FUNCTION == 1) || (RULE_HYPERGRAPH_TEST == 1)
+#if (RULE_HYPERGRAPH_TEST_FUNCTIONS == 1) || (RULE_HYPERGRAPH_TEST == 1)
 
 #include <check.h>
 
