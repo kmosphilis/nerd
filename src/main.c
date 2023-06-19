@@ -16,6 +16,7 @@
 
 #define TRAIN ".train_set"
 #define TEST ".test_set"
+#define INFO_FILE_NAME "info"
 
 #define STATE_SEED 314159U
 #define SEQUENCE_SEED 271828U
@@ -24,7 +25,7 @@ int compare(const void *a, const void *b) {
     return (*(int *) a - *(int *) b);
 }
 
-int close_dataset(FILE *dataset) {
+int close_dataset_and_exit(FILE *dataset) {
     if (dataset) {
         fclose(dataset);
     }
@@ -42,11 +43,14 @@ int main(int argc, char *argv[]) {
         "number or 0 are given, it will use the maximum value (max - 1).\n(Optional) -e <unsigned "
         "long> Number of epochs that Nerd should train for. Must be greater than 0. By default the "
         "epochs are set to 1.\n(Optional) -o <bool> Should the file be trained using partial "
-        "observations? By default the value is set to 'true'.\n(Optional) By adding an additional "
-        "number at the end of these parameters, you can change the seed of the random algorithm\n");
+        "observations? By default the value is set to 'true'.\n(Optional) -l <filepath> This option"
+        "enables evaluating the learned KnowledgeBase with a file containing the possible labels "
+        "that should be predicted.\n(Optional) By adding an additional number at the end of these "
+        "parameters, you can change the seed of the random algorithm\n");
         return EXIT_FAILURE;
     }
 
+    Context *labels = NULL;
     bool has_header = false, use_back_chaining = false, partial_observation = true;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
@@ -61,7 +65,7 @@ int main(int argc, char *argv[]) {
                 switch (opt) {
                     case 'f':
                         if (!(dataset = fopen(argv[++i], "r"))) {
-                            printf("'-f' value '%s' does not exit.\n", argv[i]);
+                            printf("'-f' value '%s' does not exist.\n", argv[i]);
                             return EXIT_FAILURE;
                         }
                         if (strstr(argv[i], ".csv")) {
@@ -73,7 +77,8 @@ int main(int argc, char *argv[]) {
                     case 'i':
                         FILE *incompatibility_rules = fopen(argv[++i], "r");
                         if (!incompatibility_rules) {
-                            return close_dataset(dataset);
+                            printf("'-i' value '%s' does not exist.\n", argv[i]);
+                            return close_dataset_and_exit(dataset);
                         }
                         fclose(incompatibility_rules);
                         constraints_file = argv[i];
@@ -86,7 +91,7 @@ int main(int argc, char *argv[]) {
                         } else {
                             printf("'-h' has a wrong value '%s'. It must be a boolean value, 'true'"
                             " or 'false'\n", argv[i]);
-                            return close_dataset(dataset);
+                            return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 't':
@@ -94,7 +99,8 @@ int main(int argc, char *argv[]) {
                         if (threshold <= 0) {
                             printf("'-t' has a wrong value '%s'. It must be a float greater than "
                             "0.0\n", argv[i]);
-                            return close_dataset(dataset);
+
+                            return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'p':
@@ -102,7 +108,8 @@ int main(int argc, char *argv[]) {
                         if (promotion <= 0) {
                             printf("'-p' has a wrong value '%s'. It must be a float greater than "
                             "0.0\n", argv[i]);
-                            return close_dataset(dataset);
+
+                            return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'd':
@@ -110,7 +117,7 @@ int main(int argc, char *argv[]) {
                         if (demotion <= 0) {
                             printf("'-d' has a wrong value '%s'. It must be a float greater than "
                             "0.0\n", argv[i]);
-                            return close_dataset(dataset);
+                            return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'c':
@@ -121,7 +128,7 @@ int main(int argc, char *argv[]) {
                         } else {
                             printf("'-c' has a wrong value '%s'. It must be a boolean value, 'true'"
                             " or 'false'\n", argv[i]);
-                            return close_dataset(dataset);
+                            return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'b':
@@ -131,7 +138,7 @@ int main(int argc, char *argv[]) {
                         }
                         printf("'-b' has a wrong value '%s'. It must be an unsigned int\n",
                         argv[i]);
-                        return close_dataset(dataset);
+                        return close_dataset_and_exit(dataset);
                     case 'e':
                         if ((isdigit(argv[++i][0])) || (isdigit(argv[i][1]))) {
                             epochs = (size_t) atol(argv[i]);
@@ -141,7 +148,7 @@ int main(int argc, char *argv[]) {
                         }
                         printf("'-e' has a wrong value '%s'. It must be an unsigned long greater "
                         "than 0\n", argv[i]);
-                        return close_dataset(dataset);
+                        return close_dataset_and_exit(dataset);
                     case 'o':
                         if (strcmp(argv[++i], "true") == 0) {
                             partial_observation = true;
@@ -150,16 +157,48 @@ int main(int argc, char *argv[]) {
                         } else {
                             printf("'-o' has a wrong value '%s'. It must be a boolean value, 'true'"
                             " or 'false'\n", argv[i]);
-                            return close_dataset(dataset);
+                            return close_dataset_and_exit(dataset);
                         }
+                        break;
+                    case 'l':
+                        FILE *labels_file = fopen(argv[++i], "r");
+                        if (!labels_file) {
+                            printf("'-l' value '%s' does not exist.\n", argv[i]);
+                            return close_dataset_and_exit(dataset);
+                        }
+
+                        char labels_delimiter = ' ';
+                        if (strstr(argv[i], ".csv")) {
+                            labels_delimiter = ',';
+                        }
+
+                        labels = context_constructor(true);
+                        Literal *l = NULL;
+                        unsigned int j = 0;
+                        int c;
+                        char buffer[BUFFER_SIZE];
+                        memset(buffer, 0, BUFFER_SIZE);
+
+                        while ((c = fgetc(labels_file)) != EOF) {
+                            if ((c == labels_delimiter) || c == '\n') {
+                                l = literal_constructor_from_string(buffer);
+                                context_add_literal(labels, &l);
+                                memset(buffer, 0, strlen(buffer));
+                                j = 0;
+                            } else {
+                                buffer[j++] = c;
+                            }
+                        }
+
+                        fclose(labels_file);
                         break;
                     default:
                         printf("Option '-%c' is not available.\n", opt);
-                            return close_dataset(dataset);
+                            return close_dataset_and_exit(dataset);
                 }
             } else {
                 printf("Invalid parameters.\n");
-                return close_dataset(dataset);
+                return close_dataset_and_exit(dataset);
             }
         }
     }
@@ -190,14 +229,15 @@ int main(int argc, char *argv[]) {
                 given_number, argv[1]);
             } while (mkdir(test_directory, 0740) != 0);
 
-            file_info = (char *) malloc((strlen(test_directory) + 6) * sizeof(char));
-            sprintf(file_info, "%s/info", test_directory);
+            file_info = (char *) malloc((strlen(test_directory) + strlen(INFO_FILE_NAME) + 1)
+            * sizeof(char));
+            sprintf(file_info, "%s%s", test_directory, INFO_FILE_NAME);
 
             umask(S_IROTH | S_IWOTH | S_IWGRP);
             FILE *file = NULL;
             if (!(file = fopen(file_info, "w"))) {
                 free (file_info);
-                return close_dataset(dataset);
+                return close_dataset_and_exit(dataset);
             }
             free(file_info);
 
@@ -287,10 +327,11 @@ int main(int argc, char *argv[]) {
     PrudensSettings_ptr settings = NULL;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file);
 
-    nerd_start_learning(nerd, settings, test_directory);
+    nerd_start_learning(nerd, settings, test_directory, test_path, labels);
 
     nerd_destructor(&nerd);
     prudensjs_settings_destructor(&settings);
+    context_destructor(&labels);
 
     remove(train_path);
     remove(test_path);
