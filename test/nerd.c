@@ -217,7 +217,7 @@ START_TEST(to_file_test) {
     ck_assert_int_eq(compare_files("../bin/nerd_output1.txt",
     "../test/data/nerd_expected_output.txt"), 0);
 
-    nerd_start_learning(nerd, settings, NULL);
+    nerd_start_learning(nerd, settings, NULL, NULL, NULL);
     nerd_to_file(nerd, "../bin/nerd_output2.txt");
     ck_assert_int_eq(compare_files("../bin/nerd_output2.txt",
     "../test/data/nerd_expected_output.txt"), -1);

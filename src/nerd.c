@@ -7,6 +7,9 @@
 #include "nerd.h"
 #include "metrics.h"
 
+#define EPOCH_FILE_NAME_FORMAT "%sepoch-%zu.nd"
+#define EVALUATION_FILE_NAME_FORMAT "%sepoch-%zu-results.txt"
+
 #define SECONDS_TO_MILLISECONDS 1e3
 #define NANOSECONDS_TO_MILLISECONDS 1e-6
 
@@ -88,6 +91,8 @@ const bool use_backward_chaining) {
         unsigned short partial_observation, sensor_reuse, sensor_header;
         float activation_threshold;
 
+        memset(buffer, 0, buffer_size);
+
         if (fscanf(file, "breadth: %zu\n", &(nerd->breadth)) != 1) {
             goto failed1;
         }
@@ -132,7 +137,6 @@ const bool use_backward_chaining) {
             goto failed2;
         }
 
-        free(buffer);
         nerd->knowledge_base =
         knowledge_base_constructor(activation_threshold, use_backward_chaining);
 
@@ -143,9 +147,7 @@ const bool use_backward_chaining) {
         Rule *rule;
         Body *body = scene_constructor(true);
 
-        buffer = (char *) malloc(buffer_size * sizeof(char));
-        memset(buffer, 0, buffer_size);
-
+        memset(buffer, 0, strlen(buffer));
 
         while(fgets(buffer, buffer_size, file) != NULL) {
             if (strlen(buffer) == buffer_size) {
@@ -180,6 +182,7 @@ const bool use_backward_chaining) {
                 }
                 tokens = strtok(NULL, " (),\n");
             }
+            memset(buffer, 0, strlen(buffer));
             fgetpos(file, &position);
         }
 
@@ -225,10 +228,18 @@ void nerd_destructor(Nerd ** const nerd) {
  *
  * @param nerd The Nerd structure containing all the info for learn new Rules.
  * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
+ * @param test_directory (Optional) The directory path to save the nerd at each epoch.
+ * @param evaluation_filepath (Optional) The path of the evaluation (test) dataset. If it is given,
+ * the algorithm will perform an evaluation of the learnt KnowledgeBase at each epoch (using
+ * evaluate_all_literals and evaluate_random_literals).
+ * @param labels (Optional) A Context containing all the Literals that should be considered as
+ * labels. If it is given, the algorithm will perform a label evaluation of the learnt KnowledgeBase
+ * at each epoch (using evaluate_labels).
  */
 void nerd_start_learning(Nerd * const nerd, const PrudensSettings_ptr settings,
-const char * const test_directory) {
-    if (!nerd) {
+const char * const test_directory, const char * const evaluation_filepath,
+const Context * const restrict labels) {
+    if (!(nerd && settings)) {
         return;
     }
 
@@ -238,7 +249,7 @@ const char * const test_directory) {
 
     struct timespec start, end, prudens_start_time, prudens_end_time, start_convert, end_convert;
     size_t prudens_total_time = 0, convert_total = 0;
-    char *nerd_at_epoch = NULL;
+    char *nerd_at_epoch_filename = NULL, *results_at_epoch_filename = NULL;
     timespec_get(&start, TIME_UTC);
 
     for (epoch = 0; epoch < nerd->epochs; ++epoch) {
@@ -270,13 +281,76 @@ const char * const test_directory) {
 
         timespec_get(&start_convert, TIME_UTC);
         if (test_directory) {
-            nerd_at_epoch = (char *) malloc((strlen(test_directory) + strlen("epoch") +
-            snprintf(NULL, 0, "%zu", epoch + 1) + 1) * sizeof(char));
-            sprintf(nerd_at_epoch, "%sepoch%zu", test_directory, epoch + 1);
-            nerd_to_file(nerd, nerd_at_epoch);
-            free(nerd_at_epoch);
-            nerd_at_epoch = NULL;
+            nerd_at_epoch_filename = (char *) malloc((snprintf(NULL, 0, EPOCH_FILE_NAME_FORMAT,
+            test_directory, epoch + 1)  + 1) * sizeof(char));
+            sprintf(nerd_at_epoch_filename, EPOCH_FILE_NAME_FORMAT, test_directory, epoch + 1);
+            nerd_to_file(nerd, nerd_at_epoch_filename);
+            free(nerd_at_epoch_filename);
         }
+
+        if (evaluation_filepath) {
+            const char *test_space = " ", *test_result_space = "  ";
+            results_at_epoch_filename = (char *) malloc((snprintf(NULL, 0,
+            EVALUATION_FILE_NAME_FORMAT, test_directory, epoch + 1) + 1) * sizeof(char));
+            sprintf(results_at_epoch_filename, EVALUATION_FILE_NAME_FORMAT, test_directory,
+            epoch + 1);
+            FILE *results = fopen(results_at_epoch_filename, "wb");
+
+            size_t total_hidden, total_recovered, total_not_recovered, total_incorrectly_recovered;
+            int result = evaluate_all_literals(nerd, settings, evaluation_filepath, &total_hidden,
+            &total_recovered, &total_incorrectly_recovered, &total_not_recovered);
+            fprintf(results, "Epoch %zu of %zu\n", epoch + 1, nerd->epochs);
+            fprintf(results, "%sEvaluating All Literals:\n", test_space);
+
+            if (result == 0) {
+                fprintf(results, "%sh r i n\n", test_result_space);
+                fprintf(results, "%s%zu %zu %zu %zu\n", test_result_space, total_hidden,
+                total_recovered, total_incorrectly_recovered, total_not_recovered);
+            } else if (result == -2) {
+                fprintf(results, "%s'%s' is not a valid evaluation_path\n", test_result_space,
+                evaluation_filepath);
+            }
+
+            const unsigned int ratios_size = 9;
+            float ratios[] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+
+            unsigned int i;
+            for (i = 0; i < ratios_size; ++i) {
+                fprintf(results, "%sEvaluating Random Literals with ratio %.1f:\n", test_space,
+                ratios[i]);
+
+                result = evaluate_random_literals(nerd, settings, evaluation_filepath, ratios[i],
+                &total_hidden, &total_recovered, &total_incorrectly_recovered,
+                &total_not_recovered);
+
+                if (result == 0) {
+                    fprintf(results, "%sh r i n\n", test_result_space);
+                    fprintf(results, "%s%zu %zu %zu %zu\n", test_result_space, total_hidden,
+                    total_recovered, total_incorrectly_recovered, total_not_recovered);
+                } else {
+                    fprintf(results, "%s'%s' is not a valid evaluation_path\n", test_result_space,
+                    evaluation_filepath);
+                }
+            }
+
+            float accuracy, abstain_ratio;
+            if (labels) {
+                result = evaluate_labels(nerd, settings, evaluation_filepath, labels, &accuracy,
+                &abstain_ratio);
+                if (result == 0) {
+                    fprintf(results, "%sEvaluating Labels:\n", test_space);
+                    fprintf(results, "%saccuracy abstain\n", test_result_space);
+                    fprintf(results, "%s%.2f %.2f\n", test_result_space, accuracy, abstain_ratio);
+                } else if (result > 0) {
+                    fprintf(results, "%sNo label was given for line %u\n", test_result_space,
+                    result);
+                }
+            }
+
+        fclose(results);
+        free(results_at_epoch_filename);
+        }
+
         timespec_get(&end_convert, TIME_UTC);
         convert_total += (end_convert.tv_sec - start_convert.tv_sec) * SECONDS_TO_MILLISECONDS
         + (end_convert.tv_nsec - start_convert.tv_nsec) * NANOSECONDS_TO_MILLISECONDS;
