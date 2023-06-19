@@ -240,15 +240,14 @@ next_literal:
 
 /**
  * @brief Evaluates the Nerd's learnt KnowledgeBase by checking whether it can find the
- * corresponding Literal marked as a label. The labels are given as a Context with the
- * literals_to_evaluate. The algorithm will find the label from the original observation, and then
- * it will use the integrated inference engine to find out whether the engine can infer that Literal
- * or not.
+ * corresponding Literal marked as a label. The labels are given as a Context with the labels. The
+ * algorithm will find the label from the original observation, and then it will use the integrated
+ * inference engine to find out whether the engine can infer that Literal or not.
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
  * @param file_to_evaluate The filepath containing the evaluation samples.
- * @param literals_to_evaluate The Context containing all the Literals that act a labels.
+ * @param labels The Context containing all the Literals that act a labels.
  * @param accuracy A pointer to a float variable to save the overall accuracy of the KnowledgeBase
  * over the given samples.
  * @param abstain_ratio A pointer to a float variable to save the abstain ratio of the KnowledgeBase
@@ -259,10 +258,10 @@ next_literal:
  * abstain_ratio), > 0 which will be the index of the first observation that does not have a
  * provided label (index calculated from the given file).
 */
-int evaluate_one_specific_literal(const Nerd * const nerd, const PrudensSettings_ptr settings,
-const char * const file_to_evaluate, const Context * const literals_to_evaluate,
-float * const restrict accuracy, float * const restrict abstain_ratio) {
-    if (!(nerd && settings && file_to_evaluate && literals_to_evaluate && accuracy)) {
+int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
+const char * const file_to_evaluate, const Context * const labels, float * const restrict accuracy,
+float * const restrict abstain_ratio) {
+    if (!(nerd && settings && file_to_evaluate && labels && accuracy)) {
         return -1;
     }
 
@@ -283,8 +282,8 @@ float * const restrict accuracy, float * const restrict abstain_ratio) {
     unsigned int j, i, evaluation_literal_index;
     for (j = 0; j < total_observations; ++j) {
         sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
-        for (i = 0; i < literals_to_evaluate->size; ++i) {
-            if ((label_index = scene_literal_index(observation, literals_to_evaluate->literals[i]))
+        for (i = 0; i < labels->size; ++i) {
+            if ((label_index = scene_literal_index(observation, labels->literals[i]))
             > -1) {
                 evaluation_literal_index = i;
                 scene_remove_literal(observation, label_index, NULL);
@@ -300,8 +299,8 @@ float * const restrict accuracy, float * const restrict abstain_ratio) {
 
         prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
 
-        for (i = 0; i < literals_to_evaluate->size; ++i) {
-            current_index = scene_literal_index(inference, literals_to_evaluate->literals[i]);
+        for (i = 0; i < labels->size; ++i) {
+            current_index = scene_literal_index(inference, labels->literals[i]);
             if (current_index > -1) {
                 if (evaluation_literal_index == i) {
                     ++positives;
