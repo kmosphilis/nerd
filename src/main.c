@@ -44,9 +44,9 @@ int main(int argc, char *argv[]) {
         "long> Number of epochs that Nerd should train for. Must be greater than 0. By default the "
         "epochs are set to 1.\n(Optional) -o <bool> Should the file be trained using partial "
         "observations? By default the value is set to 'true'.\n(Optional) -l <filepath> This option"
-        "enables evaluating the learned KnowledgeBase with a file containing the possible labels "
+        " enables evaluating the learned KnowledgeBase with a file containing the possible labels "
         "that should be predicted.\n(Optional) By adding an additional number at the end of these "
-        "parameters, you can change the seed of the random algorithm\n");
+        "parameters, you can change the seed of the random algorithm.\n");
         return EXIT_FAILURE;
     }
 
