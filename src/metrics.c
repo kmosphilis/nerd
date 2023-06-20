@@ -3,6 +3,7 @@
 #include <string.h>
 #include <pcg_variants.h>
 
+#include "nerd_utils.h"
 #include "metrics.h"
 
 /**
@@ -79,13 +80,13 @@ size_t * const restrict total_not_recovered) {
                         sensor_destructor(&evaluation_sensor);
                         scene_destructor(&observation);
                         scene_destructor(&inference);
-                        free(expected_header);
+                        safe_free(expected_header);
                         return -3;
                 }
             }
             ++total_not_recovered_;
 finished:
-            free(expected_header);
+            safe_free(expected_header);
             scene_destructor(&inference);
             scene_add_literal(observation, &removed_literal);
         }
@@ -162,6 +163,8 @@ size_t * const restrict total_not_recovered) {
     size_t total_hidden_ = 0, total_recovered_ = 0, total_incorrectly_recovered_ = 0,
     total_not_recovered_ = 0, remaining, new_size;
     unsigned int i, j, k, *possible_indices = NULL;
+    char *expected_header = NULL;
+
     for (i = 0; i < total_observations; ++i) {
         removed_literals = scene_constructor(true);
         sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
@@ -180,8 +183,7 @@ size_t * const restrict total_not_recovered) {
             &removed_literal);
             scene_add_literal(removed_literals, &removed_literal);
         }
-        free(possible_indices);
-        possible_indices = NULL;
+        safe_free(possible_indices);
 
         prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
 
@@ -190,7 +192,6 @@ size_t * const restrict total_not_recovered) {
         for (j = 0; j < removed_literals->size; ++j) {
             removed_literal = removed_literals->literals[j];
             size_t header_size = 0;
-            char *expected_header = NULL;
             if (evaluation_sensor->header) {
                 header_size = strchr(removed_literal->atom, '_') - removed_literal->atom + 2;
                 expected_header = (char *) malloc(header_size * sizeof(char));
@@ -214,7 +215,7 @@ size_t * const restrict total_not_recovered) {
             }
             ++total_not_recovered_;
 next_literal:
-            free(expected_header);
+            safe_free(expected_header);
         }
 
         scene_destructor(&observation);

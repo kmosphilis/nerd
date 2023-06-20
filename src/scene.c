@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "nerd_utils.h"
 #include "scene.h"
 
 typedef struct _Scene {
@@ -42,11 +43,10 @@ void scene_destructor(Scene ** const scene) {
                 }
             }
 
-            free((*scene)->literals);
-            (*scene)->literals = NULL;
+            safe_free((*scene)->literals);
             (*scene)->size = 0;
         }
-        free(_scene);
+        safe_free(_scene);
         *scene = NULL;
     }
 }
@@ -183,8 +183,7 @@ Literal ** const removed_literal) {
             }
             --scene->size;
             if (scene->size == 0) {
-                free(scene->literals);
-                scene->literals = NULL;
+                safe_free(scene->literals);
                 return;
             }
 

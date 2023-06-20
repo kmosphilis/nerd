@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "nerd_utils.h"
 #include "rule_queue.h"
 
 typedef struct _RuleQueue {
@@ -41,12 +42,10 @@ void rule_queue_destructor(RuleQueue ** const rule_queue) {
                 }
             }
 
-            free((*rule_queue)->rules);
-            (*rule_queue)->rules = NULL;
+            safe_free((*rule_queue)->rules);
             (*rule_queue)->length = 0;
         }
-        free(*rule_queue);
-        *rule_queue = NULL;
+        safe_free(*rule_queue);
     }
 }
 
@@ -140,8 +139,7 @@ void rule_queue_dequeue(RuleQueue * const rule_queue, Rule ** const dequeued_rul
             }
 
             if (rule_queue->length == 0) {
-                free(rule_queue->rules);
-                rule_queue->rules = NULL;
+                safe_free(rule_queue->rules);
             } else {
                 Rule **rules = rule_queue->rules;
                 rule_queue->rules = (Rule **) malloc(rule_queue->length * sizeof(Rule *));
@@ -198,8 +196,7 @@ Rule ** const removed_rule) {
             }
 
             if (rule_queue->length == 0) {
-                free(rule_queue->rules);
-                rule_queue->rules = NULL;
+                safe_free(rule_queue->rules);
             } else {
                 Rule **rules = rule_queue->rules;
 

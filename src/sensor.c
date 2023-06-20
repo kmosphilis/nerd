@@ -4,6 +4,7 @@
 #include <time.h>
 #include <pcg_variants.h>
 
+#include "nerd_utils.h"
 #include "sensor.h"
 
 /**
@@ -87,20 +88,17 @@ void sensor_destructor(Sensor ** const sensor) {
         if ((*sensor)->environment) {
             fclose((*sensor)->environment);
             (*sensor)->environment = NULL;
-            free((*sensor)->filepath);
-            (*sensor)->filepath = NULL;
+            safe_free((*sensor)->filepath);
             (*sensor)->delimiter = '\0';
             (*sensor)->reuse = false;
             unsigned int i;
             for (i = 0 ; i < (*sensor)->header_size; ++i) {
-                free((*sensor)->header[i]);
+                safe_free((*sensor)->header[i]);
             }
-            free((*sensor)->header);
-            (*sensor)->header = NULL;
+            safe_free((*sensor)->header);
             (*sensor)->header_size = 0;
         }
-        free(*sensor);
-        *sensor = NULL;
+        safe_free(*sensor);
     }
 }
 

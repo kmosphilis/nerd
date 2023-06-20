@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <prb.h>
 
+#include "nerd_utils.h"
 #include "rule_hypergraph.h"
 
 typedef struct Vertex Vertex;
@@ -39,10 +40,9 @@ struct RuleHyperGraph {
 */
 void edge_destructor(Edge ** const edge) {
     if (edge && *edge) {
-        free((*edge)->from);
+        safe_free((*edge)->from);
         rule_destructor(&((*edge)->rule));
-        free(*edge);
-        *edge = NULL;
+        safe_free(*edge);
     }
 }
 
@@ -75,12 +75,11 @@ void vertex_destructor(Vertex ** const vertex, const bool destruct_literal) {
         for (i = 0; i < (*vertex)->number_of_edges; ++i) {
             edge_destructor(&((*vertex)->edges[i]));
         }
-        free((*vertex)->edges);
+        safe_free((*vertex)->edges);
         if (destruct_literal) {
             literal_destructor(&((*vertex)->literal));
         }
-        free(*vertex);
-        *vertex = NULL;
+        safe_free(*vertex);
     }
 }
 
@@ -133,8 +132,8 @@ Vertex * const head_vertex) {
             literal_destructor(&((*rule)->head));
         }
         free(body);
-        free((*rule)->body);
-        free((*rule));
+        safe_free((*rule)->body);
+        safe_free((*rule));
         *rule = new_rule;
     } else {
         (*rule)->head = head_vertex->literal;
@@ -180,8 +179,7 @@ void vertex_remove_edge(Vertex * const vertex, unsigned int index) {
         edge_destructor(&(vertex->edges[index]));
         --vertex->number_of_edges;
         if (vertex->number_of_edges == 0) {
-            free(vertex->edges);
-            vertex->edges = NULL;
+            safe_free(vertex->edges);
             return;
         }
 
@@ -252,8 +250,7 @@ RuleHyperGraph *rule_hypergraph_empty_constructor(const bool use_backward_chaini
 void rule_hypergraph_destructor(RuleHyperGraph ** const rule_hypergraph) {
     if (rule_hypergraph && *rule_hypergraph && (*rule_hypergraph)->literal_tree) {
         prb_destroy((*rule_hypergraph)->literal_tree, item_destructor);
-        free(*rule_hypergraph);
-        *rule_hypergraph = NULL;
+        safe_free(*rule_hypergraph);
     }
 }
 
@@ -573,8 +570,7 @@ edge_checking:
                                 vertex_array = (Vertex **) realloc(vertex_array, sizeof(Vertex *) *
                                 vertex_edge_position->size);
                             } else {
-                                free(vertex_array);
-                                vertex_array = NULL;
+                                safe_free(vertex_array);
                             }
                         } while (vertex_array &&
                         ((vertex_array[vertex_edge_position->size - 1]->number_of_edges - 1 ==

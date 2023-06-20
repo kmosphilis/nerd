@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "nerd_utils.h"
 #include "nerd_helper.h"
 
 static const char *_node = "node";
@@ -104,12 +105,9 @@ int prudensjs_settings_destructor(PrudensSettings_ptr *settings) {
         return 1;
     }
 
-    free((*settings)->prudensjs_call);
-    (*settings)->prudensjs_call = NULL;
-    free((*settings)->temp_file);
-    (*settings)->temp_file = NULL;
-    free(*settings);
-    *settings = NULL;
+    safe_free((*settings)->prudensjs_call);
+    safe_free((*settings)->temp_file);
+    safe_free(*settings);
 
     return 0;
 }

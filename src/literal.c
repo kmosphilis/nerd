@@ -64,12 +64,10 @@ Literal *literal_constructor_from_string(const char * const string) {
 void literal_destructor(Literal ** const literal) {
     if (literal && (*literal)) {
         if ((*literal)->atom) {
-            free((*literal)->atom);
-            (*literal)->atom = NULL;
+            safe_free((*literal)->atom);
         }
         (*literal)->sign = 0;
-        free(*literal);
-        *literal = NULL;
+        safe_free(*literal);
     }
 }
 

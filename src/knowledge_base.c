@@ -5,6 +5,7 @@
 #include <time.h>
 #include <pcg_variants.h>
 
+#include "nerd_utils.h"
 #include "knowledge_base.h"
 
 /**
@@ -37,8 +38,7 @@ void knowledge_base_destructor(KnowledgeBase ** const knowledge_base) {
         rule_queue_destructor(&((*knowledge_base)->active));
         rule_hypergraph_destructor(&((*knowledge_base)->hypergraph));
         (*knowledge_base)->activation_threshold = INFINITY;
-        free(*knowledge_base);
-        *knowledge_base = NULL;
+        safe_free(*knowledge_base);
     }
 }
 

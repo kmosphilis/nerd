@@ -1,7 +1,14 @@
-#include <stdlib.h>
 #include <string.h>
 
 #include "nerd_utils.h"
+
+/**
+ * @brief safe_free macro implementation.
+*/
+void _safe_free(void **ptr) {
+    free(*ptr);
+    *ptr = NULL;
+}
 
 /**
  * @brief Removes all the whitespaces from both ends of the given string.
@@ -51,12 +58,10 @@ IntVector *int_vector_constructor() {
 void int_vector_destructor(IntVector ** const int_vector) {
     if (int_vector && (*int_vector)) {
         if ((*int_vector)->items) {
-            free((*int_vector)->items);
-            (*int_vector)->items = NULL;
+            safe_free((*int_vector)->items);
             (*int_vector)->size = 0;
         }
-        free(*int_vector);
-        *int_vector = NULL;
+        safe_free(*int_vector);
     }
 }
 
@@ -88,8 +93,7 @@ void int_vector_resize(IntVector * const int_vector, const unsigned int new_size
     if (int_vector) {
         if (new_size == 0) {
             int_vector->size = 0;
-            free(int_vector->items);
-            int_vector->items = NULL;
+            safe_free(int_vector->items);
             return;
         }
 

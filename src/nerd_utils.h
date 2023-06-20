@@ -1,6 +1,15 @@
 #ifndef NERD_UTILS_H
 #define NERD_UTILS_H
 
+#include <stdlib.h>
+
+void _safe_free(void **ptr);
+
+/**
+ * @brief Frees the allocated pointer and sets its value to NULL.
+*/
+#define safe_free(ptr) _safe_free((void **) &ptr);
+
 char *trim(const char * const string);
 
 /* IntVector */

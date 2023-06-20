@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "nerd_utils.h"
 #include "nerd.h"
 #include "metrics.h"
 
@@ -218,8 +219,7 @@ void nerd_destructor(Nerd ** const nerd) {
         sensor_destructor(&((*nerd)->sensor));
         knowledge_base_destructor(&((*nerd)->knowledge_base));
         (*nerd)->partial_observation = 0;
-        free(*nerd);
-        *nerd = NULL;
+        safe_free(*nerd);
     }
 }
 
@@ -285,7 +285,7 @@ const Context * const restrict labels) {
             test_directory, epoch + 1)  + 1) * sizeof(char));
             sprintf(nerd_at_epoch_filename, EPOCH_FILE_NAME_FORMAT, test_directory, epoch + 1);
             nerd_to_file(nerd, nerd_at_epoch_filename);
-            free(nerd_at_epoch_filename);
+            safe_free(nerd_at_epoch_filename);
         }
 
         if (evaluation_filepath) {
@@ -348,7 +348,7 @@ const Context * const restrict labels) {
             }
 
         fclose(results);
-        free(results_at_epoch_filename);
+        safe_free(results_at_epoch_filename);
         }
 
         timespec_get(&end_convert, TIME_UTC);
@@ -395,7 +395,7 @@ void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
     for (i = 0; i < nerd->knowledge_base->active->length; ++i) {
         str = rule_to_string(nerd->knowledge_base->active->rules[i]);
         fprintf(file, "    %s,\n", str);
-        free(str);
+        safe_free(str);
     }
 
     RuleQueue *inactive_rules;
@@ -404,7 +404,7 @@ void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
     for (i = 0; i < inactive_rules->length; ++i) {
         str = rule_to_string(inactive_rules->rules[i]);
         fprintf(file, "    %s,\n", str);
-        free(str);
+        safe_free(str);
     }
     rule_queue_destructor(&inactive_rules);
 

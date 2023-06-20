@@ -2,6 +2,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "nerd_utils.h"
 #include "rule.h"
 
 /**
@@ -57,8 +58,7 @@ void rule_destructor(Rule ** const rule) {
         }
         context_destructor(&((*rule)->body));
         (*rule)->weight = INFINITY;
-        free(*rule);
-        *rule = NULL;
+        safe_free(*rule);
     }
 }
 
@@ -221,7 +221,6 @@ int rule_equals(const Rule * const restrict rule1, const Rule * const restrict r
 char *rule_to_string(const Rule * const rule) {
     if (rule) {
         if (rule->body && (rule->body->size != 0) && rule->head) {
-            unsigned int i;
             char *literal_string, *result = strdup("(");
             size_t result_size = strlen(result) + 1;
 
@@ -233,6 +232,7 @@ char *rule_to_string(const Rule * const rule) {
             free(temp);
             free(literal_string);
 
+            unsigned int i;
             for (i = 1; i < rule->body->size; ++i) {
                 literal_string = literal_to_string(rule->body->literals[i]);
                 result_size += strlen(literal_string) + 2;
