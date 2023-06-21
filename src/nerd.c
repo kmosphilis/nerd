@@ -297,22 +297,23 @@ const Context * const restrict labels) {
             FILE *results = fopen(results_at_epoch_filename, "wb");
 
             size_t total_hidden, total_recovered, total_not_recovered, total_incorrectly_recovered;
-            int result = evaluate_all_literals(nerd, settings, evaluation_filepath, &total_hidden,
-            &total_recovered, &total_incorrectly_recovered, &total_not_recovered);
-            fprintf(results, "Epoch %zu of %zu\n", epoch + 1, nerd->epochs);
-            fprintf(results, "%sEvaluating All Literals:\n", test_space);
+            int result;
+            // result = evaluate_all_literals(nerd, settings, evaluation_filepath, &total_hidden,
+            // &total_recovered, &total_incorrectly_recovered, &total_not_recovered);
+            // fprintf(results, "Epoch %zu of %zu\n", epoch + 1, nerd->epochs);
+            // fprintf(results, "%sEvaluating All Literals:\n", test_space);
 
-            if (result == 0) {
-                fprintf(results, "%sh r i n\n", test_result_space);
-                fprintf(results, "%s%zu %zu %zu %zu\n", test_result_space, total_hidden,
-                total_recovered, total_incorrectly_recovered, total_not_recovered);
-            } else if (result == -2) {
-                fprintf(results, "%s'%s' is not a valid evaluation_path\n", test_result_space,
-                evaluation_filepath);
-            }
+            // if (result == 0) {
+            //     fprintf(results, "%sh r i n\n", test_result_space);
+            //     fprintf(results, "%s%zu %zu %zu %zu\n", test_result_space, total_hidden,
+            //     total_recovered, total_incorrectly_recovered, total_not_recovered);
+            // } else if (result == -2) {
+            //     fprintf(results, "%s'%s' is not a valid evaluation_path\n", test_result_space,
+            //     evaluation_filepath);
+            // }
 
-            const unsigned int ratios_size = 9;
-            float ratios[] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+            const unsigned int ratios_size = 3;
+            const float ratios[] = {0.2, 0.4, 0.6};
 
             unsigned int i;
             for (i = 0; i < ratios_size; ++i) {
@@ -359,6 +360,7 @@ const Context * const restrict labels) {
     timespec_get(&end, TIME_UTC);
     size_t total_time = ((end.tv_sec - start.tv_sec) * SECONDS_TO_MILLISECONDS
     + (end.tv_nsec - start.tv_nsec) * NANOSECONDS_TO_MILLISECONDS) - convert_total;
+    printf("Evaluation time: %zu ms\n", convert_total);
     printf("Time spend on nerd: %zu ms\n", total_time - prudens_total_time);
     printf("Time spent on prudens: %zu ms\n", prudens_total_time);
     printf("Total time: %zu ms\n", total_time);
