@@ -113,7 +113,7 @@ size_t sensor_get_total_observations(const Sensor * const sensor) {
     if (sensor && sensor->environment) {
         fpos_t current_possition;
         fgetpos(sensor->environment, &current_possition);
-        rewind(sensor->environment);
+        fseek(sensor->environment, 0, SEEK_SET);
 
         size_t total_observations = 0;
         char c;
@@ -154,6 +154,9 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
             if (c == EOF) {
                 if (sensor->reuse) {
                     fseek(sensor->environment, 0, SEEK_SET);
+                    if (sensor->header) {
+                        while ((c = fgetc(sensor->environment)) != '\n');
+                    }
                     c = fgetc(sensor->environment);
                 } else {
                     return;

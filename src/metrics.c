@@ -35,7 +35,7 @@ size_t * const restrict total_not_recovered) {
     }
 
     Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
-    nerd->sensor->delimiter, 0, nerd->sensor->header != NULL);
+    nerd->sensor->delimiter, false, nerd->sensor->header != NULL);
 
     if (!evaluation_sensor) {
         return -2;
@@ -142,7 +142,7 @@ size_t * const restrict total_not_recovered) {
     }
 
     Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
-    nerd->sensor->delimiter, 0, nerd->sensor->header != NULL);
+    nerd->sensor->delimiter, false, nerd->sensor->header != NULL);
 
     if (!evaluation_sensor) {
         return -2;
@@ -267,7 +267,7 @@ float * const restrict abstain_ratio) {
     }
 
     Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
-    nerd->sensor->delimiter, 0, nerd->sensor->header != NULL);
+    nerd->sensor->delimiter, false, nerd->sensor->header != NULL);
 
     if (!evaluation_sensor) {
         return -2;
