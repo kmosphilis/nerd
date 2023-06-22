@@ -33,25 +33,28 @@ int close_dataset_and_exit(FILE *dataset) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 17) {
+    if (argc < 15) {
         printf("Parameters required:\n-f <filepath> The path of the file,\n-i <filepath> The path "
         "of a file containing incompatibility rules in the form of prudens-js,\n-h <bool> Does the "
         "file have a header or not?,\n-t <float> > 0 Threshold value. Must be bigger than 0,\n-p "
         "<float> > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be"
-        " greater than 0,\n-c <bool> Should it use back-chaining demotion or not? and\n-b <unsigned"
-        " int> Maximum number of literals per rule. Must be positive. If more that the maximum "
-        "number or 0 are given, it will use the maximum value (max - 1).\n(Optional) -e <unsigned "
-        "long> Number of epochs that Nerd should train for. Must be greater than 0. By default the "
-        "epochs are set to 1.\n(Optional) -o <bool> Should the file be trained using partial "
-        "observations? By default the value is set to 'true'.\n(Optional) -l <filepath> This option"
-        " enables evaluating the learned KnowledgeBase with a file containing the possible labels "
-        "that should be predicted.\n(Optional) By adding an additional number at the end of these "
-        "parameters, you can change the seed of the random algorithm.\n");
+        " greater than 0,and\n-b <unsigned int> Maximum number of literals per rule. Must be "
+        "positive. If more that the maximum number or 0 are given, it will use the maximum value "
+        "(max - 1).\n(Optional) -e <unsigned long> Number of epochs that Nerd should train for. "
+        "Must be greater than 0. By default the epochs are set to 1.\n(Optional) -c <bool> Should "
+        "it use the classic approach or not (use back-chaining demotion)? Default value is set to "
+        "'false'\n (Optional) -o <bool> Should the it be trained using partial observations? "
+        "Default value is set to 'true'.\n (Optional) -v <bool> Should it evaluate the learnt "
+        "KnowledgeBase at each epoch? Default value is set to 'false'.\n(Optional) -l <filepath>"
+        " This option enables evaluating the learned KnowledgeBase with a file containing the "
+        "possible labels that should be predicted.\n(Optional) By adding an additional number at "
+        "the end of these parameters, you can change the seed of the random algorithm.\n");
         return EXIT_FAILURE;
     }
 
     Context *labels = NULL;
-    bool has_header = false, use_back_chaining = false, partial_observation = true;
+    bool has_header = false, use_back_chaining = true, partial_observation = true,
+    should_evaluate = false;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
@@ -122,9 +125,9 @@ int main(int argc, char *argv[]) {
                         break;
                     case 'c':
                         if (strcmp(argv[++i], "true") == 0) {
-                            use_back_chaining = true;
-                        } else if (strcmp(argv[i], "false") == 0) {
                             use_back_chaining = false;
+                        } else if (strcmp(argv[i], "false") == 0) {
+                            use_back_chaining = true;
                         } else {
                             printf("'-c' has a wrong value '%s'. It must be a boolean value, 'true'"
                             " or 'false'\n", argv[i]);
@@ -153,7 +156,7 @@ int main(int argc, char *argv[]) {
                         if (strcmp(argv[++i], "true") == 0) {
                             partial_observation = true;
                         } else if (strcmp(argv[i], "false") == 0) {
-                            use_back_chaining = false;
+                            partial_observation = false;
                         } else {
                             printf("'-o' has a wrong value '%s'. It must be a boolean value, 'true'"
                             " or 'false'\n", argv[i]);
@@ -191,6 +194,17 @@ int main(int argc, char *argv[]) {
                         }
 
                         fclose(labels_file);
+                        break;
+                    case 'v':
+                        if (strcmp(argv[++i], "true") == 0) {
+                            should_evaluate = true;
+                        } else if (strcmp(argv[i], "false") == 0) {
+                            should_evaluate = false;
+                        } else {
+                            printf("'-v' has a wrong value '%s'. It must be a boolean value, 'true'"
+                            " or 'false'\n", argv[i]);
+                            return close_dataset_and_exit(dataset);
+                        }
                         break;
                     default:
                         printf("Option '-%c' is not available.\n", opt);
@@ -327,7 +341,8 @@ int main(int argc, char *argv[]) {
     PrudensSettings_ptr settings = NULL;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file);
 
-    nerd_start_learning(nerd, settings, test_directory, test_path, labels);
+    nerd_start_learning(nerd, settings, test_directory, should_evaluate ? test_directory : NULL,
+    labels);
 
     nerd_destructor(&nerd);
     prudensjs_settings_destructor(&settings);
