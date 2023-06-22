@@ -360,7 +360,7 @@ const Context * const restrict labels) {
     timespec_get(&end, TIME_UTC);
     size_t total_time = ((end.tv_sec - start.tv_sec) * SECONDS_TO_MILLISECONDS
     + (end.tv_nsec - start.tv_nsec) * NANOSECONDS_TO_MILLISECONDS) - convert_total;
-    printf("Evaluation time: %zu ms\n", convert_total);
+    // printf("Evaluation time: %zu ms\n", convert_total);
     printf("Time spend on nerd: %zu ms\n", total_time - prudens_total_time);
     printf("Time spent on prudens: %zu ms\n", prudens_total_time);
     printf("Total time: %zu ms\n", total_time);
