@@ -16,6 +16,7 @@
 
 #define TRAIN ".train_set"
 #define TEST ".test_set"
+#define TEST_DIRECTORY "timestamp=%zu_test=%d/"
 #define INFO_FILE_NAME "info"
 
 #define STATE_SEED 314159U
@@ -33,22 +34,23 @@ int close_dataset_and_exit(FILE *dataset) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 15) {
-        printf("Parameters required:\n-f <filepath> The path of the file,\n-i <filepath> The path "
-        "of a file containing incompatibility rules in the form of prudens-js,\n-h <bool> Does the "
-        "file have a header or not?,\n-t <float> > 0 Threshold value. Must be bigger than 0,\n-p "
-        "<float> > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be"
-        " greater than 0,and\n-b <unsigned int> Maximum number of literals per rule. Must be "
-        "positive. If more that the maximum number or 0 are given, it will use the maximum value "
-        "(max - 1).\n(Optional) -e <unsigned long> Number of epochs that Nerd should train for. "
-        "Must be greater than 0. By default the epochs are set to 1.\n(Optional) -c <bool> Should "
-        "it use the classic approach or not (use back-chaining demotion)? Default value is set to "
-        "'false'\n (Optional) -o <bool> Should the it be trained using partial observations? "
-        "Default value is set to 'true'.\n (Optional) -v <bool> Should it evaluate the learnt "
-        "KnowledgeBase at each epoch? Default value is set to 'false'.\n(Optional) -l <filepath>"
-        " This option enables evaluating the learned KnowledgeBase with a file containing the "
-        "possible labels that should be predicted.\n(Optional) By adding an additional number at "
-        "the end of these parameters, you can change the seed of the random algorithm.\n");
+    if (argc < 13) {
+        printf("Required parameters:\n-f <filepath> The path of the file,\n-h <bool> Does the file "
+        "have a header or not?,\n-t <float> > 0 Threshold value. Must be bigger than 0,\n-p <float>"
+        " > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be"
+        " greater than 0, and\n-b <unsigned int> Maximum number of literals per rule. It must be\n "
+        "positive. If more that the maximum number or 0 are given, it will use\n the maximum value "
+        "(max - 1).\n\nOptional parameters:\n-i <filepath> The path of a file containing "
+        "incompatibility rules in the\n form of prudens-js.\n-e <unsigned long> Number of epochs "
+        "that Nerd should train for. It must\n be greater than 0. Default value is set to 1.\n-c "
+        "<bool> Should it use the classic approach or not (use back-chaining\n demotion)? Default "
+        "value is set to 'false'\n-o <bool> Should the it be trained using partial observations? "
+        "Default\n value is set to 'true'.\n-v <bool> Should it evaluate the learnt KnowledgeBase "
+        "at each epoch?\n Default value is set to 'false'.\n-l <filepath> This option enables "
+        "evaluating the learned KnowledgeBase\n with a file containing the possible labels that "
+        "should be predicted.\n This will only be used if -v is set to 'true'.\n\nBy adding an "
+        "additional number at the end of these parameters, you mark\n the number of this run and it"
+        " will save its given parameters.\n");
         return EXIT_FAILURE;
     }
 
@@ -59,7 +61,7 @@ int main(int argc, char *argv[]) {
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
     unsigned int i, breadth = 0;
-    char *constraints_file = NULL;
+    char *dataset_value = NULL, *constraints_file = NULL, *current_arg;
     size_t epochs = 1;
     for (i = 1;
     i < (((unsigned int) argc % 2 == 0) ? (unsigned int) (argc - 1) : (unsigned int) argc); ++i) {
@@ -67,111 +69,123 @@ int main(int argc, char *argv[]) {
             if (sscanf(argv[i], "-%c", &opt) == 1) {
                 switch (opt) {
                     case 'f':
-                        if (!(dataset = fopen(argv[++i], "r"))) {
-                            printf("'-f' value '%s' does not exist.\n", argv[i]);
+                        current_arg = argv[++i];
+                        if (!(dataset = fopen(current_arg, "r"))) {
+                            printf("'-f' value '%s' does not exist.\n", current_arg);
                             return EXIT_FAILURE;
                         }
-                        if (strstr(argv[i], ".csv")) {
+                        if (strstr(current_arg, ".csv")) {
                             delimiter = ',';
                         } else {
                             delimiter = ' ';
                         }
+                        dataset_value = current_arg;
                         break;
                     case 'i':
-                        FILE *incompatibility_rules = fopen(argv[++i], "r");
+                        current_arg = argv[++i];
+                        FILE *incompatibility_rules = fopen(current_arg, "r");
                         if (!incompatibility_rules) {
-                            printf("'-i' value '%s' does not exist.\n", argv[i]);
+                            printf("'-i' value '%s' does not exist.\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
                         fclose(incompatibility_rules);
-                        constraints_file = argv[i];
+                        constraints_file = current_arg;
                         break;
                     case 'h':
-                        if (strcmp(argv[++i], "true") == 0) {
+                        current_arg = argv[++i];
+                        if (strcmp(current_arg, "true") == 0) {
                             has_header = true;
-                        } else if (strcmp(argv[i], "false") == 0) {
+                        } else if (strcmp(current_arg, "false") == 0) {
                             has_header = false;
                         } else {
                             printf("'-h' has a wrong value '%s'. It must be a boolean value, 'true'"
-                            " or 'false'\n", argv[i]);
+                            " or 'false'\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 't':
-                        threshold = atof(argv[++i]);
+                        current_arg = argv[++i];
+                        threshold = atof(current_arg);
                         if (threshold <= 0) {
                             printf("'-t' has a wrong value '%s'. It must be a float greater than "
-                            "0.0\n", argv[i]);
+                            "0.0\n", current_arg);
 
                             return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'p':
-                        promotion = atof(argv[++i]);
+                        current_arg = argv[++i];
+                        promotion = atof(current_arg);
                         if (promotion <= 0) {
                             printf("'-p' has a wrong value '%s'. It must be a float greater than "
-                            "0.0\n", argv[i]);
+                            "0.0\n", current_arg);
 
                             return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'd':
-                        demotion = atof(argv[++i]);
+                        current_arg = argv[++i];
+                        demotion = atof(current_arg);
                         if (demotion <= 0) {
                             printf("'-d' has a wrong value '%s'. It must be a float greater than "
-                            "0.0\n", argv[i]);
+                            "0.0\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'c':
-                        if (strcmp(argv[++i], "true") == 0) {
+                        current_arg = argv[++i];
+                        if (strcmp(current_arg, "true") == 0) {
                             use_back_chaining = false;
-                        } else if (strcmp(argv[i], "false") == 0) {
+                        } else if (strcmp(current_arg, "false") == 0) {
                             use_back_chaining = true;
                         } else {
                             printf("'-c' has a wrong value '%s'. It must be a boolean value, 'true'"
-                            " or 'false'\n", argv[i]);
+                            " or 'false'\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'b':
-                        if ((isdigit(argv[++i][0])) || (isdigit(argv[i][1]))) {
-                            breadth = atoi(argv[i]);
+                        current_arg = argv[++i];
+                        if ((isdigit(current_arg[0])) || (isdigit(current_arg[1]))) {
+                            breadth = atoi(current_arg);
                             break;
                         }
                         printf("'-b' has a wrong value '%s'. It must be an unsigned int\n",
-                        argv[i]);
+                        current_arg);
                         return close_dataset_and_exit(dataset);
                     case 'e':
-                        if ((isdigit(argv[++i][0])) || (isdigit(argv[i][1]))) {
-                            epochs = (size_t) atol(argv[i]);
+                        current_arg = argv[++i];
+                        if ((isdigit(current_arg[0])) || (isdigit(current_arg[1]))) {
+                            epochs = (size_t) atol(current_arg);
                             if (epochs > 0) {
                                 break;
                             }
                         }
                         printf("'-e' has a wrong value '%s'. It must be an unsigned long greater "
-                        "than 0\n", argv[i]);
+                        "than 0\n", current_arg);
                         return close_dataset_and_exit(dataset);
                     case 'o':
-                        if (strcmp(argv[++i], "true") == 0) {
+                        current_arg = argv[++i];
+                        if (strcmp(current_arg, "true") == 0) {
                             partial_observation = true;
-                        } else if (strcmp(argv[i], "false") == 0) {
+                        } else if (strcmp(current_arg, "false") == 0) {
                             partial_observation = false;
                         } else {
                             printf("'-o' has a wrong value '%s'. It must be a boolean value, 'true'"
-                            " or 'false'\n", argv[i]);
+                            " or 'false'\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
                         break;
                     case 'l':
-                        FILE *labels_file = fopen(argv[++i], "r");
+                        current_arg = argv[++i];
+                        FILE *labels_file = fopen(current_arg, "r");
                         if (!labels_file) {
-                            printf("'-l' value '%s' does not exist.\n", argv[i]);
+                            printf("'-l' value '%s' does not exist.\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
 
                         char labels_delimiter = ' ';
-                        if (strstr(argv[i], ".csv")) {
+                        if (strstr(current_arg, ".csv")) {
                             labels_delimiter = ',';
                         }
 
@@ -196,13 +210,14 @@ int main(int argc, char *argv[]) {
                         fclose(labels_file);
                         break;
                     case 'v':
-                        if (strcmp(argv[++i], "true") == 0) {
+                        current_arg = argv[++i];
+                        if (strcmp(current_arg, "true") == 0) {
                             should_evaluate = true;
-                        } else if (strcmp(argv[i], "false") == 0) {
+                        } else if (strcmp(current_arg, "false") == 0) {
                             should_evaluate = false;
                         } else {
                             printf("'-v' has a wrong value '%s'. It must be a boolean value, 'true'"
-                            " or 'false'\n", argv[i]);
+                            " or 'false'\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
                         break;
@@ -216,16 +231,18 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
     pcg32_random_t seed;
+    pcg32_random_t train_test_split_seed;
 
-    pcg32_srandom_r(&seed, STATE_SEED, time(NULL));
+    pcg32_srandom_r(&train_test_split_seed, STATE_SEED, SEQUENCE_SEED);
+    pcg32_srandom_r(&seed, STATE_SEED, SEQUENCE_SEED);
 
     char *test_directory = NULL;
     if ((argc >= 18) && (argc % 2 == 0)) {
         if (isdigit(argv[argc - 1][0])) {
             struct timespec current_time;
-            int given_number = atoi(argv[argc - 1]);
+            current_arg = argv[argc - 1];
+            int given_number = atoi(current_arg);
             size_t time_milliseconds, random_seed;
             char *file_info;
 
@@ -234,13 +251,13 @@ int main(int argc, char *argv[]) {
                 random_seed = given_number + (SEQUENCE_SEED * current_time.tv_nsec);
                 time_milliseconds = current_time.tv_sec * 1e9 + current_time.tv_nsec + STATE_SEED;
                 pcg32_srandom_r(&seed, time_milliseconds, random_seed);
+                pcg32_srandom_r(&train_test_split_seed, time_milliseconds - random_seed,
+                random_seed - time_milliseconds);
 
-                test_directory = (char *) realloc(test_directory, (snprintf(NULL, 0,
-                "timestamp=%zu_test=%d_/filepath=%s", time_milliseconds, given_number, argv[1]) + 1)
-                * sizeof(char));
+                test_directory = (char *) realloc(test_directory, (snprintf(NULL, 0, TEST_DIRECTORY,
+                time_milliseconds, given_number) + 1) * sizeof(char));
 
-                sprintf(test_directory, "timestamp=%zu_test=%d_filepath=%s/", time_milliseconds,
-                given_number, argv[1]);
+                sprintf(test_directory, TEST_DIRECTORY, time_milliseconds, given_number);
             } while (mkdir(test_directory, 0740) != 0);
 
             file_info = (char *) malloc((strlen(test_directory) + strlen(INFO_FILE_NAME) + 1)
@@ -255,10 +272,34 @@ int main(int argc, char *argv[]) {
             }
             free(file_info);
 
-            fprintf(file, "f=%s\nt=%s\np=%s\nd=%s\nc=%s\nb=%s\ntest=%d\nstate_seed=%zu\n"
-            "seq_seed=%zu\ntrain_test_split_state_seed=%d\ntrain_test_split_seq_seed=%d\n",
-            argv[2], argv[8], argv[10], argv[12], argv[14], argv[16], given_number,
-            time_milliseconds, random_seed, STATE_SEED, SEQUENCE_SEED);
+            fprintf(file, "f=%s\nt=%f\np=%f\nd=%f\nb=%u\nrun=%d\n",
+            dataset_value, threshold, promotion, demotion, breadth, given_number);
+
+            if (!use_back_chaining) {
+                fprintf(file, "c=true\n");
+            } else {
+                fprintf(file, "c=false\n");
+            }
+
+            if (partial_observation) {
+                fprintf(file, "o=true\n");
+            } else {
+                fprintf(file, "o=false\n");
+            }
+
+            if (has_header) {
+                fprintf(file, "h=true\n");
+            } else {
+                fprintf(file, "h=false\n");
+            }
+
+            if (constraints_file) {
+                fprintf(file, "i=%s\n", constraints_file);
+            }
+
+            fprintf(file, "state_seed=%zu\nseq_seed=%zu\ntrain_test_split_state_seed=%zu\n"
+            "train_test_split_seq_seed=%zu\n", time_milliseconds, random_seed,
+            time_milliseconds - random_seed, random_seed - time_milliseconds);
 
             fclose(file);
         }
@@ -302,8 +343,6 @@ int main(int argc, char *argv[]) {
 
     int current_index;
     size_t remaining = dataset_size;
-    pcg32_random_t train_test_split_seed;
-    pcg32_srandom_r(&train_test_split_seed, STATE_SEED, SEQUENCE_SEED);
     for (i = 0; i < test_size; ++i) {
         current_index = pcg32_random_r(&train_test_split_seed) % remaining--;
         test_indices[i] = possible_indices[current_index];
