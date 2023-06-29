@@ -47,12 +47,13 @@ int main(int argc, char *argv[]) {
         "<bool> Should it use the classic approach or not (use back-chaining\n demotion)? Default "
         "value is set to 'false'\n-o <bool> Should the it be trained using partial observations? "
         "Default\n value is set to 'true'.\n-v <bool> Should it evaluate the learnt KnowledgeBase "
-        "at each epoch?\n Default value is set to 'false'.\n-l <filepath> This option enables "
-        "evaluating the learned KnowledgeBase\n with a file containing the possible labels that "
-        "should be predicted.\n This will only be used if -v is set to 'true'.\n-s1 <unsigned long>"
-        " Seed 1 (state seed) for the PRNG. It must be bigger\n than 0.\n\nBy adding an additional "
-        "number at the end of these parameters, you mark\n the number of this run and it will save "
-        "its given parameters.\n");
+        "at each epoch?\n Default value is set to 'false'.\n-l <filepath> This option enables the "
+        "rule learning to focus on these\n labels and also enables evaluating the learned "
+        "KnowledgeBase with a\n file containing the possible labels that should be predicted.\n "
+        "This will only be used if -v is set to 'true'.\n-s1 <unsigned long>  Seed 1 (state seed) "
+        "for the PRNG. It must be bigger\n than 0.\n\nBy adding an additional number at the end of "
+        "these parameters, you mark\n the number of this run and it will save its given parameters."
+        "\n");
         return EXIT_FAILURE;
     }
 
