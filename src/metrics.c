@@ -153,8 +153,8 @@ size_t * const restrict total_not_recovered) {
     Literal *removed_literal = NULL;
     Scene *removed_literals = NULL, *observation = NULL, *inference = NULL;
     pcg32_random_t seed;
-    if (global_seed) {
-        seed = *global_seed;
+    if (global_rng) {
+        seed = *global_rng;
     } else {
         pcg32_srandom_r(&seed, time(NULL), 314159U);
     }

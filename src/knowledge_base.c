@@ -112,8 +112,8 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
         scene_union(observed, inferred, &combined);
 
         pcg32_random_t seed;
-        if (global_seed) {
-            seed = *global_seed;
+        if (global_rng) {
+            seed = *global_rng;
         } else {
             pcg32_srandom_r(&seed, time(NULL), 42u);
         }

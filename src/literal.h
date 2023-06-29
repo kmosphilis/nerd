@@ -6,7 +6,7 @@
 #include <pcg_variants.h>
 
 // If defined, this seed will be used across the entire algorithm.
-extern pcg32_random_t *global_seed;
+extern pcg32_random_t *global_rng;
 
 typedef struct Literal {
     char *atom;

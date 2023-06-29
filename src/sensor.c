@@ -220,8 +220,8 @@ end_literal_loop:
                 }
 
                 pcg32_random_t seed;
-                if (global_seed) {
-                    seed = *global_seed;
+                if (global_rng) {
+                    seed = *global_rng;
                 } else {
                     pcg32_srandom_r(&seed, time(NULL), 0U);
                 }

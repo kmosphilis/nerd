@@ -256,9 +256,9 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    pcg32_random_t seed;
+    pcg32_random_t generator;
 
-    pcg32_srandom_r(&seed, STATE_SEED, SEQUENCE_SEED);
+    pcg32_srandom_r(&generator, STATE_SEED, SEQUENCE_SEED);
 
     char *test_directory = NULL;
     if ((argc >= 18) && (argc % 2 == 0)) {
@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
             if (!s2_set) {
                 s2 = given_number + (SEQUENCE_SEED * current_time.tv_nsec);
             }
-            pcg32_srandom_r(&seed, s1, s2);
+            pcg32_srandom_r(&generator, s1, s2);
 
             info_file = (char *) malloc((strlen(test_directory) + strlen(INFO_FILE_NAME) + 1)
             * sizeof(char));
@@ -329,7 +329,7 @@ int main(int argc, char *argv[]) {
             fclose(file);
         }
     }
-    global_seed = &seed;
+    global_rng = &generator;
 
     size_t dataset_size = 0;
     int c;
@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
     int current_index;
     size_t remaining = dataset_size;
     for (i = 0; i < test_size; ++i) {
-        current_index = pcg32_random_r(global_seed) % remaining--;
+        current_index = pcg32_random_r(global_rng) % remaining--;
         test_indices[i] = possible_indices[current_index];
         possible_indices[current_index] = possible_indices[remaining];
     }
