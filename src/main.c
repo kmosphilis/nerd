@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
                 current_arg = argv[++i];
                 if (strcmp(large_option, "s1") == 0) {
                     s1 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
-                    if (*arg_end) {
+                    if ((*arg_end) || strstr(current_arg, "-")) {
                         printf("'-s1' value '%s' is not valid. It must be an unsigned long greater "
                         "than 0 (> 0).\n", large_option);
                         return close_dataset_and_exit(dataset);
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
                     s1_set = true;
                 } else if (strcmp(large_option, "s2") == 0) {
                     s2 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
-                    if (*arg_end) {
+                    if ((*arg_end) || strstr(current_arg, "-")) {
                         printf("'-s2' value '%s' is not valid. It must be an unsigned long greater "
                         "than 0 (> 0).\n", large_option);
                         return close_dataset_and_exit(dataset);
@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
                         break;
                     case 't':
                         current_arg = argv[++i];
-                        threshold = atof(current_arg);
-                        if (threshold <= 0) {
+                        threshold = strtof(current_arg, &arg_end);
+                        if ((*arg_end) || (threshold <= 0)) {
                             printf("'-t' has a wrong value '%s'. It must be a float greater than "
                             "0.0\n", current_arg);
 
@@ -140,8 +140,8 @@ int main(int argc, char *argv[]) {
                         break;
                     case 'p':
                         current_arg = argv[++i];
-                        promotion = atof(current_arg);
-                        if (promotion <= 0) {
+                        promotion = strtof(current_arg, &arg_end);
+                        if ((*arg_end) || (promotion <= 0)) {
                             printf("'-p' has a wrong value '%s'. It must be a float greater than "
                             "0.0\n", current_arg);
 
@@ -150,8 +150,8 @@ int main(int argc, char *argv[]) {
                         break;
                     case 'd':
                         current_arg = argv[++i];
-                        demotion = atof(current_arg);
-                        if (demotion <= 0) {
+                        demotion = strtof(current_arg, &arg_end);
+                        if ((*arg_end) || (demotion <= 0)) {
                             printf("'-d' has a wrong value '%s'. It must be a float greater than "
                             "0.0\n", current_arg);
                             return close_dataset_and_exit(dataset);
@@ -171,24 +171,22 @@ int main(int argc, char *argv[]) {
                         break;
                     case 'b':
                         current_arg = argv[++i];
-                        if ((isdigit(current_arg[0])) || (isdigit(current_arg[1]))) {
-                            breadth = atoi(current_arg);
-                            break;
+                        breadth = strtoul(current_arg, &arg_end, DECIMAL_BASE);
+                        if ((*arg_end) || strstr(current_arg, "-")) {
+                            printf("'-b' has a wrong value '%s'. It must be an unsigned int\n",
+                            current_arg);
+                            return close_dataset_and_exit(dataset);
                         }
-                        printf("'-b' has a wrong value '%s'. It must be an unsigned int\n",
-                        current_arg);
-                        return close_dataset_and_exit(dataset);
+                        break;
                     case 'e':
                         current_arg = argv[++i];
-                        if ((isdigit(current_arg[0])) || (isdigit(current_arg[1]))) {
-                            epochs = (size_t) atol(current_arg);
-                            if (epochs > 0) {
-                                break;
-                            }
+                        epochs = strtoul(current_arg, &arg_end, DECIMAL_BASE);
+                        if ((*arg_end) || strstr(current_arg, "-")) {
+                            printf("'-e' has a wrong value '%s'. It must be an unsigned long "
+                            "greater than 0\n", current_arg);
+                            return close_dataset_and_exit(dataset);
                         }
-                        printf("'-e' has a wrong value '%s'. It must be an unsigned long greater "
-                        "than 0\n", current_arg);
-                        return close_dataset_and_exit(dataset);
+                        break;
                     case 'o':
                         current_arg = argv[++i];
                         if (strcmp(current_arg, "true") == 0) {
