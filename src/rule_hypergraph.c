@@ -409,12 +409,11 @@ const float demotion_rate) {
 
     unsigned int i, j;
     Vertex *vertex_to_find, *current_vertex;
-    Scene *opposed, *observed_and_inferred, *observed_and_inferred_no_opposed;
+    Scene *opposed, *observed_and_inferred;
     Rule *current_rule;
 
     scene_opposed_literals(observations, inferences, &opposed);
     scene_union(observations, inferences, &observed_and_inferred);
-    scene_difference(observed_and_inferred, opposed, &observed_and_inferred_no_opposed);
 
     // Finds all the Rules that concur by finding the observed Literal in the RB-tree.
     for (j = 0; j < observations->size; ++j) {
@@ -425,7 +424,7 @@ const float demotion_rate) {
         if (current_vertex && (current_vertex->number_of_edges != 0)) {
             for (i = 0; i < current_vertex->number_of_edges; ++i) {
                 current_rule = current_vertex->edges[i]->rule;
-                // Checks if the Rule is applicable given the inferred and observed Literals.
+                // Checks if the Rule is applicable given the observed Literals.
                 if (rule_applicable(current_rule, observations)) {
                     bool is_inactive = current_rule->weight < knowledge_base->activation_threshold;
                     current_rule->weight += promotion_rate;
@@ -609,7 +608,6 @@ edge_checking:
 finished:
     scene_destructor(&observed_and_inferred);
     scene_destructor(&opposed);
-    scene_destructor(&observed_and_inferred_no_opposed);
 }
 
 #if (RULE_HYPERGRAPH_TEST_FUNCTIONS == 1) || (RULE_HYPERGRAPH_TEST == 1)

@@ -97,19 +97,41 @@ int knowledge_base_add_rule(KnowledgeBase * const knowledge_base, Rule ** const 
  * @param inferred The inferred Scene.
  * @param max_body_size The maximum number of Literals to be included in the body of a Rule.
  * @param max_number_of_rules The maximum number of Rules to be created.
+ * @param focused_labels (Optional) A Context containing labels that the algorithm should use as the
+ * head for every Rule that it will create. If NULL, the head will be a random uncovered Literal.
  */
 void knowledge_base_create_new_rules(KnowledgeBase * const knowledge_base,
 const Scene * const restrict observed, const Scene * const restrict inferred,
-const unsigned int max_body_size, const unsigned int max_number_of_rules) {
+const unsigned int max_body_size, const unsigned int max_number_of_rules,
+const Context * const restrict focused_labels) {
     if (knowledge_base && observed) {
         Context *uncovered = NULL;
-        Scene *combined = NULL;
-        Literal *head = NULL, *temp;
+        Scene *combined = NULL, *opposed = NULL, *temp_scene;
+        Literal *head = NULL, *temp = NULL;
         Body *body = NULL;
         Rule *new_rule = NULL;
+        bool head_set = false;
 
-        scene_difference(observed, inferred, &uncovered);
-        scene_union(observed, inferred, &combined);
+        scene_union(observed, inferred, &temp_scene);
+        scene_opposed_literals(observed, inferred, &opposed);
+        scene_difference(temp_scene, opposed, &combined);
+
+        unsigned int i;
+        if (focused_labels) {
+            for (i = 0; i < focused_labels->size; ++i) {
+                int index = scene_literal_index(combined, focused_labels->literals[i]);
+                if (index > -1) {
+                    scene_remove_literal(combined, index, &head);
+                    head_set = true;
+                    break;
+                }
+            }
+            if (!head_set) {
+                return;
+            }
+        } else {
+            scene_difference(observed, inferred, &uncovered);
+        }
 
         pcg32_random_t seed;
         if (global_rng) {
@@ -118,27 +140,33 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
             pcg32_srandom_r(&seed, time(NULL), 42u);
         }
 
-        unsigned int i, j, body_size,
+        unsigned int j, body_size,
         rules_to_create = (pcg32_random_r(&seed) % max_number_of_rules) + 1;
         int chosen_head_index, head_index, remaining_randoms, random_chosen,chosen_index,
         *random_indices;
 
         for (i = 0; i < rules_to_create; ++i) {
-            if ((uncovered->size != 0) && (combined->size > 1)) {
+            if (combined->size > 1) {
 
-                body = context_constructor(true);
-                chosen_head_index = pcg32_random_r(&seed) % uncovered->size;
-                literal_copy(&head, uncovered->literals[chosen_head_index]);
+                if (!head_set) {
+                    if (uncovered->size == 0) {
+                        break;
+                    }
 
-                head_index = scene_literal_index(combined, head);
-                if (head_index >= 0) {
-                    scene_remove_literal(combined, head_index, NULL);
+                    chosen_head_index = pcg32_random_r(&seed) % uncovered->size;
+                    literal_copy(&head, uncovered->literals[chosen_head_index]);
+
+                    head_index = scene_literal_index(combined, head);
+                    if (head_index >= 0) {
+                        scene_remove_literal(combined, head_index, NULL);
+                    }
                 }
 
+                body = context_constructor(true);
                 body_size = (pcg32_random_r(&seed) % max_body_size) + 1;
                 remaining_randoms = combined->size;
 
-                random_indices = (int *) calloc(combined->size, sizeof(int));
+                random_indices = (int *) malloc(combined->size * sizeof(int));
 
                 for (j = 0; j < combined->size; ++j) {
                     random_indices[j] = j;
@@ -164,10 +192,17 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules) {
                     rule_destructor(&new_rule);
                 }
 
-                scene_add_literal(combined, &head);
-                free(random_indices);
+                if (!head_set) {
+                    scene_add_literal(combined, &head);
+                }
+
+                safe_free(random_indices);
                 context_destructor(&body);
             }
+        }
+
+        if (head_set) {
+            literal_destructor(&head);
         }
 
         scene_destructor(&combined);

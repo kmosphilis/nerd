@@ -243,7 +243,7 @@ const Context * const restrict labels) {
         return;
     }
 
-    Scene *observation = NULL, *inferred = NULL, *uncovered = NULL;
+    Scene *observation = NULL, *inferred = NULL;
     size_t epoch, iteration;
     const size_t total_observations = sensor_get_total_observations(nerd->sensor);
 
@@ -267,14 +267,11 @@ const Context * const restrict labels) {
             + (prudens_end_time.tv_nsec - prudens_start_time.tv_nsec) * NANOSECONDS_TO_MILLISECONDS;
 
             knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred,
-            nerd->breadth, 5);
-
-            scene_difference(observation, inferred, &uncovered);
+            nerd->breadth, 5, labels);
 
             rule_hypergraph_update_rules(nerd->knowledge_base, observation, inferred,
             nerd->promotion_weight, nerd->demotion_weight);
 
-            scene_destructor(&uncovered);
             scene_destructor(&observation);
             scene_destructor(&inferred);
         }

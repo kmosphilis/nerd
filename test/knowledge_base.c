@@ -129,6 +129,7 @@ START_TEST(create_new_rules_test) {
     RuleQueue *rule_queue = create_rule_queue2(), *result;
     Scene *observed = scene_constructor(true), *inferred = scene_constructor(true);
     Literal *literal = literal_constructor("Penguin", 1), *copy;
+    Context *labels = context_constructor(true);
     scene_add_literal(observed, &literal);
 
     literal = literal_constructor("Antarctica", 1);
@@ -142,7 +143,9 @@ START_TEST(create_new_rules_test) {
     scene_add_literal(inferred, &copy);
 
     literal = literal_constructor("Fly", 0);
+    literal_copy(&copy, literal);
     scene_add_literal(observed, &literal);
+    context_add_literal(labels, &copy);
 
     literal = literal_constructor("Albatross", 1);
     scene_add_literal(observed, &literal);
@@ -157,8 +160,9 @@ START_TEST(create_new_rules_test) {
     rule_hypergraph_get_inactive_rules(knowledge_base, &result);
     old_size = knowledge_base->active->length + result->length;
     rule_queue_destructor(&result);
+
     do {
-        knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5);
+        knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5, NULL);
         rule_hypergraph_get_inactive_rules(knowledge_base, &result);
         new_size = knowledge_base->active->length + result->length;
         rule_queue_destructor(&result);
@@ -167,7 +171,7 @@ START_TEST(create_new_rules_test) {
 
     old_size = new_size;
     do {
-        knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5);
+        knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5, NULL);
         rule_hypergraph_get_inactive_rules(knowledge_base, &result);
         new_size = knowledge_base->active->length + result->length;
         rule_queue_destructor(&result);
@@ -175,21 +179,37 @@ START_TEST(create_new_rules_test) {
     ck_assert_int_ne(old_size, new_size);
 
     old_size = new_size;
-    knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5);
-    knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5);
+    knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5, NULL);
+    knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5, NULL);
     rule_hypergraph_get_inactive_rules(knowledge_base, &result);
     new_size = knowledge_base->active->length + result->length;
     rule_queue_destructor(&result);
     ck_assert_int_eq(old_size, new_size);
 
-    knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5);
-    knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5);
+    knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5, NULL);
+    knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5, NULL);
     rule_hypergraph_get_inactive_rules(knowledge_base, &result);
     new_size = knowledge_base->active->length + result->length;
     rule_queue_destructor(&result);
     ck_assert_int_ne(old_size, new_size);
 
     knowledge_base_destructor(&knowledge_base);
+
+    knowledge_base = knowledge_base_constructor(3.0, true);
+
+    do {
+        rule_queue_destructor(&result);
+        knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 20, labels);
+        rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    } while (result->length == 0);
+
+    for (i = 0; i < result->length; ++i) {
+        ck_assert_literal_eq(result->rules[i]->head, labels->literals[0]);
+    }
+
+    rule_queue_destructor(&result);
+    knowledge_base_destructor(&knowledge_base);
+    context_destructor(&labels);
     scene_destructor(&inferred);
     scene_destructor(&observed);
 }
