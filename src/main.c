@@ -46,14 +46,11 @@ int main(int argc, char *argv[]) {
         "that Nerd should train for. It must\n be greater than 0. Default value is set to 1.\n-c "
         "<bool> Should it use the classic approach or not (use back-chaining\n demotion)? Default "
         "value is set to 'false'\n-o <bool> Should the it be trained using partial observations? "
-        "Default\n value is set to 'true'.\n-v <bool> Should it evaluate the learnt KnowledgeBase "
-        "at each epoch?\n Default value is set to 'false'.\n-l <filepath> This option enables the "
-        "rule learning to focus on these\n labels and also enables evaluating the learned "
-        "KnowledgeBase with a\n file containing the possible labels that should be predicted.\n "
-        "This will only be used if -v is set to 'true'.\n-s1 <unsigned long>  Seed 1 (state seed) "
-        "for the PRNG. It must be bigger\n than 0.\n\nBy adding an additional number at the end of "
-        "these parameters, you mark\n the number of this run and it will save its given parameters."
-        "\n");
+        "Default\n value is set to 'true'.-l <filepath> This option enables the rule learning to "
+        "focus on these\n labels found in the given file. \n-s1 <unsigned long>  Seed 1 (state "
+        "seed) for the PRNG. It must be bigger\n than 0.\n\nBy adding an additional number at the "
+        "end of these parameters, you mark\n the number of this run and it will save its given "
+        "parameters.\n");
         return EXIT_FAILURE;
     }
 
@@ -233,18 +230,18 @@ int main(int argc, char *argv[]) {
 
                         fclose(labels_file);
                         break;
-                    case 'v':
-                        current_arg = argv[++i];
-                        if (strcmp(current_arg, "true") == 0) {
-                            should_evaluate = true;
-                        } else if (strcmp(current_arg, "false") == 0) {
-                            should_evaluate = false;
-                        } else {
-                            printf("'-v' has a wrong value '%s'. It must be a boolean value, 'true'"
-                            " or 'false'\n", current_arg);
-                            return close_dataset_and_exit(dataset);
-                        }
-                        break;
+                    // case 'v':
+                    //     current_arg = argv[++i];
+                    //     if (strcmp(current_arg, "true") == 0) {
+                    //         should_evaluate = true;
+                    //     } else if (strcmp(current_arg, "false") == 0) {
+                    //         should_evaluate = false;
+                    //     } else {
+                    //         printf("'-v' has a wrong value '%s'. It must be a boolean value, 'true'"
+                    //         " or 'false'\n", current_arg);
+                    //         return close_dataset_and_exit(dataset);
+                    //     }
+                    //     break;
                     default:
                         printf("Option '-%c' is not available.\n", opt);
                         return close_dataset_and_exit(dataset);
