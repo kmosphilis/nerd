@@ -14,13 +14,14 @@
 #include "nerd_helper.h"
 #include "metrics.h"
 
+#define DECIMAL_BASE 10
+#define STATE_SEED 314159U
+#define SEQUENCE_SEED 271828U
+
 #define TRAIN ".train_set"
 #define TEST ".test_set"
 #define TEST_DIRECTORY "timestamp=%zu_test=%d/"
 #define INFO_FILE_NAME "info"
-
-#define STATE_SEED 314159U
-#define SEQUENCE_SEED 271828U
 
 int compare(const void *a, const void *b) {
     return (*(int *) a - *(int *) b);
@@ -36,8 +37,8 @@ int close_dataset_and_exit(FILE *dataset) {
 int main(int argc, char *argv[]) {
     if (argc < 13) {
         printf("Required parameters:\n-f <filepath> The path of the file,\n-h <bool> Does the file "
-        "have a header or not?,\n-t <float> > 0 Threshold value. Must be bigger than 0,\n-p <float>"
-        " > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be"
+        "have a header or not?,\n-t <float> > 0 Threshold value. It must be bigger than 0,\n-p "
+        "<float> > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 Demotion rate. Must be"
         " greater than 0, and\n-b <unsigned int> Maximum number of literals per rule. It must be\n "
         "positive. If more that the maximum number or 0 are given, it will use\n the maximum value "
         "(max - 1).\n\nOptional parameters:\n-i <filepath> The path of a file containing "
@@ -48,25 +49,49 @@ int main(int argc, char *argv[]) {
         "Default\n value is set to 'true'.\n-v <bool> Should it evaluate the learnt KnowledgeBase "
         "at each epoch?\n Default value is set to 'false'.\n-l <filepath> This option enables "
         "evaluating the learned KnowledgeBase\n with a file containing the possible labels that "
-        "should be predicted.\n This will only be used if -v is set to 'true'.\n\nBy adding an "
-        "additional number at the end of these parameters, you mark\n the number of this run and it"
-        " will save its given parameters.\n");
+        "should be predicted.\n This will only be used if -v is set to 'true'.\n-s1 <unsigned long>"
+        " Seed 1 (state seed) for the PRNG. It must be bigger\n than 0.\n\nBy adding an additional "
+        "number at the end of these parameters, you mark\n the number of this run and it will save "
+        "its given parameters.\n");
         return EXIT_FAILURE;
     }
 
     Context *labels = NULL;
     bool has_header = false, use_back_chaining = true, partial_observation = true,
-    should_evaluate = false;
+    should_evaluate = false, s1_set = false, s2_set = false;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
     unsigned int i, breadth = 0;
-    char *dataset_value = NULL, *constraints_file = NULL, *current_arg;
-    size_t epochs = 1;
+    char *current_arg, *arg_end, *dataset_value = NULL, *constraints_file = NULL;
+    size_t epochs = 1, s1 = 0, s2 = 0;
     for (i = 1;
     i < (((unsigned int) argc % 2 == 0) ? (unsigned int) (argc - 1) : (unsigned int) argc); ++i) {
         if (i % 2 == 1) {
-            if (sscanf(argv[i], "-%c", &opt) == 1) {
+            if ((strlen(argv[i]) > 2) && strstr(argv[i], "-")) {
+                char *large_option = argv[i] + 1;
+                current_arg = argv[++i];
+                if (strcmp(large_option, "s1") == 0) {
+                    s1 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
+                    if (*arg_end) {
+                        printf("'-s1' value '%s' is not valid. It must be an unsigned long greater "
+                        "than 0 (> 0).\n", large_option);
+                        return close_dataset_and_exit(dataset);
+                    }
+                    s1_set = true;
+                } else if (strcmp(large_option, "s2") == 0) {
+                    s2 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
+                    if (*arg_end) {
+                        printf("'-s2' value '%s' is not valid. It must be an unsigned long greater "
+                        "than 0 (> 0).\n", large_option);
+                        return close_dataset_and_exit(dataset);
+                    }
+                    s2_set = true;
+                } else {
+                    printf("Option '-%s' is not available.\n", large_option);
+                    return close_dataset_and_exit(dataset);
+                }
+            } else if (sscanf(argv[i], "-%c", &opt) == 1) {
                 switch (opt) {
                     case 'f':
                         current_arg = argv[++i];
@@ -223,7 +248,7 @@ int main(int argc, char *argv[]) {
                         break;
                     default:
                         printf("Option '-%c' is not available.\n", opt);
-                            return close_dataset_and_exit(dataset);
+                        return close_dataset_and_exit(dataset);
                 }
             } else {
                 printf("Invalid parameters.\n");
@@ -232,9 +257,7 @@ int main(int argc, char *argv[]) {
         }
     }
     pcg32_random_t seed;
-    pcg32_random_t train_test_split_seed;
 
-    pcg32_srandom_r(&train_test_split_seed, STATE_SEED, SEQUENCE_SEED);
     pcg32_srandom_r(&seed, STATE_SEED, SEQUENCE_SEED);
 
     char *test_directory = NULL;
@@ -243,34 +266,39 @@ int main(int argc, char *argv[]) {
             struct timespec current_time;
             current_arg = argv[argc - 1];
             int given_number = atoi(current_arg);
-            size_t time_milliseconds, random_seed;
-            char *file_info;
+            size_t time_nanoseconds;
+            char *info_file;
 
             do {
                 timespec_get(&current_time, TIME_UTC);
-                random_seed = given_number + (SEQUENCE_SEED * current_time.tv_nsec);
-                time_milliseconds = current_time.tv_sec * 1e9 + current_time.tv_nsec + STATE_SEED;
-                pcg32_srandom_r(&seed, time_milliseconds, random_seed);
-                pcg32_srandom_r(&train_test_split_seed, time_milliseconds - random_seed,
-                random_seed - time_milliseconds);
+                time_nanoseconds = current_time.tv_sec * 1e9 + current_time.tv_nsec + STATE_SEED;
 
                 test_directory = (char *) realloc(test_directory, (snprintf(NULL, 0, TEST_DIRECTORY,
-                time_milliseconds, given_number) + 1) * sizeof(char));
+                time_nanoseconds, given_number) + 1) * sizeof(char));
 
-                sprintf(test_directory, TEST_DIRECTORY, time_milliseconds, given_number);
+                sprintf(test_directory, TEST_DIRECTORY, time_nanoseconds, given_number);
             } while (mkdir(test_directory, 0740) != 0);
 
-            file_info = (char *) malloc((strlen(test_directory) + strlen(INFO_FILE_NAME) + 1)
+            if (!s1_set) {
+                s1 = time_nanoseconds;
+            }
+
+            if (!s2_set) {
+                s2 = given_number + (SEQUENCE_SEED * current_time.tv_nsec);
+            }
+            pcg32_srandom_r(&seed, s1, s2);
+
+            info_file = (char *) malloc((strlen(test_directory) + strlen(INFO_FILE_NAME) + 1)
             * sizeof(char));
-            sprintf(file_info, "%s%s", test_directory, INFO_FILE_NAME);
+            sprintf(info_file, "%s%s", test_directory, INFO_FILE_NAME);
 
             umask(S_IROTH | S_IWOTH | S_IWGRP);
             FILE *file = NULL;
-            if (!(file = fopen(file_info, "w"))) {
-                free (file_info);
+            if (!(file = fopen(info_file, "w"))) {
+                free (info_file);
                 return close_dataset_and_exit(dataset);
             }
-            free(file_info);
+            free(info_file);
 
             fprintf(file, "f=%s\nt=%f\np=%f\nd=%f\nb=%u\nrun=%d\n",
             dataset_value, threshold, promotion, demotion, breadth, given_number);
@@ -296,10 +324,7 @@ int main(int argc, char *argv[]) {
             if (constraints_file) {
                 fprintf(file, "i=%s\n", constraints_file);
             }
-
-            fprintf(file, "state_seed=%zu\nseq_seed=%zu\ntrain_test_split_state_seed=%zu\n"
-            "train_test_split_seq_seed=%zu\n", time_milliseconds, random_seed,
-            time_milliseconds - random_seed, random_seed - time_milliseconds);
+            fprintf(file, "state_seed=%zu\nseq_seed=%zu\n", s1, s2);
 
             fclose(file);
         }
@@ -344,7 +369,7 @@ int main(int argc, char *argv[]) {
     int current_index;
     size_t remaining = dataset_size;
     for (i = 0; i < test_size; ++i) {
-        current_index = pcg32_random_r(&train_test_split_seed) % remaining--;
+        current_index = pcg32_random_r(global_seed) % remaining--;
         test_indices[i] = possible_indices[current_index];
         possible_indices[current_index] = possible_indices[remaining];
     }
