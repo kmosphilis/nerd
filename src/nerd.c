@@ -73,26 +73,24 @@ const float demotion_weight, const bool use_backward_chaining, const bool partia
  * @param epochs The number of epochs the algorithm should learn for.
  * @param use_backward_chaining A boolean value which indicates whether the hypergraph should
  * demoted rules using the backward chaining algorithm or not.
+ * @param reuse_sensor A boolean value which indicates whether the sensor should be reused or not.
  *
  * @return A new Nerd object * from the given filepath. Use nerd_destructor to deallocate.
 */
 Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int epochs,
-const bool use_backward_chaining) {
+const bool use_backward_chaining, const bool reuse_sensor) {
     if (filepath) {
         FILE *file = fopen(filepath, "rb");
         if (!file) {
             return NULL;
         }
         Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
-        nerd->knowledge_base = NULL;
         nerd->sensor = NULL;
 
         size_t buffer_size = BUFFER_SIZE;
-        char *buffer = (char *) malloc(buffer_size * sizeof(char)), sensor_delimiter;
+        char *buffer = (char *) calloc(buffer_size, sizeof(char)), sensor_delimiter;
         unsigned short partial_observation, sensor_reuse, sensor_header;
         float activation_threshold;
-
-        memset(buffer, 0, buffer_size);
 
         if (fscanf(file, "breadth: %zu\n", &(nerd->breadth)) != 1) {
             goto failed1;
@@ -110,17 +108,26 @@ const bool use_backward_chaining) {
             goto failed1;
         }
         nerd->partial_observation = partial_observation;
-        if (fscanf(file, "sensor: %s '%c' %hu %hu\n", buffer, &sensor_delimiter, &sensor_reuse,
-        &sensor_header) != 4) {
-            goto failed1;
-        }
-        nerd->sensor = sensor_constructor_from_file(buffer, sensor_delimiter, sensor_reuse,
-        sensor_header);
 
-        if (nerd->sensor->reuse) {
-            nerd->epochs = epochs;
+        nerd->epochs = epochs;
+        if (reuse_sensor) {
+            if (fscanf(file, "sensor: %s '%c' %hu %hu\n", buffer, &sensor_delimiter, &sensor_reuse,
+            &sensor_header) != 4) {
+                goto failed1;
+            }
+            nerd->sensor = sensor_constructor_from_file(buffer, sensor_delimiter, sensor_reuse,
+            sensor_header);
+
+            if (nerd->sensor) {
+                if (!nerd->sensor->reuse) {
+                    nerd->epochs = 1;
+                }
+            } else {
+                goto failed1;
+            }
         } else {
-            nerd->epochs = 1;
+            int c;
+            while ((c = fgetc(file)) != '\n');
         }
 
         long int previous_position = ftell(file);

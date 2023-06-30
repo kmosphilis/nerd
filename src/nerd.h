@@ -20,7 +20,7 @@ const bool header , const float activation_threshold, const unsigned int breadth
 const unsigned int depth, const unsigned int epochs, const float promotion_weight,
 const float demotion_weight, const bool use_backward_chaining, const bool partial_observation);
 Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int epochs,
-const bool use_backward_chaining);
+const bool use_backward_chaining, const bool reuse_sensor);
 void nerd_destructor(Nerd ** const nerd);
 void nerd_start_learning(Nerd * const nerd, const PrudensSettings_ptr settings,
 const char * const test_directory, const char * const evaluation_filepath,
