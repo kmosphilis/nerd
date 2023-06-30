@@ -23,10 +23,6 @@
 #define TEST_DIRECTORY "timestamp=%zu_test=%d/"
 #define INFO_FILE_NAME "info"
 
-int compare(const void *a, const void *b) {
-    return (*(int *) a - *(int *) b);
-}
-
 int close_dataset_and_exit(FILE *dataset) {
     if (dataset) {
         fclose(dataset);
@@ -327,71 +323,16 @@ int main(int argc, char *argv[]) {
     }
     global_rng = &generator;
 
-    size_t dataset_size = 0;
-    int c;
-    for (c = fgetc(dataset); c != EOF; c = fgetc(dataset)) {
-        if (c == '\n') {
-            ++dataset_size;
-        }
-    }
-
-    fseek(dataset, 0, SEEK_SET);
-
-    char *train_path = (char *) malloc((strlen(TRAIN) + strlen(test_directory) + 1) * sizeof(char)),
-    *test_path = (char *) malloc((strlen(TEST) + strlen(test_directory) + 1) * sizeof(char));
+    char *train_path = (char *) malloc((strlen(TRAIN) + strlen(test_directory) + 1) * sizeof(char));
 
     sprintf(train_path, "%s%s", test_directory, TRAIN);
-    sprintf(test_path, "%s%s", test_directory, TEST);
 
-    FILE *train = fopen(train_path, "wb"), *test = fopen(test_path, "wb");
-
-    if (has_header) {
-        dataset_size -= 1;
-        do {
-            c = fgetc(dataset);
-            fputc(c, train);
-            fputc(c, test);
-        } while (c != '\n');
+    if (train_test_split(dataset, has_header, 0.2, global_rng, train_path, NULL, NULL, NULL) != 0) {
+        context_destructor(&labels);
+        free(train_path);
+        free(test_directory);
+        return EXIT_FAILURE;
     }
-
-    size_t test_size = dataset_size * 0.2;
-    unsigned int *possible_indices = (unsigned int *) malloc(dataset_size * sizeof(int)),
-    *test_indices = (unsigned int *) malloc(test_size * sizeof(int));
-
-    for (i = 0; i < dataset_size; ++i) {
-        possible_indices[i] = i;
-    }
-
-    int current_index;
-    size_t remaining = dataset_size;
-    for (i = 0; i < test_size; ++i) {
-        current_index = pcg32_random_r(global_rng) % remaining--;
-        test_indices[i] = possible_indices[current_index];
-        possible_indices[current_index] = possible_indices[remaining];
-    }
-
-    free(possible_indices);
-
-    qsort(test_indices, test_size, sizeof(int), compare);
-
-    FILE *file_to_write;
-    unsigned int test_indices_index = 0;
-    for (i = 0; i < dataset_size; ++i) {
-        if (test_indices[test_indices_index] == i) {
-            ++test_indices_index;
-            file_to_write = test;
-        } else {
-            file_to_write = train;
-        }
-
-        do {
-            c = fgetc(dataset);
-            fputc(c, file_to_write);
-        } while (c != '\n');
-    }
-    free(test_indices);
-    fclose(train);
-    fclose(test);
     fclose(dataset);
 
     Nerd *nerd =
@@ -401,17 +342,14 @@ int main(int argc, char *argv[]) {
     PrudensSettings_ptr settings = NULL;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file);
 
-    nerd_start_learning(nerd, settings, test_directory, should_evaluate ? test_directory : NULL,
-    labels);
+    nerd_start_learning(nerd, settings, test_directory, NULL, labels);
 
     nerd_destructor(&nerd);
     prudensjs_settings_destructor(&settings);
     context_destructor(&labels);
 
     remove(train_path);
-    remove(test_path);
     free(train_path);
-    free(test_path);
 
     free(test_directory);
     return EXIT_SUCCESS;

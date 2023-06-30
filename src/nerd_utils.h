@@ -2,6 +2,9 @@
 #define NERD_UTILS_H
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <pcg_variants.h>
 
 void _safe_free(void **ptr);
 
@@ -11,6 +14,9 @@ void _safe_free(void **ptr);
 #define safe_free(ptr) _safe_free((void **) &ptr);
 
 char *trim(const char * const string);
+int train_test_split(FILE *dataset, const bool has_header, const float test_ratio,
+pcg32_random_t *generator, const char * const train_path, const char * const test_path,
+FILE **train, FILE **test);
 
 /* IntVector */
 

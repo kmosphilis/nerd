@@ -35,6 +35,129 @@ char *trim(const char * const string) {
     return trimmed_string;
 }
 
+int _compare(const void *a, const void *b) {
+    return (*(int *) a - *(int *) b);
+}
+
+/**
+ * @brief Splits the given dataset into a train and a test streams.
+ *
+ * @param dataset The FILE pointer to the initial dataset.
+ * @param has_header Boolean value which indicates whether the given dataset has boolean values or
+ * not.
+ * @param test_ratio A float indicating the ratio of the testing dataset, given the dataset's size.
+ * @param generator A pcg32_random_t pointer to an RNG.
+ * @param train_path A string containing the filename location to save the training dataset. If
+ * NULL, the train will contain a tmpfile.
+ * @param test_path A string containing the filename location to save the testing dataset. If NULL,
+ * the test parameter will contain a tmpfile.
+ * @param train A double pointer - reference to a FILE * - &(FILE *) - to save the training dataset.
+ * If NULL, the training split will not be saved.
+ * @param test A double pointer - reference to a FILE * - &(FILE *) - to save the testing dataset.
+ * If NULL, the testing split will not be saved.
+ *
+ * @return 0 if the process was successful, -1 if the given train_path was incorrect and the train
+ * dataset was saved in a tmpfile, -2 if the given test_path was incorrect and the test dataset was
+ * saved in a tmpfile, or -3 if both were incorrect.
+*/
+int train_test_split(FILE *dataset, const bool has_header, const float test_ratio,
+pcg32_random_t *generator, const char * const train_path, const char * const test_path,
+FILE **train, FILE **test) {
+    size_t dataset_size = 0;
+    int c;
+    for (c = fgetc(dataset); c != EOF; c = fgetc(dataset)) {
+        if (c == '\n') {
+            ++dataset_size;
+        }
+    }
+
+    fseek(dataset, 0, SEEK_SET);
+
+    FILE *train_ = NULL, *test_ = NULL;
+    int error_code = 0;
+
+    if (train_path) {
+        train_ = fopen(train_path, "wb+");
+        if (!train_) {
+            error_code = -1;
+            train_ = tmpfile();
+        }
+    } else {
+        train_ = tmpfile();
+    }
+
+    if (test_path) {
+        test_ = fopen(test_path, "wb+");
+        if (!test_) {
+            error_code += -2;
+            test_ = tmpfile();
+        }
+    } else {
+        test_ = tmpfile();
+    }
+
+    if (has_header) {
+        dataset_size -= 1;
+        do {
+            c = fgetc(dataset);
+            fputc(c, train_);
+            fputc(c, test_);
+        } while (c != '\n');
+    }
+
+    size_t test_size = dataset_size * test_ratio;
+    unsigned int *possible_indices = (unsigned int *) malloc(dataset_size * sizeof(int)),
+    *test_indices = (unsigned int *) malloc(test_size * sizeof(int));
+
+    unsigned int i;
+    for (i = 0; i < dataset_size; ++i) {
+        possible_indices[i] = i;
+    }
+
+    int current_index;
+    size_t remaining = dataset_size;
+    for (i = 0; i < test_size; ++i) {
+        current_index = pcg32_random_r(generator) % remaining--;
+        test_indices[i] = possible_indices[current_index];
+        possible_indices[current_index] = possible_indices[remaining];
+    }
+
+    free(possible_indices);
+
+    qsort(test_indices, test_size, sizeof(int), _compare);
+
+    FILE *file_to_write;
+    unsigned int test_indices_index = 0;
+    for (i = 0; i < dataset_size; ++i) {
+        if (test_indices[test_indices_index] == i) {
+            ++test_indices_index;
+            file_to_write = test_;
+        } else {
+            file_to_write = train_;
+        }
+
+        do {
+            c = fgetc(dataset);
+            fputc(c, file_to_write);
+        } while (c != '\n');
+    }
+    free(test_indices);
+
+    if (train) {
+        *train = train_;
+    } else {
+        fclose(train_);
+    }
+
+    if (test) {
+        *test = test_;
+    } else {
+        fclose(test_);
+    }
+
+    return error_code;
+}
+
 /* IntVector implementation. */
 
 /**
