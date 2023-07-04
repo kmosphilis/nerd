@@ -292,8 +292,10 @@ int main(int argc, char *argv[]) {
             }
             free(info_file);
 
+            dataset_value = realpath(dataset_value, NULL);
             fprintf(file, "f=%s\nt=%f\np=%f\nd=%f\nb=%u\nrun=%d\n",
             dataset_value, threshold, promotion, demotion, breadth, given_number);
+            free(dataset_value);
 
             if (!use_back_chaining) {
                 fprintf(file, "c=true\n");
@@ -314,7 +316,9 @@ int main(int argc, char *argv[]) {
             }
 
             if (constraints_file) {
-                fprintf(file, "i=%s\n", constraints_file);
+                char *abs_constraints_file = realpath(constraints_file, NULL);
+                fprintf(file, "i=%s\n", abs_constraints_file);
+                free(abs_constraints_file);
             }
             fprintf(file, "state_seed=%zu\nseq_seed=%zu\n", s1, s2);
 

@@ -151,14 +151,6 @@ failed:
     fclose(info_file);
     free(value_buffer);
 
-    // printf("file_pointer: %p and its delimiter %c\n", dataset, delimiter);
-    // printf("threshold: %f\npromotion: %f\ndemotion: %f\nbreadth: %d\nrun_number: %d\n",
-    // threshold, promotion, demotion, breadth, given_number);
-    // printf("classic?: %d\npartial_observation?: %d\nheader?: %d\n",
-    // !use_back_chaining, partial_observation, has_header);
-    // printf("state_seed: %zu\nseq_seed: %zu\n", state_seed, seq_seed);
-    // printf("incompatibility pointer: %p\n", constraints_file);
-
     Nerd *nerd = NULL;
     unsigned int epoch_number;
     if (strstr(argv[2], ".nd")) {
