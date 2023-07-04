@@ -344,7 +344,8 @@ int main(int argc, char *argv[]) {
     promotion, demotion, use_back_chaining, partial_observation);
 
     PrudensSettings_ptr settings = NULL;
-    prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file);
+    prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
+    current_arg);
 
     nerd_start_learning(nerd, settings, test_directory, NULL, labels);
 

@@ -9,7 +9,7 @@
 typedef struct PrudensSettings *PrudensSettings_ptr;
 
 int prudensjs_settings_constructor(PrudensSettings_ptr *settings, const char * const argv0,
-const char * const test_directory, const char * const constraints_file);
+const char * const test_directory, const char * const constraints_file, char *extra_args);
 int prudensjs_settings_destructor(PrudensSettings_ptr *settings);
 
 void prudensjs_inference(const PrudensSettings_ptr settings, const KnowledgeBase * const knowledge_base,

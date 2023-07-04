@@ -205,7 +205,8 @@ failed:
     memcpy(test_directory, argv[2], last_slash - argv[2]);
 
     PrudensSettings_ptr settings;
-    prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file);
+    prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
+    strstr(argv[2], "epoch"));
 
     char *train_path = (char *) malloc((snprintf(NULL, 0, "%s%s%u", TRAIN, test_directory,
     epoch_number) + 1) * sizeof(char)),

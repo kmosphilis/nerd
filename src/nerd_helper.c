@@ -13,7 +13,7 @@ typedef struct PrudensSettings {
 } PrudensSettings;
 
 int prudensjs_settings_constructor(PrudensSettings_ptr *settings, const char * const argv0,
-const char * const test_directory, const char * const constraints_file) {
+const char * const test_directory, const char * const constraints_file, char *extra_args) {
     if (!settings) {
         return -1;
     }
@@ -31,6 +31,9 @@ const char * const test_directory, const char * const constraints_file) {
     size_t current_string_length = 0, string_set_so_far = 0,
     total_string_length = strlen(_node) + 1 + strlen(current_directory) + strlen(_prudensjs_dir) + 1
     + strlen(_temp) + 1;
+    if (extra_args) {
+        total_string_length += strlen(extra_args);
+    }
 
     (*settings) = (PrudensSettings *) malloc(sizeof(PrudensSettings));
     (*settings)->prudensjs_call = (char *) malloc(total_string_length * sizeof(char));
@@ -57,12 +60,18 @@ const char * const test_directory, const char * const constraints_file) {
         temp_directory = current_directory;
     }
 
-    current_string_length = strlen(temp_directory);
+    current_string_length = strlen(temp_directory) + strlen(_temp) + 1;
+    if (extra_args) {
+        current_string_length += strlen(extra_args);
+    }
     total_string_length += current_string_length + 1;
 
-    (*settings)->temp_file = (char *) malloc((current_string_length + strlen(_temp) + 1)
-    * sizeof(char));
-    sprintf((*settings)->temp_file, "%s%s", temp_directory, _temp);
+    (*settings)->temp_file = (char *) malloc(current_string_length * sizeof(char));
+    if (extra_args) {
+        sprintf((*settings)->temp_file, "%s%s%s", temp_directory, _temp, extra_args);
+    } else {
+        sprintf((*settings)->temp_file, "%s%s", temp_directory, _temp);
+    }
 
     (*settings)->prudensjs_call = (char *) realloc((*settings)->prudensjs_call,
     total_string_length * sizeof(char));
