@@ -215,10 +215,12 @@ failed:
     PrudensSettings_ptr settings;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file);
 
-    char *train_path = (char *) malloc((strlen(TRAIN) + strlen(test_directory) + 1) * sizeof(char)),
-    *test_path = (char *) malloc((strlen(TEST) + strlen(test_directory) + 1) * sizeof(char));
-    sprintf(train_path, "%s%s", test_directory, TRAIN);
-    sprintf(test_path, "%s%s", test_directory, TEST);
+    char *train_path = (char *) malloc((snprintf(NULL, 0, "%s%s%u", TRAIN, test_directory,
+    epoch_number) + 1) * sizeof(char)),
+    *test_path = (char *) malloc((snprintf(NULL, 0, "%s%s%u", TEST, test_directory, epoch_number)
+    + 1) * sizeof(char));
+    sprintf(train_path, "%s%s%u", test_directory, TRAIN, epoch_number);
+    sprintf(test_path, "%s%s%u", test_directory, TEST, epoch_number);
 
 
     train_test_split(dataset, has_header, 0.2, &seed, train_path, test_path, NULL, NULL);
