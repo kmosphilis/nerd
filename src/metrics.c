@@ -260,14 +260,14 @@ next_literal:
  * provided label (index calculated from the given file).
 */
 int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
-const char * const file_to_evaluate, const Context * const labels, float * const restrict accuracy,
-float * const restrict abstain_ratio) {
+const char * const file_to_evaluate, const Context * const labels, const char delimiter,
+const bool has_header, float * const restrict accuracy, float * const restrict abstain_ratio) {
     if (!(nerd && settings && file_to_evaluate && labels && accuracy)) {
         return -1;
     }
 
-    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
-    nerd->sensor->delimiter, false, nerd->sensor->header != NULL);
+    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate, delimiter, false,
+    has_header);
 
     if (!evaluation_sensor) {
         return -2;

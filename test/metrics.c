@@ -136,37 +136,47 @@ START_TEST(one_specific_literal_evaluation_test) {
     Context *literals_to_evaluate = context_constructor(false);
     context_add_literal(literals_to_evaluate, &l2);
 
+    const char delimiter = ',';
+    const bool has_header = true;
+
     float accuracy, abstain_ratio;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,
-    &accuracy, &abstain_ratio), 1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, &accuracy, &abstain_ratio), 1);
 
     context_add_literal(literals_to_evaluate, &l4);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,
-    &accuracy, &abstain_ratio), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
+    has_header, &accuracy, &abstain_ratio), 0);
     ck_assert_float_eq(accuracy, 0);
     ck_assert_float_eq(abstain_ratio, 1);
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,
-    &accuracy, &abstain_ratio), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
+    has_header, &accuracy, &abstain_ratio), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
 
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,
-    &accuracy, NULL), 0);
-    ck_assert_int_eq(evaluate_labels(NULL, settings, DATASET2, literals_to_evaluate,
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
+    has_header, &accuracy, NULL), 0);
+    accuracy = 0;
+    abstain_ratio = 0;
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
+    has_header, &accuracy, &abstain_ratio), 0);
+    ck_assert_float_eq(accuracy, 0.5);
+    ck_assert_float_eq(abstain_ratio, 0.5);
+
+    ck_assert_int_eq(evaluate_labels(NULL, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, &accuracy, NULL), -1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, NULL, literals_to_evaluate, delimiter,
+    has_header, &accuracy, NULL), -1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, NULL, delimiter, has_header,
     &accuracy, NULL), -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, NULL, literals_to_evaluate,
-    &accuracy, NULL), -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, NULL, &accuracy, NULL),
-     -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,
-    NULL, NULL), -1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, NULL, NULL), -1);
 
     nerd_destructor(&nerd);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,
-    &accuracy, NULL), -1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, &accuracy, NULL), -1);
 
 
     context_destructor(&literals_to_evaluate);
