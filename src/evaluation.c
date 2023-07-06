@@ -27,8 +27,7 @@ int main(int argc, char *argv[]) {
 
     int c;
     size_t value_buffer_size = BUFFER_SIZE;
-    char *value_buffer = (char *) malloc(value_buffer_size), *end = NULL;
-    memset(value_buffer, 0, value_buffer_size);
+    char *value_buffer = (char *) calloc(value_buffer_size, sizeof(char)), *end = NULL;
     unsigned int i = 0;
 
     FILE *dataset = NULL;
@@ -46,7 +45,7 @@ int main(int argc, char *argv[]) {
             if (equals_location) {
                 int equals_index = equals_location - value_buffer;
                 const char *true_value = equals_location + 1;
-                char *option = (char *) malloc(equals_index + 1);
+                char *option = (char *) calloc(equals_index + 1, sizeof(char));
                 memcpy(option, value_buffer, equals_index);
                 switch (option[0]) {
                     case 'f':
@@ -201,7 +200,7 @@ failed:
 
     char *last_slash = strrchr(argv[2], '/') + 1;
 
-    char *test_directory = (char *) malloc((last_slash - argv[2] + 1) * sizeof(char));
+    char *test_directory = (char *) calloc(((last_slash - argv[2]) + 1), sizeof(char));
     memcpy(test_directory, argv[2], last_slash - argv[2]);
 
     PrudensSettings_ptr settings;
