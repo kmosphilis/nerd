@@ -208,10 +208,10 @@ failed:
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
     strstr(argv[2], "epoch"));
 
-    char *train_path = (char *) malloc((snprintf(NULL, 0, "%s%s%u", TRAIN, test_directory,
-    epoch_number) + 1) * sizeof(char)),
-    *test_path = (char *) malloc((snprintf(NULL, 0, "%s%s%u", TEST, test_directory, epoch_number)
-    + 1) * sizeof(char));
+    char *train_path = (char *) calloc((snprintf(NULL, 0, "%s%s%u", test_directory, TRAIN,
+    epoch_number) + 1), sizeof(char)),
+    *test_path = (char *) calloc((snprintf(NULL, 0, "%s%s%u", test_directory, TEST, epoch_number)
+    + 1), sizeof(char));
     sprintf(train_path, "%s%s%u", test_directory, TRAIN, epoch_number);
     sprintf(test_path, "%s%s%u", test_directory, TEST, epoch_number);
 
@@ -221,11 +221,11 @@ failed:
 
     float accuracy, abstain;
 
-    char *train_results_name = (char *) malloc((strlen("train_results") + strlen(test_directory)
-    + 1) * sizeof(char)), *test_results_name = (char *) malloc((strlen("test_results")
-    + strlen(test_directory) + 1) * sizeof(char));
-    sprintf(train_results_name, "%strain_results", test_directory);
-    sprintf(test_results_name, "%stest_results", test_directory);
+    char *train_results_name = (char *) calloc((strlen("/train_results") + strlen(test_directory)
+    + 1), sizeof(char)), *test_results_name = (char *) calloc((strlen("/test_results")
+    + strlen(test_directory) + 1), sizeof(char));
+    sprintf(train_results_name, "%s/train_results", test_directory);
+    sprintf(test_results_name, "%s/test_results", test_directory);
     FILE *train_results = fopen(train_results_name, "ab+"),
     *test_results = fopen(test_results_name, "ab+");
     free(train_results_name);
