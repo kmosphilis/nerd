@@ -8,7 +8,7 @@
 #include "nerd.h"
 #include "metrics.h"
 
-#define EPOCH_FILE_NAME_FORMAT "%sepoch-%zu.nd"
+#define EPOCH_FILE_NAME_FORMAT "%siteration-%zu-instance%zu.nd"
 #define EVALUATION_FILE_NAME_FORMAT "%sepoch-%zu-results.txt"
 
 #define SECONDS_TO_MILLISECONDS 1e3
@@ -235,13 +235,13 @@ void nerd_destructor(Nerd ** const nerd) {
  *
  * @param nerd The Nerd structure containing all the info for learn new Rules.
  * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
- * @param test_directory (Optional) The directory path to save the nerd at each epoch.
+ * @param test_directory (Optional) The directory path to save the nerd at each instance.
  * @param evaluation_filepath (Optional) The path of the evaluation (test) dataset. If it is given,
- * the algorithm will perform an evaluation of the learnt KnowledgeBase at each epoch (using
+ * the algorithm will perform an evaluation of the learnt KnowledgeBase at each iteration (using
  * evaluate_all_literals and evaluate_random_literals).
  * @param labels (Optional) A Context containing all the Literals that should be considered as
  * labels. If it is given, the algorithm will perform a label evaluation of the learnt KnowledgeBase
- * at each epoch (using evaluate_labels).
+ * at each iteration (using evaluate_labels).
  */
 void nerd_start_learning(Nerd * const nerd, const PrudensSettings_ptr settings,
 const char * const test_directory, const char * const evaluation_filepath,
@@ -251,7 +251,7 @@ const Context * const restrict labels) {
     }
 
     Scene *observation = NULL, *inferred = NULL;
-    size_t epoch, iteration;
+    size_t iteration, instance;
     const size_t total_observations = sensor_get_total_observations(nerd->sensor);
 
     struct timespec start, end, prudens_start_time, prudens_end_time, start_convert, end_convert;
@@ -259,10 +259,10 @@ const Context * const restrict labels) {
     char *nerd_at_epoch_filename = NULL, *results_at_epoch_filename = NULL;
     timespec_get(&start, TIME_UTC);
 
-    for (epoch = 0; epoch < nerd->epochs; ++epoch) {
-        for (iteration = 0; iteration < total_observations; ++iteration) {
-            printf("\nEpoch %zu of %zu, Iteration %zu of %zu\n", epoch + 1, nerd->epochs,
-            iteration + 1, total_observations);
+    for (iteration = 0; iteration < nerd->epochs; ++iteration) {
+        for (instance = 0; instance < total_observations; ++instance) {
+            printf("\nIteration %zu of %zu, Instance %zu of %zu\n", iteration + 1, nerd->epochs,
+            instance + 1, total_observations);
 
             sensor_get_next_scene(nerd->sensor, &observation, nerd->partial_observation, NULL);
             timespec_get(&prudens_start_time, TIME_UTC);
@@ -281,23 +281,28 @@ const Context * const restrict labels) {
 
             scene_destructor(&observation);
             scene_destructor(&inferred);
+
+            timespec_get(&start_convert, TIME_UTC);
+            if (test_directory) {
+                nerd_at_epoch_filename = (char *) malloc((snprintf(NULL, 0, EPOCH_FILE_NAME_FORMAT,
+                test_directory, iteration + 1, instance + 1)  + 1) * sizeof(char));
+                sprintf(nerd_at_epoch_filename, EPOCH_FILE_NAME_FORMAT, test_directory,
+                iteration + 1, instance + 1);
+                nerd_to_file(nerd, nerd_at_epoch_filename);
+                safe_free(nerd_at_epoch_filename);
+            }
+            timespec_get(&end_convert, TIME_UTC);
+            convert_total += (end_convert.tv_sec - start_convert.tv_sec) * SECONDS_TO_MILLISECONDS
+            + (end_convert.tv_nsec - start_convert.tv_nsec) * NANOSECONDS_TO_MILLISECONDS;
         }
 
         timespec_get(&start_convert, TIME_UTC);
-        if (test_directory) {
-            nerd_at_epoch_filename = (char *) malloc((snprintf(NULL, 0, EPOCH_FILE_NAME_FORMAT,
-            test_directory, epoch + 1)  + 1) * sizeof(char));
-            sprintf(nerd_at_epoch_filename, EPOCH_FILE_NAME_FORMAT, test_directory, epoch + 1);
-            nerd_to_file(nerd, nerd_at_epoch_filename);
-            safe_free(nerd_at_epoch_filename);
-        }
-
         if (evaluation_filepath) {
             const char *test_space = " ", *test_result_space = "  ";
             results_at_epoch_filename = (char *) malloc((snprintf(NULL, 0,
-            EVALUATION_FILE_NAME_FORMAT, test_directory, epoch + 1) + 1) * sizeof(char));
+            EVALUATION_FILE_NAME_FORMAT, test_directory, iteration + 1) + 1) * sizeof(char));
             sprintf(results_at_epoch_filename, EVALUATION_FILE_NAME_FORMAT, test_directory,
-            epoch + 1);
+            iteration + 1);
             FILE *results = fopen(results_at_epoch_filename, "wb");
 
             size_t total_hidden, total_recovered, total_not_recovered, total_incorrectly_recovered;

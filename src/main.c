@@ -38,15 +38,16 @@ int main(int argc, char *argv[]) {
         " greater than 0, and\n-b <unsigned int> Maximum number of literals per rule. It must be\n "
         "positive. If more that the maximum number or 0 are given, it will use\n the maximum value "
         "(max - 1).\n\nOptional parameters:\n-i <filepath> The path of a file containing "
-        "incompatibility rules in the\n form of prudens-js.\n-e <unsigned long> Number of epochs "
-        "that Nerd should train for. It must\n be greater than 0. Default value is set to 1.\n-c "
-        "<bool> Should it use the classic approach or not (use back-chaining\n demotion)? Default "
-        "value is set to 'false'\n-o <bool> Should the it be trained using partial observations? "
-        "Default\n value is set to 'true'.-l <filepath> This option enables the rule learning to "
-        "focus on these\n labels found in the given file. \n-s1 <unsigned long>  Seed 1 (state "
-        "seed) for the PRNG. It must be bigger\n than 0.\n\nBy adding an additional number at the "
-        "end of these parameters, you mark\n the number of this run and it will save its given "
-        "parameters.\n");
+        "incompatibility rules in the\n form of prudens-js.\n-e <unsigned long> Number of "
+        "iterations that Nerd should train for. It must\n be greater than 0. Default value is set "
+        "to 1.\n-c <bool> Should it use the classic approach or not (use back-chaining\n demotion)?"
+        " Default value is set to 'false'\n-o <bool> Should the it be trained using partial "
+        "observations? Default\n value is set to 'true'.-l <filepath> This option enables the rule "
+        "learning to focus on these\n labels found in the given file. \n-s1 <unsigned long>  Seed 1"
+        " (state seed) for the PRNG. \n-s2 <unsigned long>  Seed 2 (sequence seed) for the PRNG. \n"
+        "It must be bigger\n than 0.\n\nBy adding an additional number at the end of "
+        "these parameters, you mark\n the number of this run and it will save its given parameters."
+        "\n");
         return EXIT_FAILURE;
     }
 
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
     unsigned int i, breadth = 0;
     char *current_arg, *arg_end, *dataset_value = NULL, *constraints_file = NULL;
-    size_t epochs = 1, s1 = 0, s2 = 0;
+    size_t iterations = 1, s1 = 0, s2 = 0;
     for (i = 1;
     i < (((unsigned int) argc % 2 == 0) ? (unsigned int) (argc - 1) : (unsigned int) argc); ++i) {
         if (i % 2 == 1) {
@@ -174,7 +175,7 @@ int main(int argc, char *argv[]) {
                         break;
                     case 'e':
                         current_arg = argv[++i];
-                        epochs = strtoul(current_arg, &arg_end, DECIMAL_BASE);
+                        iterations = strtoul(current_arg, &arg_end, DECIMAL_BASE);
                         if ((*arg_end) || strstr(current_arg, "-")) {
                             printf("'-e' has a wrong value '%s'. It must be an unsigned long "
                             "greater than 0\n", current_arg);
@@ -253,7 +254,7 @@ int main(int argc, char *argv[]) {
     pcg32_srandom_r(&generator, STATE_SEED, SEQUENCE_SEED);
 
     char *test_directory = NULL;
-    if ((argc >= 18) && (argc % 2 == 0)) {
+    if ((argc >= 14) && (argc % 2 == 0)) {
         if (isdigit(argv[argc - 1][0])) {
             struct timespec current_time;
             current_arg = argv[argc - 1];
@@ -327,7 +328,7 @@ int main(int argc, char *argv[]) {
     }
     global_rng = &generator;
 
-    char *train_path = (char *) malloc((strlen(TRAIN) + strlen(test_directory) + 1) * sizeof(char));
+    char *train_path = (char *) calloc((strlen(TRAIN) + strlen(test_directory) + 1), sizeof(char));
 
     sprintf(train_path, "%s%s", test_directory, TRAIN);
 
@@ -340,7 +341,7 @@ int main(int argc, char *argv[]) {
     fclose(dataset);
 
     Nerd *nerd =
-    nerd_constructor(train_path, delimiter, true, has_header, threshold, breadth, 1, epochs,
+    nerd_constructor(train_path, delimiter, true, has_header, threshold, breadth, 1, iterations,
     promotion, demotion, use_back_chaining, partial_observation);
 
     PrudensSettings_ptr settings = NULL;
