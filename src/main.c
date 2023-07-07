@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
                     s1 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
                     if ((*arg_end) || strstr(current_arg, "-")) {
                         printf("'-s1' value '%s' is not valid. It must be an unsigned long greater "
-                        "than 0 (> 0).\n", large_option);
+                        "than 0 (> 0).\n", current_arg);
                         return close_dataset_and_exit(dataset);
                     }
                     s1_set = true;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
                     s2 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
                     if ((*arg_end) || strstr(current_arg, "-")) {
                         printf("'-s2' value '%s' is not valid. It must be an unsigned long greater "
-                        "than 0 (> 0).\n", large_option);
+                        "than 0 (> 0).\n", current_arg);
                         return close_dataset_and_exit(dataset);
                     }
                     s2_set = true;
