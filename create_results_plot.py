@@ -2,57 +2,85 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-def create_plot(directory: str):
-    train_results = f"{directory}/train_results"
-    test_results = f"{directory}/test_results"
-    info_file = f"{directory}/info"
+def create_plot(directory: Path):
+    info_file = directory/"info"
+    train_results = directory/"train_results"
+    test_results = directory/"test_results"
     fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(16,9), layout='constrained')
-    with open(info_file) as info:
+
+    with info_file.open() as info:
         title = ""
-        ignore = ['h=', 'seed=']
+        ignore = ['h=']
         found_taboo = False
         for line in info.readlines():
             for taboo in ignore:
                 if line.find(taboo) != -1:
                     found_taboo = True
             if not found_taboo:
-                title += line.strip() + ", "
+                title += line.strip() + ', '
             found_taboo = False
-        fig.suptitle(title)
+        fig.suptitle(title.removesuffix(', '))
     fig.supylabel("Performance")
-    fig.supxlabel("Epoch")
+    fig.supxlabel("Iterations")
 
-    with open(train_results) as train:
+    with train_results.open() as train:
         results = []
         lines = train.readlines()
         for line in lines:
-            result = line.strip().split(" ")
+            result = line.strip().split(' ')
             results.append([float(n) for n in result])
-        results.sort()
-        results =np.array(results)
 
-        axes[0].plot(results[:, 0], results[:, 1], label="correct", color="g", marker="+")
-        axes[0].plot(results[:, 0], results[:, 2], label="abstain", color="b", marker='x')
-        axes[0].plot(results[:, 0], 1 - results[:, 1], label="incorrect", color="r", marker="+")
-        axes[0].legend()
-        axes[0].set_title("Training")
-    with open(test_results) as test:
+        results.sort()
+        results = pd.DataFrame(results)
+        groups = results.groupby(0)
+
+        for i, group in enumerate(groups):
+            result = group[1].to_numpy()
+
+            x = np.linspace(result[0, 0] - 1, result[0, 0], result.shape[0])
+            axes[0].plot(x, result[:, 2], label='correct' if i == 0 else None, color='b')
+            axes[0].plot(x, result[:, 3], label='abstain' if i == 0 else None, color='g')
+            axes[0].plot(x, 1 - result[:, 2] - result[:, 3], label='incorrect' if i == 0 else None, color='r')
+
+        axes[0].set_xticks(range(1, groups.ngroups + 1))
+
+    axes[0].set_ylabel("Training")
+    axes[0].grid(axis='y', alpha=0.5)
+    axes[0].grid(axis='x', color='k', alpha=1)
+    axes[0].autoscale(True, axis= 'x', tight=True)
+    axes[0].legend()
+
+    with test_results.open() as test:
         results = []
         lines = test.readlines()
         for line in lines:
-            result = line.strip("\n").split(" ")
+            result = line.strip().split(' ')
             results.append([float(n) for n in result])
-        results.sort()
-        results =np.array(results)
-        axes[1].plot(results[:, 0], results[:, 1], label="correct", color="g", marker="+")
-        axes[1].plot(results[:, 0], results[:, 2], label="abstain", color="b", marker="x")
-        axes[1].plot(results[:, 0], 1 - results[:, 1], label="incorrect", color="r", marker="+")
-        axes[1].legend()
-        axes[1].set_title("Testing")
 
-    fig.savefig(f"{directory}plot.png", bbox_inches='tight', dpi=150)
+        results.sort()
+        results = pd.DataFrame(results)
+        groups = results.groupby(0)
+
+        for i, group in enumerate(groups):
+            result = group[1].to_numpy()
+
+            x = np.linspace(result[0, 0] - 1, result[0, 0], result.shape[0])
+            axes[1].plot(x, result[:, 2], label='correct' if i == 0 else None, color='b')
+            axes[1].plot(x, result[:, 3], label='abstain' if i == 0 else None, color='g')
+            axes[1].plot(x, 1 - result[:, 2] - result[:, 3], label='incorrect' if i == 0 else None, color='r')
+
+        axes[1].set_xticks(range(1, groups.ngroups + 1))
+
+    axes[1].set_ylabel("Testing")
+    axes[1].grid(axis='y', alpha=0.5)
+    axes[1].grid(axis='x', color='k', alpha=1)
+    axes[1].autoscale(True, axis='x', tight=True)
+    axes[1].legend()
+
+    fig.savefig(directory/"plot.png", bbox_inches='tight', dpi=150)
 
 def main():
     if len(sys.argv) == 1:
@@ -61,7 +89,7 @@ def main():
     else:
         path = Path(sys.argv[1])
         if (path.exists() and path.is_dir()):
-            create_plot(sys.argv[1])
+            create_plot(path)
         else:
             print(f"'{path}' Path does not exist.")
 
