@@ -9,7 +9,7 @@ def create_plot(directory: Path):
     info_file = directory/"info"
     train_results = directory/"train_results"
     test_results = directory/"test_results"
-    fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(16,9), layout='constrained')
+    fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(16, 9), layout='constrained')
 
     with info_file.open() as info:
         title = ""
@@ -80,7 +80,9 @@ def create_plot(directory: Path):
     axes[1].autoscale(True, axis='x', tight=True)
     axes[1].legend()
 
-    fig.savefig(directory/"plot.png", bbox_inches='tight', dpi=150)
+    plots_directory = directory/"plots"
+    plots_directory.mkdir(mode=0o740, exist_ok=True)
+    fig.savefig(plots_directory/"performance_plot.pdf", bbox_inches='tight', dpi=150)
 
 def main():
     if len(sys.argv) == 1:
