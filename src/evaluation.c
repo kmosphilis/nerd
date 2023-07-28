@@ -151,13 +151,14 @@ failed:
     free(value_buffer);
 
     Nerd *nerd = NULL;
-    unsigned int epoch_number;
+    unsigned int iteration_number, instance_number;
     if (strstr(argv[2], ".nd")) {
         nerd = nerd_constructor_from_file(argv[2], 0, use_back_chaining, false);
-        if (!(nerd && (sscanf(strstr(argv[2], "epoch-"), "epoch-%u.nd", &epoch_number) == 1))) {
+        if (!(nerd && (sscanf(strstr(argv[2], "iteration_"), "iteration_%u-instance_%u.nd",
+        &iteration_number, &instance_number) == 2))) {
             nerd_destructor(&nerd);
             fclose(dataset);
-            printf("Nerd file has a bad format %u.\n", epoch_number);
+            printf("Nerd file has a bad format.\n");
             return EXIT_FAILURE;
         }
     } else {
@@ -205,14 +206,14 @@ failed:
 
     PrudensSettings_ptr settings;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
-    strstr(argv[2], "epoch"));
+    strstr(argv[2], "iteration"));
 
     char *train_path = (char *) calloc((snprintf(NULL, 0, "%s%s%u", test_directory, TRAIN,
-    epoch_number) + 1), sizeof(char)),
-    *test_path = (char *) calloc((snprintf(NULL, 0, "%s%s%u", test_directory, TEST, epoch_number)
+    iteration_number) + 1), sizeof(char)),
+    *test_path = (char *) calloc((snprintf(NULL, 0, "%s%s%u", test_directory, TEST, iteration_number)
     + 1), sizeof(char));
-    sprintf(train_path, "%s%s%u", test_directory, TRAIN, epoch_number);
-    sprintf(test_path, "%s%s%u", test_directory, TEST, epoch_number);
+    sprintf(train_path, "%s%s%u", test_directory, TRAIN, iteration_number);
+    sprintf(test_path, "%s%s%u", test_directory, TEST, iteration_number);
 
 
     train_test_split(dataset, has_header, 0.2, &seed, train_path, test_path, NULL, NULL);
@@ -231,11 +232,11 @@ failed:
     free(test_results_name);
 
     evaluate_labels(nerd, settings, train_path, labels, delimiter, has_header, &accuracy, &abstain);
-    fprintf(train_results, "%u %f %f\n", epoch_number, accuracy, abstain);
+    fprintf(train_results, "%u %u %f %f\n", iteration_number, instance_number, accuracy, abstain);
     fclose(train_results);
 
     evaluate_labels(nerd, settings, test_path, labels, delimiter, has_header, &accuracy, &abstain);
-    fprintf(test_results, "%u %f %f\n", epoch_number, accuracy, abstain);
+    fprintf(test_results, "%u %u %f %f\n", iteration_number, instance_number, accuracy, abstain);
     fclose(test_results);
 
     prudensjs_settings_destructor(&settings);
