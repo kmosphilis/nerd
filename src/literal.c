@@ -18,9 +18,10 @@ pcg32_random_t *global_rng = NULL;
  * @return A new Literal * or NULL if atom == NULL. Use literal_destructor to deallocate.
  */
 Literal *literal_constructor(const char * const atom, const bool sign) {
-    if (atom) {
+    char *trimmed_atom = trim(atom);
+    if (trimmed_atom) {
         Literal *literal = (Literal *) malloc(sizeof(Literal));
-        literal->atom = trim(atom);
+        literal->atom = trimmed_atom;
         unsigned int i;
         for (i = 0; i < strlen(literal->atom); ++i) {
             literal->atom[i] = tolower(literal->atom[i]);
@@ -41,9 +42,9 @@ Literal *literal_constructor(const char * const atom, const bool sign) {
  * @return A new Literal * or NULL if string == NULL. Use literal_destructor to deallocate.
  */
 Literal *literal_constructor_from_string(const char * const string) {
-    if (string) {
+    char *trimmed_string = trim(string);
+    if (trimmed_string) {
         Literal *literal;
-        char *trimmed_string = trim(string);
         if (trimmed_string[0] == '-') {
             literal = literal_constructor(trimmed_string + 1, false);
         } else {
