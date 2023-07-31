@@ -1,4 +1,5 @@
 #include <string.h>
+#include <ctype.h>
 
 #include "nerd_utils.h"
 
@@ -15,20 +16,25 @@ void _safe_free(void **ptr) {
  *
  * @param string The string to filter.
  *
- * @return A newly allocated trimmed string. Use free to deallocate.
+ * @return A newly allocated trimmed string, or NULL if string is whitespaces only. Use free to
+ * deallocate.
 */
 char *trim(const char * const string) {
+    if (strlen(string) == 0) {
+        return NULL;
+    }
+
     char *trimmed_string = strdup(string), *temp;
     size_t length = strlen(trimmed_string) + 1;
 
-    while (trimmed_string[0] == ' ') {
+    while (isspace(trimmed_string[0])) {
         temp = trimmed_string;
         trimmed_string = (char *) malloc(--length * sizeof(char));
         memcpy(trimmed_string, temp + 1, length * sizeof(char));
         free(temp);
     }
 
-    while (trimmed_string[length - 2] == ' ') {
+    while (isspace(trimmed_string[length - 2])) {
         trimmed_string[length - 2] = '\0';
         trimmed_string = realloc(trimmed_string, --length * sizeof(char));
     }
