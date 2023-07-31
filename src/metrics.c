@@ -274,36 +274,48 @@ const bool has_header, float * const restrict accuracy, float * const restrict a
     }
 
     const size_t total_observations = sensor_get_total_observations(evaluation_sensor);
+    Scene **observations = (Scene **) malloc(sizeof(Scene *) * total_observations),
+    **inferences = NULL;
+    unsigned int *evaluation_literal_indices =
+    (unsigned int *) malloc(total_observations * sizeof(int));
+    int label_index;
 
-    Scene *observation = NULL, *inference = NULL;
-    unsigned int positives = 0, negatives = 0, unobserved = 0;
-    bool found = false;
-
-    int current_index, label_index;
-    unsigned int j, i, evaluation_literal_index;
-    for (j = 0; j < total_observations; ++j) {
-        sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
-        for (i = 0; i < labels->size; ++i) {
-            if ((label_index = scene_literal_index(observation, labels->literals[i]))
+    unsigned int i, j;
+    for (i = 0; i < total_observations; ++i) {
+        sensor_get_next_scene(evaluation_sensor, &(observations[i]), false, NULL);
+        for (j = 0; j < labels->size; ++j) {
+            if ((label_index = scene_literal_index(observations[i], labels->literals[j]))
             > -1) {
-                evaluation_literal_index = i;
-                scene_remove_literal(observation, label_index, NULL);
+                evaluation_literal_indices[i] = j;
+                scene_remove_literal(observations[i], label_index, NULL);
                 break;
             }
         }
 
         if (label_index < 0) {
-            scene_destructor(&observation);
+            unsigned int temp;
+            for (temp = 0; temp <= i; ++temp) {
+                scene_destructor(&(observations[temp]));
+            }
+            free(observations);
+            free(evaluation_literal_indices);
             sensor_destructor(&evaluation_sensor);
-            return j + 1;
+            return i + 1;
         }
+    }
 
-        prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
+    prudensjs_inference_batch(settings, nerd->knowledge_base, total_observations, observations,
+    &inferences);
 
-        for (i = 0; i < labels->size; ++i) {
-            current_index = scene_literal_index(inference, labels->literals[i]);
+    unsigned int positives = 0, negatives = 0, unobserved = 0;
+    bool found = false;
+
+    int current_index;
+    for (i = 0; i < total_observations; ++i) {
+        for (j = 0; j < labels->size; ++j) {
+            current_index = scene_literal_index(inferences[i], labels->literals[j]);
             if (current_index > -1) {
-                if (evaluation_literal_index == i) {
+                if (evaluation_literal_indices[i] == j) {
                     ++positives;
                 } else {
                     ++negatives;
@@ -317,9 +329,13 @@ const bool has_header, float * const restrict accuracy, float * const restrict a
             ++unobserved;
         }
 
-        scene_destructor(&observation);
-        scene_destructor(&inference);
+        scene_destructor(&(observations[i]));
+        scene_destructor(&(inferences[i]));
     }
+
+    free(observations);
+    free(inferences);
+    free(evaluation_literal_indices);
 
     sensor_destructor(&evaluation_sensor);
 

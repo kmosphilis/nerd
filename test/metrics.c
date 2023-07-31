@@ -198,7 +198,7 @@ Suite *metrics_suite() {
 }
 
 int main(int argc, char *argv[]) {
-    prudensjs_settings_constructor(&settings, argv[0], NULL, NULL);
+    prudensjs_settings_constructor(&settings, argv[0], NULL, NULL, NULL);
     Suite *suite = metrics_suite();
     SRunner *s_runner;
 
