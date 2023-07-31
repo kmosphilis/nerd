@@ -8,7 +8,7 @@
 #include "nerd.h"
 #include "metrics.h"
 
-#define EPOCH_FILE_NAME_FORMAT "%siteration-%zu-instance%zu.nd"
+#define EPOCH_FILE_NAME_FORMAT "%siteration_%zu-instance_%zu.nd"
 #define EVALUATION_FILE_NAME_FORMAT "%sepoch-%zu-results.txt"
 
 #define SECONDS_TO_MILLISECONDS 1e3
@@ -254,6 +254,9 @@ const Context * const restrict labels) {
     size_t iteration, instance;
     const size_t total_observations = sensor_get_total_observations(nerd->sensor);
 
+    const size_t iterations_str_size = snprintf(NULL, 0, "%zu", nerd->epochs);
+    const size_t instances_str_size = snprintf(NULL, 0, "%zu", total_observations);
+
     struct timespec start, end, prudens_start_time, prudens_end_time, start_convert, end_convert;
     size_t prudens_total_time = 0, convert_total = 0;
     char *nerd_at_epoch_filename = NULL, *results_at_epoch_filename = NULL;
@@ -284,10 +287,26 @@ const Context * const restrict labels) {
 
             timespec_get(&start_convert, TIME_UTC);
             if (test_directory) {
-                nerd_at_epoch_filename = (char *) malloc((snprintf(NULL, 0, EPOCH_FILE_NAME_FORMAT,
-                test_directory, iteration + 1, instance + 1)  + 1) * sizeof(char));
-                sprintf(nerd_at_epoch_filename, EPOCH_FILE_NAME_FORMAT, test_directory,
-                iteration + 1, instance + 1);
+                size_t current_allocated = 0;
+                unsigned int z;
+
+                nerd_at_epoch_filename = (char *) calloc((snprintf(NULL, 0, EPOCH_FILE_NAME_FORMAT,
+                test_directory, nerd->epochs, total_observations)  + 1), sizeof(char));
+                sprintf(nerd_at_epoch_filename, "%siteration_", test_directory);
+                current_allocated = strlen(nerd_at_epoch_filename);
+                for (z = 0; z < (iterations_str_size - snprintf(NULL, 0, "%zu", iteration + 1));
+                ++z) {
+                    sprintf(nerd_at_epoch_filename + (current_allocated++), "0");
+                }
+                sprintf(nerd_at_epoch_filename + current_allocated, "%zu-instance_", iteration + 1);
+                current_allocated = strlen(nerd_at_epoch_filename);
+                for (z = 0; z < (instances_str_size - snprintf(NULL, 0, "%zu", instance + 1));
+                ++z) {
+                    sprintf(nerd_at_epoch_filename + (current_allocated++), "0");
+                }
+                sprintf(nerd_at_epoch_filename + current_allocated, "%zu.nd", instance + 1);
+
+
                 nerd_to_file(nerd, nerd_at_epoch_filename);
                 safe_free(nerd_at_epoch_filename);
             }
