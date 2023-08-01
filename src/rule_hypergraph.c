@@ -455,7 +455,7 @@ const float demotion_rate) {
                     if (rule_applicable(current_rule, observed_and_inferred)) {
                         bool is_active =
                         current_rule->weight >= knowledge_base->activation_threshold;
-                        current_rule->weight -= promotion_rate;
+                        current_rule->weight -= demotion_rate;
 
                         if (is_active &&
                         (current_rule->weight < knowledge_base->activation_threshold)) {
