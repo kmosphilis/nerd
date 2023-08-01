@@ -31,8 +31,10 @@
  * @param epochs The number of epochs the algorithm should learn for.
  * @param promotion_weight The amount that a Rule should be promoted with. It should be > 0.
  * @param demotion_weight The amount that a Rule should be demoted with. It should be > 0.
- * @param use_backward_chaining A boolean value which indicates whether the hypergraph should demoted
+ * @param use_backward_chaining A boolean value which indicates whether the hypergraph should demote
  * rules using the backward chaining algorithm or not.
+ * @param increasing_demotion A boolean value which indicates whether the chaining demotion should
+ * be increasing or not. It only works if and only if backward chaining demotion is enabled.
  * @param partial_observation If partial_observation is > 0, the initial observation will be saved
  * here. If NULL is given, it will not be saved.
  *
@@ -41,7 +43,8 @@
 Nerd *nerd_constructor(const char * const filepath, const char delimiter, const bool reuse,
 const bool header, const float activation_threshold, const unsigned int breadth,
 const unsigned int depth, const unsigned int epochs, const float promotion_weight,
-const float demotion_weight, const bool use_backward_chaining, const bool partial_observation) {
+const float demotion_weight, const bool use_backward_chaining, const bool increasing_demotion,
+const bool partial_observation) {
     if (filepath) {
         Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
         if ((nerd->sensor = sensor_constructor_from_file(filepath, delimiter, reuse, header))) {
@@ -56,6 +59,7 @@ const float demotion_weight, const bool use_backward_chaining, const bool partia
             }
             nerd->promotion_weight = promotion_weight;
             nerd->demotion_weight = demotion_weight;
+            nerd->increasing_demotion = increasing_demotion;
             nerd->partial_observation = partial_observation;
             return nerd;
         }
@@ -89,7 +93,7 @@ const bool use_backward_chaining, const bool reuse_sensor) {
 
         size_t buffer_size = BUFFER_SIZE;
         char *buffer = (char *) calloc(buffer_size, sizeof(char)), sensor_delimiter;
-        unsigned short partial_observation, sensor_reuse, sensor_header;
+        unsigned short partial_observation, sensor_reuse, sensor_header, increasing_demotion;
         float activation_threshold;
 
         if (fscanf(file, "breadth: %zu\n", &(nerd->breadth)) != 1) {
@@ -101,9 +105,11 @@ const bool use_backward_chaining, const bool reuse_sensor) {
         if (fscanf(file, "promotion_weight: %f\n", &(nerd->promotion_weight)) != 1) {
             goto failed1;
         }
-        if (fscanf(file, "demotion_weight: %f\n", &(nerd->demotion_weight)) != 1) {
+        if (fscanf(file, "demotion_weight: %f %hu\n", &(nerd->demotion_weight),
+        &increasing_demotion) != 2) {
             goto failed1;
         }
+        nerd->increasing_demotion = increasing_demotion;
         if (fscanf(file, "partial_observation: %hu\n", &partial_observation) != 1) {
             goto failed1;
         }
@@ -280,7 +286,7 @@ const Context * const restrict labels) {
             nerd->breadth, 5, labels);
 
             rule_hypergraph_update_rules(nerd->knowledge_base, observation, inferred,
-            nerd->promotion_weight, nerd->demotion_weight);
+            nerd->promotion_weight, nerd->demotion_weight, nerd->increasing_demotion);
 
             scene_destructor(&observation);
             scene_destructor(&inferred);
@@ -413,7 +419,7 @@ void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
     fprintf(file, "breadth: %zu\n", nerd->breadth);
     fprintf(file, "depth: %zu\n", nerd->depth);
     fprintf(file, "promotion_weight: %f\n", nerd->promotion_weight);
-    fprintf(file, "demotion_weight: %f\n", nerd->demotion_weight);
+    fprintf(file, "demotion_weight: %f %hu\n", nerd->demotion_weight, nerd->increasing_demotion);
     fprintf(file, "partial_observation: %hu\n", nerd->partial_observation);
     fprintf(file, "sensor: %s '%c' %hu %hu\n", nerd->sensor->filepath, nerd->sensor->delimiter,
     nerd->sensor->reuse, nerd->sensor->header_size > 0);

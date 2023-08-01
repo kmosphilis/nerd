@@ -73,13 +73,14 @@ START_TEST(construct_destruct_test) {
     rule_queue_destructor(&rule_queue2);
 
     Nerd *nerd =
-    nerd_constructor(DATASET, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, false);
+    nerd_constructor(DATASET, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, true, false);
     ck_assert_ptr_nonnull(nerd);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 50);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.5, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.5, 0.000001);
+    ck_assert_int_eq(nerd->increasing_demotion, true);
     ck_assert_float_eq(nerd->promotion_weight, 0.5);
     ck_assert_int_eq(nerd->partial_observation, false);
     ck_assert_ptr_nonnull(nerd->sensor->environment);
@@ -103,13 +104,14 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 3, 100, 50, 0.5, 1.5, true, 0);
+    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 3, 100, 50, 0.5, 1.5, true, false, 0);
     ck_assert_ptr_nonnull(nerd);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.5, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.5, 0.000001);
+    ck_assert_int_eq(nerd->increasing_demotion, false);
     ck_assert_float_eq(nerd->promotion_weight, 0.5);
     ck_assert_int_eq(nerd->partial_observation, false);
     ck_assert_ptr_nonnull(nerd->sensor->environment);
@@ -123,11 +125,11 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, 0);
+    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, true, 0);
     ck_assert_ptr_null(nerd);
 
     nerd = nerd_constructor("file-that-does-not-exist.txt", ',', true, false, 10.0, 3, 100, 50, 0.5,
-    1.5, true, 0);
+    1.5, true, true, 0);
     ck_assert_ptr_null(nerd);
 
     nerd_destructor(&nerd);
@@ -145,6 +147,7 @@ START_TEST(construct_from_file) {
     ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.750000, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 2.250000, 0.000001);
+    ck_assert_int_eq(nerd->increasing_demotion, true);
     ck_assert_float_eq(nerd->promotion_weight, 0.750000);
     ck_assert_int_eq(nerd->partial_observation, 1);
     ck_assert_ptr_nonnull(nerd->sensor->environment);
@@ -166,6 +169,7 @@ START_TEST(construct_from_file) {
     ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.500000, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.500000, 0.000001);
+    ck_assert_int_eq(nerd->increasing_demotion, 0);
     ck_assert_int_eq(nerd->partial_observation, 0);
     ck_assert_ptr_nonnull(nerd->sensor->environment);
     ck_assert_int_eq(nerd->sensor->delimiter, ',');
@@ -243,7 +247,8 @@ START_TEST(construct_from_file) {
 END_TEST
 
 START_TEST(to_file_test) {
-    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, true, 1);
+    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, true,
+    true, 1);
 
     nerd_to_file(nerd, "../bin/nerd_output1.txt");
     ck_assert_int_eq(compare_files("../bin/nerd_output1.txt",
@@ -282,7 +287,7 @@ Suite *nerd_suite() {
 }
 
 int main(int argc, char *argv[]) {
-    prudensjs_settings_constructor(&settings, argv[0], NULL, NULL);
+    prudensjs_settings_constructor(&settings, argv[0], NULL, NULL, NULL);
     Suite *suite = nerd_suite();
     SRunner *s_runner;
 

@@ -1,7 +1,7 @@
 breadth: 3
 depth: 50
 promotion_weight: 1.500000
-demotion_weight: 4.500000
+demotion_weight: 4.500000 1
 partial_observation: 1
 sensor: ../data/test.txt ' ' 1 0
 knowledge_base:
