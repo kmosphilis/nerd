@@ -40,20 +40,23 @@ int main(int argc, char *argv[]) {
         "(max - 1).\n\nOptional parameters:\n-i <filepath> The path of a file containing "
         "incompatibility rules in the\n form of prudens-js.\n-e <unsigned long> Number of "
         "iterations that Nerd should train for. It must\n be greater than 0. Default value is set "
-        "to 1.\n-c <bool> Should it use the classic approach or not (use back-chaining\n demotion)?"
-        " Default value is set to 'false'\n-o <bool> Should the it be trained using partial "
-        "observations? Default\n value is set to 'true'.-l <filepath> This option enables the rule "
-        "learning to focus on these\n labels found in the given file. \n-s1 <unsigned long>  Seed 1"
-        " (state seed) for the PRNG. \n-s2 <unsigned long>  Seed 2 (sequence seed) for the PRNG. \n"
-        "It must be bigger\n than 0.\n\nBy adding an additional number at the end of "
-        "these parameters, you mark\n the number of this run and it will save its given parameters."
-        "\n");
+        "to 1.\n-c <bool> Should it use the classic approach or not (use backward chaining\n "
+        "demotion)? Default value is set to 'false'\n-di <bool> Should the demotion rate be "
+        "increasing or decreasing for\ndeeper causing rules? 'true' for increasing, 'false' for "
+        "decreasing.\nDefault value is set to 'false'\n-o <bool> Should the it be trained using "
+        "partial observations? Default\n value is set to 'true'.\n-l <filepath> This option enables"
+        " the rule learning to focus on these\n labels found in the given file. \n-s1 "
+        "<unsigned long>  Seed 1 (state seed) for the PRNG. \n-s2 <unsigned long>  Seed 2 (sequence"
+        " seed) for the PRNG. \nIt must be bigger\n than 0.\n\nBy adding an additional number at "
+        "the end of these parameters, you mark\n the number of this run and it will save its given "
+        "parameters.\n");
         return EXIT_FAILURE;
     }
 
     Context *labels = NULL;
+    bool h_set = false, b_set = false;
     bool has_header = false, use_back_chaining = true, partial_observation = true,
-    should_evaluate = false, s1_set = false, s2_set = false;
+    should_evaluate = false, s1_set = false, s2_set = false, increasing_demotion = false;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
@@ -66,7 +69,17 @@ int main(int argc, char *argv[]) {
             if ((strlen(argv[i]) > 2) && strstr(argv[i], "-")) {
                 char *large_option = argv[i] + 1;
                 current_arg = argv[++i];
-                if (strcmp(large_option, "s1") == 0) {
+                if (strcmp(large_option, "di") == 0) {
+                    if (strcmp(current_arg, "true") == 0) {
+                        increasing_demotion = false;
+                    } else if (strcmp(current_arg, "false") == 0) {
+                        increasing_demotion = true;
+                    } else {
+                        printf("'-di' has a wrong value '%s'. It must be a boolean value, 'true' or"
+                        " 'false'\n", current_arg);
+                        return close_dataset_and_exit(dataset);
+                    }
+                } else if (strcmp(large_option, "s1") == 0) {
                     s1 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
                     if ((*arg_end) || strstr(current_arg, "-")) {
                         printf("'-s1' value '%s' is not valid. It must be an unsigned long greater "
@@ -122,6 +135,7 @@ int main(int argc, char *argv[]) {
                             " or 'false'\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
+                        h_set = true;
                         break;
                     case 't':
                         current_arg = argv[++i];
@@ -172,6 +186,7 @@ int main(int argc, char *argv[]) {
                             current_arg);
                             return close_dataset_and_exit(dataset);
                         }
+                        b_set = true;
                         break;
                     case 'e':
                         current_arg = argv[++i];
@@ -249,6 +264,27 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
+    if (!dataset) {
+        printf("'-f' is required.\n");
+        exit(1);
+    } else if (!h_set) {
+        printf("'-h' is required.\n");
+        return close_dataset_and_exit(dataset);
+    } else if (threshold == INFINITY) {
+        printf("'-t' is required.\n");
+        return close_dataset_and_exit(dataset);
+    } else if (promotion == INFINITY) {
+        printf("'-p' is required.\n");
+        return close_dataset_and_exit(dataset);
+    } else if (demotion == INFINITY) {
+        printf("'-d' is required.\n");
+        return close_dataset_and_exit(dataset);
+    } else if (!b_set) {
+        printf("'-b' is required.\n");
+        return close_dataset_and_exit(dataset);
+    }
+
     pcg32_random_t generator;
 
     pcg32_srandom_r(&generator, STATE_SEED, SEQUENCE_SEED);
@@ -298,6 +334,12 @@ int main(int argc, char *argv[]) {
             dataset_value, threshold, promotion, demotion, breadth, given_number);
             free(dataset_value);
 
+            if (increasing_demotion) {
+                fprintf(file, "di=true\n");
+            } else {
+                fprintf(file, "di=false\n");
+            }
+
             if (!use_back_chaining) {
                 fprintf(file, "c=true\n");
             } else {
@@ -342,7 +384,7 @@ int main(int argc, char *argv[]) {
 
     Nerd *nerd =
     nerd_constructor(train_path, delimiter, true, has_header, threshold, breadth, 1, iterations,
-    promotion, demotion, use_back_chaining, partial_observation);
+    promotion, demotion, use_back_chaining, increasing_demotion, partial_observation);
 
     PrudensSettings_ptr settings = NULL;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,

@@ -36,7 +36,8 @@ int main(int argc, char *argv[]) {
     unsigned int breadth = 0;
     int given_number;
     char delimiter= ' ';
-    bool use_back_chaining = true, partial_observation = true, has_header = false;
+    bool use_back_chaining = true, partial_observation = true, has_header = false,
+    increasing_demotion = false;
     char *constraints_file = NULL;
 
     while ((c = fgetc(info_file)) != EOF) {
@@ -69,9 +70,18 @@ int main(int argc, char *argv[]) {
                         }
                         break;
                     case 'd':
-                        demotion = strtof(true_value, &end);
-                        if (*end) {
-                            goto option_failed;
+                        if (strcmp(option, "di") == 0) {
+                            printf("%s here\n", option);
+                            if (strcmp(true_value, "true") == 0) {
+                                increasing_demotion = true;
+                            } else if (strcmp(true_value, "false") != 0) {
+                                goto option_failed;
+                            }
+                        } else {
+                            demotion = strtof(true_value, &end);
+                            if (*end) {
+                                goto option_failed;
+                            }
                         }
                         break;
                     case 'b':
