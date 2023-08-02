@@ -56,13 +56,13 @@ fs.readFile(filepath, (err, data) => {
                 }
             }
 
-            fs.appendFile(`${filepath}1`, `${Array.from(inferred.values()).join(" ")}\n`, (err) => {
+            fs.appendFile(`${filepath}_1`, `${Array.from(inferred.values()).join(" ")}\n`, (err) => {
                 if (err) throw err;
                 return;
             });
 
         }
-        fs.rename(`${filepath}1`, filepath, (err) => {
+        fs.rename(`${filepath}_1`, filepath, (err) => {
             if (err) throw err;
             return;
         });
