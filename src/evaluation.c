@@ -32,12 +32,8 @@ int main(int argc, char *argv[]) {
 
     FILE *dataset = NULL;
     size_t state_seed, seq_seed;
-    float threshold, promotion, demotion;
-    unsigned int breadth = 0;
-    int given_number;
     char delimiter= ' ';
-    bool use_back_chaining = true, partial_observation = true, has_header = false,
-    increasing_demotion = false;
+    bool use_back_chaining = true, has_header = false;
     char *constraints_file = NULL;
 
     while ((c = fgetc(info_file)) != EOF) {
@@ -51,59 +47,11 @@ int main(int argc, char *argv[]) {
                 switch (option[0]) {
                     case 'f':
                         if (!(dataset = fopen(true_value, "r"))) {
+                            printf("Filepath '%s' does not exist.\n", true_value);
                             goto failed;
                         }
                         if (strstr(true_value, ".csv")) {
                             delimiter = ',';
-                        }
-                        break;
-                    case 't':
-                        threshold = strtof(true_value, &end);
-                        if (*end) {
-                            goto option_failed;
-                        }
-                        break;
-                    case 'p':
-                        promotion = strtof(true_value, &end);
-                        if (*end) {
-                            goto option_failed;
-                        }
-                        break;
-                    case 'd':
-                        if (strcmp(option, "di") == 0) {
-                            printf("%s here\n", option);
-                            if (strcmp(true_value, "true") == 0) {
-                                increasing_demotion = true;
-                            } else if (strcmp(true_value, "false") != 0) {
-                                goto option_failed;
-                            }
-                        } else {
-                            demotion = strtof(true_value, &end);
-                            if (*end) {
-                                goto option_failed;
-                            }
-                        }
-                        break;
-                    case 'b':
-                        breadth = strtoul(true_value, &end, DECIMAL_BASE);
-                        if (*end) {
-                            goto option_failed;
-                        }
-                        break;
-                    case 'r':
-                        given_number = strtol(true_value, &end, DECIMAL_BASE);
-                        if (*end) {
-                            goto option_failed;
-                        }
-                        break;
-                    case 'c':
-                        if (strcmp(true_value, "true") == 0) {
-                            use_back_chaining = false;
-                        }
-                        break;
-                    case 'o':
-                        if (strcmp(true_value, "false") == 0) {
-                            partial_observation = false;
                         }
                         break;
                     case 'h':
@@ -118,19 +66,34 @@ int main(int argc, char *argv[]) {
                         if (strcmp(option, "state_seed")) {
                             state_seed = strtoul(true_value, &end, DECIMAL_BASE);
                             if (*end) {
-                                goto option_failed;
+                                printf("%s is not a valid state_seed value. It required an unsigned"
+                                " long.\n", true_value);
+                                goto option_failed1;
                             }
                         } else if (strcmp(option, "seq_seed")) {
                             seq_seed = strtoul(true_value, &end, DECIMAL_BASE);
                             if (*end) {
-                                goto option_failed;
+                                printf("%s is not a valid seq_seed value. It required an unsigned"
+                                " long.\n", true_value);
+                                goto option_failed1;
                             }
                         } else {
-                            goto option_failed;
+                            goto option_failed2;
                         }
                         break;
+                    case 't':
+                    case 'p':
+                    case 'd':
+                    case 'b':
+                    case 'e':
+                    case 'r':
+                    case 'c':
+                    case 'o':
+                        break;
                     default:
-option_failed:
+option_failed2:
+                        printf("Option '%s' is not valid.\n", option);
+option_failed1:
                         free(option);
                         goto failed;
 

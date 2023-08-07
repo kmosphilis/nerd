@@ -15,8 +15,8 @@
 #include "metrics.h"
 
 #define DECIMAL_BASE 10
-#define STATE_SEED 314159U
-#define SEQUENCE_SEED 271828U
+#define STATE_SEED 31415926535U
+#define SEQUENCE_SEED 27182818284U
 
 #define TRAIN ".train_set"
 #define TEST ".test_set"
@@ -40,16 +40,17 @@ int main(int argc, char *argv[]) {
         "(max - 1).\n\nOptional parameters:\n-i <filepath> The path of a file containing "
         "incompatibility rules in the\n form of prudens-js.\n-e <unsigned long> Number of "
         "iterations that Nerd should train for. It must\n be greater than 0. Default value is set "
-        "to 1.\n-c <bool> Should it use the classic approach or not (use backward chaining\n "
-        "demotion)? Default value is set to 'false'\n-di <bool> Should the demotion rate be "
-        "increasing or decreasing for\ndeeper causing rules? 'true' for increasing, 'false' for "
-        "decreasing.\nDefault value is set to 'false'\n-o <bool> Should the it be trained using "
-        "partial observations? Default\n value is set to 'true'.\n-l <filepath> This option enables"
-        " the rule learning to focus on these\n labels found in the given file. \n-s1 "
-        "<unsigned long>  Seed 1 (state seed) for the PRNG. \n-s2 <unsigned long>  Seed 2 (sequence"
-        " seed) for the PRNG. \nIt must be bigger\n than 0.\n\nBy adding an additional number at "
-        "the end of these parameters, you mark\n the number of this run and it will save its given "
-        "parameters.\n");
+        "to 1.\n-r <unsigned int> Number of maximum rules to be learnt\n at each instance/"
+        "observation. It must be greater than 0, Default value\n is set to 5.\n-c <bool> Should it "
+        "use the classic approach or not (use backward chaining\n demotion)? Default value is set "
+        "to 'false'\n-di <bool> Should the demotion rate be increasing or decreasing for\n deeper "
+        "causing rules? 'true' for increasing, 'false' for decreasing.\n Default value is set to "
+        "'false'.\n-o <bool> Should the it be trained using partial observations? Default\n value "
+        "is set to 'true'.\n-l <filepath> This option enables the rule learning to focus on these\n"
+        " labels found in the given file.\n-s1 <unsigned long>  Seed 1 (state seed) for the PRNG. "
+        "\n-s2 <unsigned long>  Seed 2 (sequence seed) for the PRNG.\n It must be bigger than 0.\n"
+        "\nBy adding an additional number at the end of these parameters, you mark\n the number of "
+        "this run and it will save its given parameters.\n");
         return EXIT_FAILURE;
     }
 
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]) {
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
-    unsigned int i, breadth = 0;
+    unsigned int i, breadth = 0, max_rules_per_instance = 5;
     char *current_arg, *arg_end, *dataset_value = NULL, *constraints_file = NULL;
     size_t iterations = 1, s1 = 0, s2 = 0;
     for (i = 1;
@@ -242,6 +243,15 @@ int main(int argc, char *argv[]) {
 
                         fclose(labels_file);
                         break;
+                    case 'r':
+                        current_arg = argv[++i];
+                        max_rules_per_instance = strtoul(current_arg, &arg_end, DECIMAL_BASE);
+                        if ((*arg_end) || strstr(current_arg, "-")) {
+                            printf("'-r' has a wrong value '%s'. It must be an unsigned int greater"
+                            " than 0\n", current_arg);
+                            return close_dataset_and_exit(dataset);
+                        }
+                        break;
                     // case 'v':
                     //     current_arg = argv[++i];
                     //     if (strcmp(current_arg, "true") == 0) {
@@ -330,8 +340,9 @@ int main(int argc, char *argv[]) {
             free(info_file);
 
             dataset_value = realpath(dataset_value, NULL);
-            fprintf(file, "f=%s\nt=%f\np=%f\nd=%f\nb=%u\nrun=%d\n",
-            dataset_value, threshold, promotion, demotion, breadth, given_number);
+            fprintf(file, "f=%s\nt=%f\np=%f\nd=%f\nb=%u\ne=%zu\nr=%u\nrun=%d\n",
+            dataset_value, threshold, promotion, demotion, breadth, iterations,
+            max_rules_per_instance, given_number);
             free(dataset_value);
 
             if (increasing_demotion) {
@@ -383,8 +394,9 @@ int main(int argc, char *argv[]) {
     fclose(dataset);
 
     Nerd *nerd =
-    nerd_constructor(train_path, delimiter, true, has_header, threshold, breadth, 1, iterations,
-    promotion, demotion, use_back_chaining, increasing_demotion, partial_observation);
+    nerd_constructor(train_path, delimiter, true, has_header, threshold, max_rules_per_instance,
+    breadth, 1, iterations, promotion, demotion, use_back_chaining, increasing_demotion,
+    partial_observation);
 
     PrudensSettings_ptr settings = NULL;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
