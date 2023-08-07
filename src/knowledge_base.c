@@ -135,15 +135,14 @@ const Context * const restrict focused_labels) {
             scene_difference(observed, inferred, &uncovered);
         }
 
-        pcg32_random_t seed;
-        if (global_rng) {
-            seed = *global_rng;
-        } else {
-            pcg32_srandom_r(&seed, time(NULL), 42u);
+        pcg32_random_t *rng = global_rng;
+        if (!rng) {
+            rng = (pcg32_random_t *) malloc(sizeof(pcg32_random_t));
+            pcg32_srandom_r(rng, time(NULL), 42u);
         }
 
         unsigned int j, body_size,
-        rules_to_create = (pcg32_random_r(&seed) % max_number_of_rules) + 1;
+        rules_to_create = (pcg32_random_r(rng) % max_number_of_rules) + 1;
         int chosen_head_index, head_index, remaining_randoms, random_chosen,chosen_index,
         *random_indices;
 
@@ -155,7 +154,7 @@ const Context * const restrict focused_labels) {
                         break;
                     }
 
-                    chosen_head_index = pcg32_random_r(&seed) % uncovered->size;
+                    chosen_head_index = pcg32_random_r(rng) % uncovered->size;
                     literal_copy(&head, uncovered->literals[chosen_head_index]);
 
                     head_index = scene_literal_index(combined, head);
@@ -165,7 +164,7 @@ const Context * const restrict focused_labels) {
                 }
 
                 body = context_constructor(true);
-                body_size = (pcg32_random_r(&seed) % max_body_size) + 1;
+                body_size = (pcg32_random_r(rng) % max_body_size) + 1;
                 remaining_randoms = combined->size;
 
                 random_indices = (int *) malloc(combined->size * sizeof(int));
@@ -179,7 +178,7 @@ const Context * const restrict focused_labels) {
                 }
 
                 for (j = 0; j < body_size; ++j) {
-                    random_chosen = pcg32_random_r(&seed) % remaining_randoms;
+                    random_chosen = pcg32_random_r(rng) % remaining_randoms;
                     chosen_index = random_indices[random_chosen];
                     random_indices[random_chosen] = random_indices[remaining_randoms - 1];
                     remaining_randoms--;
@@ -205,6 +204,10 @@ const Context * const restrict focused_labels) {
 
         if (head_set) {
             literal_destructor(&head);
+        }
+
+        if (!global_rng) {
+            free(rng);
         }
 
         scene_destructor(&combined);

@@ -152,11 +152,10 @@ size_t * const restrict total_not_recovered) {
 
     Literal *removed_literal = NULL;
     Scene *removed_literals = NULL, *observation = NULL, *inference = NULL;
-    pcg32_random_t seed;
-    if (global_rng) {
-        seed = *global_rng;
-    } else {
-        pcg32_srandom_r(&seed, time(NULL), 314159U);
+    pcg32_random_t *rng = global_rng;
+    if (!rng) {
+        rng = (pcg32_random_t *) malloc(sizeof(pcg32_random_t));
+        pcg32_srandom_r(rng, time(NULL), 314159U);
     }
 
     int equals_result;
@@ -179,7 +178,7 @@ size_t * const restrict total_not_recovered) {
         remaining = observation->size;
 
         while (removed_literals->size != new_size) {
-            scene_remove_literal(observation, possible_indices[pcg32_random_r(&seed) % remaining--],
+            scene_remove_literal(observation, possible_indices[pcg32_random_r(rng) % remaining--],
             &removed_literal);
             scene_add_literal(removed_literals, &removed_literal);
         }
@@ -221,6 +220,10 @@ next_literal:
         scene_destructor(&observation);
         scene_destructor(&removed_literals);
         scene_destructor(&inference);
+    }
+
+    if (!global_rng) {
+        free(rng);
     }
 
     *total_hidden = total_hidden_;

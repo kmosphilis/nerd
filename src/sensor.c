@@ -219,20 +219,19 @@ end_literal_loop:
                     scene_copy(initial_observation, *output);
                 }
 
-                pcg32_random_t seed;
-                if (global_rng) {
-                    seed = *global_rng;
-                } else {
-                    pcg32_srandom_r(&seed, time(NULL), 0U);
+                pcg32_random_t *rng = global_rng;
+                if (!rng) {
+                    rng = (pcg32_random_t *) malloc(sizeof(pcg32_random_t));
+                    pcg32_srandom_r(rng, time(NULL), 0U);
                 }
 
                 size_t number_of_literals = (*output)->size -
-                (pcg32_random_r(&seed) % (*output)->size);
+                (pcg32_random_r(rng) % (*output)->size);
 
                 if (number_of_literals == (*output)->size) {
                     return;
                 } else if (number_of_literals == 1) {
-                    scene_remove_literal(*output, pcg32_random_r(&seed) % (*output)->size, NULL);
+                    scene_remove_literal(*output, pcg32_random_r(rng) % (*output)->size, NULL);
                     return;
                 }
 
@@ -244,11 +243,15 @@ end_literal_loop:
                 }
 
                 for (i = 0; i < number_of_literals; ++i) {
-                    int index = pcg32_random_r(&seed) % number_of_literals--;
+                    int index = pcg32_random_r(rng) % number_of_literals--;
                     scene_remove_literal(*output, random_literals[index], NULL);
                     random_literals[index] = random_literals[number_of_literals];
                 }
                 free(random_literals);
+
+                if (!global_rng) {
+                    free(rng);
+                }
             }
         }
     }
