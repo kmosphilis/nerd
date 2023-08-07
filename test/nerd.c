@@ -10,7 +10,7 @@
 #define DATASET "../data/test.txt"
 #define NUMBER_OF_ACTIVE 4
 #define NUMBER_OF_INACTIVE 3
-#define NUMBER_OF_ERROR_INPUTS 20
+#define NUMBER_OF_ERROR_INPUTS 21
 
 PrudensSettings_ptr settings = NULL;
 
@@ -73,8 +73,9 @@ START_TEST(construct_destruct_test) {
     rule_queue_destructor(&rule_queue2);
 
     Nerd *nerd =
-    nerd_constructor(DATASET, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, true, false);
+    nerd_constructor(DATASET, ' ', true, false, 10.0, 5, 3, 100, 50, 0.5, 1.5, true, true, false);
     ck_assert_ptr_nonnull(nerd);
+    ck_assert_int_eq(nerd->max_rules_per_instance, 5);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 50);
@@ -104,8 +105,10 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 3, 100, 50, 0.5, 1.5, true, false, 0);
+    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 10, 3, 100, 50, 0.5, 1.5, true, false,
+    0);
     ck_assert_ptr_nonnull(nerd);
+    ck_assert_int_eq(nerd->max_rules_per_instance, 10);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 1);
@@ -125,11 +128,11 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 3, 100, 50, 0.5, 1.5, true, true, 0);
+    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 5, 3, 100, 50, 0.5, 1.5, true, true, 0);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor("file-that-does-not-exist.txt", ',', true, false, 10.0, 3, 100, 50, 0.5,
-    1.5, true, true, 0);
+    nerd = nerd_constructor("file-that-does-not-exist.txt", ',', true, false, 10.0, 50, 3, 100, 50,
+    0.5, 1.5, true, true, 0);
     ck_assert_ptr_null(nerd);
 
     nerd_destructor(&nerd);
@@ -142,6 +145,7 @@ END_TEST
 START_TEST(construct_from_file) {
     Nerd *nerd = nerd_constructor_from_file("../test/data/nerd_input1.txt", 2, true, true);
     ck_assert_ptr_nonnull(nerd);
+    ck_assert_ptr_eq(nerd->max_rules_per_instance, 5);
     ck_assert_int_eq(nerd->breadth, 2);
     ck_assert_int_eq(nerd->depth, 50);
     ck_assert_int_eq(nerd->epochs, 1);
@@ -164,6 +168,7 @@ START_TEST(construct_from_file) {
     ck_assert_ptr_nonnull(nerd);
     RuleQueue *inactives;
     rule_hypergraph_get_inactive_rules(nerd->knowledge_base, &inactives);
+    ck_assert_int_eq(nerd->max_rules_per_instance, 1);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
     ck_assert_int_eq(nerd->epochs, 1);
@@ -247,7 +252,7 @@ START_TEST(construct_from_file) {
 END_TEST
 
 START_TEST(to_file_test) {
-    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, true,
+    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true,
     true, 1);
 
     nerd_to_file(nerd, "../bin/nerd_output1.txt");

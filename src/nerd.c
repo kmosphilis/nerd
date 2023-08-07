@@ -26,6 +26,8 @@
  * false (0) for no.
  * @param activation_threshold The threshold which determines whether a rule should get activated
  * or deactivated.
+ * @param max_rules_per_instance The maximum Rules that should be learnt in an iteration. Created
+ * Rules that exist will be discarded.
  * @param breadth The maximum size of Literals that a Rule should contain. //FIXME What if zero is given?
  * @param depth The maximum size of the KnowledgeBase //FIXME Currently not being used.
  * @param epochs The number of epochs the algorithm should learn for.
@@ -41,15 +43,16 @@
  * @return A new Nerd object *. Use nerd_destructor to deallocate.
  */
 Nerd *nerd_constructor(const char * const filepath, const char delimiter, const bool reuse,
-const bool header, const float activation_threshold, const unsigned int breadth,
-const unsigned int depth, const unsigned int epochs, const float promotion_weight,
-const float demotion_weight, const bool use_backward_chaining, const bool increasing_demotion,
-const bool partial_observation) {
+const bool header, const float activation_threshold, const unsigned int max_rules_per_instance,
+const unsigned int breadth, const unsigned int depth, const unsigned int epochs,
+const float promotion_weight, const float demotion_weight, const bool use_backward_chaining,
+const bool increasing_demotion, const bool partial_observation) {
     if (filepath) {
         Nerd *nerd = (Nerd *) malloc(sizeof(Nerd));
         if ((nerd->sensor = sensor_constructor_from_file(filepath, delimiter, reuse, header))) {
             nerd->knowledge_base =
             knowledge_base_constructor(activation_threshold, use_backward_chaining);
+            nerd->max_rules_per_instance = max_rules_per_instance;
             nerd->breadth = breadth;
             nerd->depth = depth;
             if (reuse) {
@@ -96,6 +99,9 @@ const bool use_backward_chaining, const bool reuse_sensor) {
         unsigned short partial_observation, sensor_reuse, sensor_header, increasing_demotion;
         float activation_threshold;
 
+        if (fscanf(file, "max_rules_per_instance: %zu\n", &(nerd->max_rules_per_instance)) != 1) {
+            goto failed1;
+        }
         if (fscanf(file, "breadth: %zu\n", &(nerd->breadth)) != 1) {
             goto failed1;
         }
@@ -283,7 +289,7 @@ const Context * const restrict labels) {
             + (prudens_end_time.tv_nsec - prudens_start_time.tv_nsec) * NANOSECONDS_TO_MILLISECONDS;
 
             knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred,
-            nerd->breadth, 5, labels);
+            nerd->breadth, nerd->max_rules_per_instance, labels);
 
             rule_hypergraph_update_rules(nerd->knowledge_base, observation, inferred,
             nerd->promotion_weight, nerd->demotion_weight, nerd->increasing_demotion);
@@ -416,6 +422,7 @@ void nerd_to_file(const Nerd * const nerd, const char * const filepath) {
     unsigned int i;
     char *str = NULL;
 
+    fprintf(file, "max_rules_per_instance: %zu\n", nerd->max_rules_per_instance);
     fprintf(file, "breadth: %zu\n", nerd->breadth);
     fprintf(file, "depth: %zu\n", nerd->depth);
     fprintf(file, "promotion_weight: %f\n", nerd->promotion_weight);

@@ -1,6 +1,7 @@
+max_rules_per_instance: 5
 breadth: 3
-depth: 100
-promotion_weight:
+depth:
+promotion_weight: 0.500000
 demotion_weight: 1.500000 1
 partial_observation: 0
 sensor: ../data/test.txt ',' 1 0

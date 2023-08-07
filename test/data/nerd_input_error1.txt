@@ -1,4 +1,5 @@
-breadth:
+max_rules_per_instance:
+breadth: 3
 depth: 100
 promotion_weight: 0.500000
 demotion_weight: 1.500000 1

@@ -1,3 +1,4 @@
+max_rules_per_instance: 5
 breadth: 3
 depth: 50
 promotion_weight: 1.500000

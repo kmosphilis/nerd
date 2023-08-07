@@ -1,4 +1,5 @@
-breadth: 3
+max_rules_per_instance: 5
+depth: 100
 promotion_weight: 0.500000
 demotion_weight: 1.500000 1
 partial_observation: 0

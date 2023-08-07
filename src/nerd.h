@@ -10,16 +10,16 @@
 typedef struct Nerd {
     Sensor *sensor;
     KnowledgeBase *knowledge_base;
-    size_t breadth, depth, epochs;
+    size_t max_rules_per_instance, breadth, depth, epochs;
     float promotion_weight, demotion_weight;
     bool partial_observation, increasing_demotion;
 } Nerd;
 
 Nerd *nerd_constructor(const char * const filepath, const char delimiter, const bool reuse,
-const bool header, const float activation_threshold, const unsigned int breadth,
-const unsigned int depth, const unsigned int epochs, const float promotion_weight,
-const float demotion_weight, const bool use_backward_chaining, const bool increasing_demotion,
-const bool partial_observation);
+const bool header, const float activation_threshold, const unsigned int max_rules_per_instance,
+const unsigned int breadth, const unsigned int depth, const unsigned int epochs,
+const float promotion_weight, const float demotion_weight, const bool use_backward_chaining,
+const bool increasing_demotion, const bool partial_observation);
 Nerd *nerd_constructor_from_file(const char * const filepath, const unsigned int epochs,
 const bool use_backward_chaining, const bool reuse_sensor);
 void nerd_destructor(Nerd ** const nerd);
