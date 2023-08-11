@@ -253,20 +253,33 @@ next_literal:
  * @param file_to_evaluate The filepath containing the evaluation samples.
  * @param labels The Context containing all the Literals that act a labels.
  * @param accuracy A pointer to a float variable to save the overall accuracy of the KnowledgeBase
- * over the given samples.
+ * over the given samples. If NULL is given, it will not be saved.
  * @param abstain_ratio A pointer to a float variable to save the abstain ratio of the KnowledgeBase
  * over the given samples. Abstain means that with the given KnowledgeBase a label cannot be
  * predicted, either correct or incorrect. If NULL is given, this ratio will not be saved.
+ * @param total_observations A size_t * to save the number of total observations. If NULL, it will
+ * not be saved.
+ * @param observations A Scene *** to save the observations. It should be a reference to a Scene **.
+ * Requires total_observations to work. If NULL is given, they will not be saved.
+ * @param inferences A Scene *** to save the inferences. It should be a reference to a Scene **.
+ * Requires total_observations to work. If NULL is given, they will not be saved.
  *
- * @return 0 if the evaluation ended successfully, -1 if it one of the parameters was NULL (expect
- * abstain_ratio), > 0 which will be the index of the first observation that does not have a
- * provided label (index calculated from the given file).
+ * @return 0 if the evaluation ended successfully, -1 if it one nerd, settings, file_to_evaluation
+ * or labels where NULL, > 0 which will be the index of the first observation that does not have a
+ * provided label (index calculated from the given file), -2 if total_observation was not given, but
+ * either observations or inferences were given.
 */
 int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
 const char * const file_to_evaluate, const Context * const labels, const char delimiter,
-const bool has_header, float * const restrict accuracy, float * const restrict abstain_ratio) {
-    if (!(nerd && settings && file_to_evaluate && labels && accuracy)) {
+const bool has_header, float * const restrict accuracy, float * const restrict abstain_ratio,
+size_t * const total_observations, Scene *** const restrict observations,
+Scene *** const restrict inferences) {
+    if (!(nerd && settings && file_to_evaluate && labels)) {
         return -1;
+    }
+
+    if ((observations || inferences) && !total_observations) {
+        return -2;
     }
 
     Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate, delimiter, false,
@@ -276,21 +289,26 @@ const bool has_header, float * const restrict accuracy, float * const restrict a
         return -2;
     }
 
-    const size_t total_observations = sensor_get_total_observations(evaluation_sensor);
-    Scene **observations = (Scene **) malloc(sizeof(Scene *) * total_observations),
-    **inferences = NULL;
+    const size_t _total_observations = sensor_get_total_observations(evaluation_sensor);
+
+    if (total_observations) {
+        *total_observations = _total_observations;
+    }
+
+    Scene **_observations = (Scene **) malloc(sizeof(Scene *) * _total_observations),
+    **_inferences = NULL;
     unsigned int *evaluation_literal_indices =
-    (unsigned int *) malloc(total_observations * sizeof(int));
+    (unsigned int *) malloc(_total_observations * sizeof(int));
     int label_index;
 
     unsigned int i, j;
-    for (i = 0; i < total_observations; ++i) {
-        sensor_get_next_scene(evaluation_sensor, &(observations[i]), false, NULL);
+    for (i = 0; i < _total_observations; ++i) {
+        sensor_get_next_scene(evaluation_sensor, &(_observations[i]), false, NULL);
         for (j = 0; j < labels->size; ++j) {
-            if ((label_index = scene_literal_index(observations[i], labels->literals[j]))
+            if ((label_index = scene_literal_index(_observations[i], labels->literals[j]))
             > -1) {
                 evaluation_literal_indices[i] = j;
-                scene_remove_literal(observations[i], label_index, NULL);
+                scene_remove_literal(_observations[i], label_index, NULL);
                 break;
             }
         }
@@ -298,55 +316,73 @@ const bool has_header, float * const restrict accuracy, float * const restrict a
         if (label_index < 0) {
             unsigned int temp;
             for (temp = 0; temp <= i; ++temp) {
-                scene_destructor(&(observations[temp]));
+                scene_destructor(&(_observations[temp]));
             }
-            free(observations);
+            free(_observations);
             free(evaluation_literal_indices);
             sensor_destructor(&evaluation_sensor);
             return i + 1;
         }
     }
 
-    prudensjs_inference_batch(settings, nerd->knowledge_base, total_observations, observations,
-    &inferences);
+    prudensjs_inference_batch(settings, nerd->knowledge_base, _total_observations, _observations,
+    &_inferences);
 
-    unsigned int positives = 0, negatives = 0, unobserved = 0;
-    bool found = false;
-
-    int current_index;
-    for (i = 0; i < total_observations; ++i) {
-        for (j = 0; j < labels->size; ++j) {
-            current_index = scene_literal_index(inferences[i], labels->literals[j]);
-            if (current_index > -1) {
-                if (evaluation_literal_indices[i] == j) {
-                    ++positives;
-                } else {
-                    ++negatives;
+    if (accuracy || abstain_ratio) {
+        unsigned int positives = 0, negatives = 0, unobserved = 0;
+        bool found = false;
+        int current_index;
+        for (i = 0; i < _total_observations; ++i) {
+            for (j = 0; j < labels->size; ++j) {
+                current_index = scene_literal_index(_inferences[i], labels->literals[j]);
+                if (current_index > -1) {
+                    if (evaluation_literal_indices[i] == j) {
+                        ++positives;
+                    } else {
+                        ++negatives;
+                    }
+                    found = true;
+                    break;
                 }
-                found = true;
-                break;
             }
+
+            if (!found) {
+                ++unobserved;
+            }
+
+            found = false;
         }
 
-        if (!found) {
-            ++unobserved;
+        if (accuracy) {
+            *accuracy = ((float) positives) / _total_observations;
         }
 
-        scene_destructor(&(observations[i]));
-        scene_destructor(&(inferences[i]));
+        if (abstain_ratio) {
+            *abstain_ratio = ((float) unobserved) / _total_observations;
+        }
     }
 
-    free(observations);
-    free(inferences);
+    if (observations) {
+        *observations = _observations;
+    } else {
+        for (i = 0; i < _total_observations; ++i) {
+            scene_destructor(&(_observations[i]));
+        }
+        free(_observations);
+    }
+
+    if (inferences) {
+        *inferences = _inferences;
+    }
+     else {
+        for (i = 0; i < _total_observations; ++i) {
+            scene_destructor(&(_inferences[i]));
+        }
+        free(_inferences);
+    }
+
     free(evaluation_literal_indices);
-
     sensor_destructor(&evaluation_sensor);
-
-    *accuracy = ((float) positives) / total_observations;
-
-    if (abstain_ratio) {
-        *abstain_ratio = ((float) unobserved) / total_observations;
-    }
 
     return 0;
 }

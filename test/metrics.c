@@ -12,7 +12,8 @@
 PrudensSettings_ptr settings = NULL;
 
 START_TEST(all_literals_evaluation_test) {
-    Nerd *nerd = nerd_constructor(DATASET1, ' ', true, false, 15.0, 3, 50, 1, 1.5, 4.5, true, true);
+    Nerd *nerd =
+    nerd_constructor(DATASET1, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true, true, true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true);
     Rule *r1 = rule_constructor(1, &l1, &l2, 15.0, false),
@@ -71,7 +72,8 @@ START_TEST(all_literals_evaluation_test) {
 END_TEST
 
 START_TEST(random_literals_evaluation_test) {
-    Nerd *nerd = nerd_constructor(DATASET2, ',', true, true, 15.0, 3, 50, 1, 1.5, 4.5, true, true);
+    Nerd *nerd =
+    nerd_constructor(DATASET1, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true, true, true);
     Literal *l1 = literal_constructor("class_bird", true),
     *l2 = literal_constructor("flies?_yes", true), *l3 = literal_constructor("class_mammal", true),
     *l4 = literal_constructor("flies?_no", true);
@@ -127,7 +129,8 @@ START_TEST(random_literals_evaluation_test) {
 END_TEST
 
 START_TEST(one_specific_literal_evaluation_test) {
-    Nerd *nerd = nerd_constructor(DATASET2, ',', true, true, 15.0, 3, 50, 1, 1.5, 4.5, true, true);
+    Nerd *nerd =
+    nerd_constructor(DATASET1, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true, true, true);
     Literal *l1 = literal_constructor("animal_bat", true),
     *l2 = literal_constructor("flies?_yes", true), *l3 = literal_constructor("animal_human", true),
     *l4 = literal_constructor("flies?_no", true);
@@ -141,42 +144,64 @@ START_TEST(one_specific_literal_evaluation_test) {
 
     float accuracy, abstain_ratio;
     ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, &accuracy, &abstain_ratio), 1);
+    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 1);
 
     context_add_literal(literals_to_evaluate, &l4);
     ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, &abstain_ratio), 0);
+    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 0);
     ck_assert_float_eq(accuracy, 0);
     ck_assert_float_eq(abstain_ratio, 1);
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
     ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, &abstain_ratio), 0);
+    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
 
     ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, NULL), 0);
+    has_header, &accuracy, NULL, NULL, NULL, NULL), 0);
     accuracy = 0;
     abstain_ratio = 0;
     ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, &abstain_ratio), 0);
+    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, NULL, NULL, NULL, NULL, NULL), 0);
+
+    size_t total_observations;
+    Scene **inferences = NULL;
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, NULL, NULL, &total_observations, NULL, &inferences), 0);
+    ck_assert_int_ne(total_observations, 0);
+    ck_assert_ptr_nonnull(inferences);
+    unsigned int i;
+    for (i = 0; i < total_observations; ++i) {
+        ck_assert_ptr_nonnull(inferences[i]);
+        scene_destructor(&(inferences[i]));
+    }
+    safe_free(inferences);
+
+    const size_t old_observations = total_observations;
+    total_observations = 0;
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, NULL, NULL, NULL, NULL, &inferences), -2);
+
+    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
+    has_header, NULL, NULL, &total_observations, NULL, NULL), 0);
+    ck_assert_int_eq(old_observations, total_observations);
 
     ck_assert_int_eq(evaluate_labels(NULL, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, &accuracy, NULL), -1);
+    has_header, &accuracy, NULL, NULL, NULL, NULL), -1);
     ck_assert_int_eq(evaluate_labels(nerd, settings, NULL, literals_to_evaluate, delimiter,
-    has_header, &accuracy, NULL), -1);
+    has_header, &accuracy, NULL, NULL, NULL, NULL), -1);
     ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, NULL, delimiter, has_header,
-    &accuracy, NULL), -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, NULL, NULL), -1);
+    &accuracy, NULL, NULL, NULL, NULL), -1);
 
     nerd_destructor(&nerd);
     ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, &accuracy, NULL), -1);
+    has_header, &accuracy, NULL, NULL, NULL, NULL), -1);
 
 
     context_destructor(&literals_to_evaluate);

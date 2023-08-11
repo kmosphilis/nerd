@@ -377,7 +377,8 @@ const Context * const restrict labels) {
             float accuracy, abstain_ratio;
             if (labels) {
                 result = evaluate_labels(nerd, settings, evaluation_filepath, labels,
-                nerd->sensor->delimiter, nerd->sensor->header != NULL, &accuracy, &abstain_ratio);
+                nerd->sensor->delimiter, nerd->sensor->header != NULL, &accuracy, &abstain_ratio,
+                NULL, NULL, NULL);
                 if (result == 0) {
                     fprintf(results, "%sEvaluating Labels:\n", test_space);
                     fprintf(results, "%saccuracy abstain\n", test_result_space);
