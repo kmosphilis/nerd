@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "nerd_helper.h"
 #include "nerd_utils.h"
@@ -10,6 +15,7 @@
 #define BUFFER_SIZE 256
 #define DECIMAL_BASE 10
 
+#define RESULT_DIR "results/"
 #define TRAIN ".train_set"
 #define TEST ".test_set"
 
@@ -28,7 +34,7 @@ int main(int argc, char *argv[]) {
     int c;
     size_t value_buffer_size = BUFFER_SIZE;
     char *value_buffer = (char *) calloc(value_buffer_size, sizeof(char)), *end = NULL;
-    unsigned int i = 0;
+    size_t i = 0;
 
     FILE *dataset = NULL;
     size_t state_seed, seq_seed;
@@ -169,55 +175,99 @@ failed:
         return EXIT_FAILURE;
     }
 
-    pcg32_random_t seed;
-    pcg32_srandom_r(&seed, state_seed, seq_seed);
-
     char *last_slash = strrchr(argv[2], '/') + 1;
 
     char *test_directory = (char *) calloc(((last_slash - argv[2]) + 1), sizeof(char));
     memcpy(test_directory, argv[2], last_slash - argv[2]);
 
+    char *result_directory = (char *) calloc((strlen(test_directory) + strlen(RESULT_DIR) + 1),
+    sizeof(char));
+    sprintf(result_directory, "%s%s", test_directory, RESULT_DIR);
+
+    if (mkdir(result_directory, 0740) != 0) {
+        if (errno != EEXIST) {
+            free(test_directory);
+            free(result_directory);
+            return EXIT_FAILURE;
+        }
+    }
+    free(test_directory);
+
+    pcg32_random_t seed;
+    pcg32_srandom_r(&seed, state_seed, seq_seed);
+
     PrudensSettings_ptr settings;
-    prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
+    prudensjs_settings_constructor(&settings, argv[0], result_directory, constraints_file,
     strstr(argv[2], "iteration"));
 
-    char *train_path = (char *) calloc((snprintf(NULL, 0, "%s%s%u", test_directory, TRAIN,
-    iteration_number) + 1), sizeof(char)),
-    *test_path = (char *) calloc((snprintf(NULL, 0, "%s%s%u", test_directory, TEST, iteration_number)
-    + 1), sizeof(char));
-    sprintf(train_path, "%s%s%u", test_directory, TRAIN, iteration_number);
-    sprintf(test_path, "%s%s%u", test_directory, TEST, iteration_number);
+    char *train_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TRAIN,
+    iteration_number) + 1, sizeof(char)),
+    *test_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TEST,
+    iteration_number) + 1, sizeof(char));
+    sprintf(train_path, "%s%s%u", result_directory, TRAIN, iteration_number);
+    sprintf(test_path, "%s%s%u", result_directory, TEST, iteration_number);
 
 
     train_test_split(dataset, has_header, 0.2, &seed, train_path, test_path, NULL, NULL);
     fclose(dataset);
 
-    float accuracy, abstain;
+    char *instance_directory =
+    (char *) calloc((strlen(result_directory) + strlen(last_slash) + 1 + 1), sizeof(char));
+    sprintf(instance_directory, "%s%s/", result_directory, last_slash);
 
-    char *train_results_name = (char *) calloc((strlen("/train_results") + strlen(test_directory)
-    + 1), sizeof(char)), *test_results_name = (char *) calloc((strlen("/test_results")
-    + strlen(test_directory) + 1), sizeof(char));
-    sprintf(train_results_name, "%s/train_results", test_directory);
-    sprintf(test_results_name, "%s/test_results", test_directory);
-    FILE *train_results = fopen(train_results_name, "ab+"),
-    *test_results = fopen(test_results_name, "ab+");
+    if (mkdir(instance_directory, 0740) != 0) {
+        if (errno != EEXIST) {
+            free(result_directory);
+            free(instance_directory);
+            return EXIT_FAILURE;
+        }
+    }
+    free(result_directory);
+
+    char *train_results_name = (char *) calloc(strlen(instance_directory) + strlen("train.txt") + 1,
+    sizeof(char));
+    sprintf(train_results_name, "%strain.txt", instance_directory);
+
+    char *test_results_name = (char *) calloc(strlen(instance_directory) + strlen("test.txt") + 1,
+    sizeof(char));
+    sprintf(test_results_name, "%stest.txt", instance_directory);
+    free(instance_directory);
+
+    umask(S_IROTH | S_IWOTH | S_IWGRP);
+    FILE *train_results = fopen(train_results_name, "wb"),
+    *test_results = fopen(test_results_name, "wb");
     free(train_results_name);
     free(test_results_name);
 
-    evaluate_labels(nerd, settings, train_path, labels, delimiter, has_header, &accuracy, &abstain);
-    fprintf(train_results, "%u %u %f %f\n", iteration_number, instance_number, accuracy, abstain);
-    fclose(train_results);
+    size_t total_observations;
+    Scene **result = NULL;
+    char *str;
+    unsigned int j, k;
+    char *paths[2] = {train_path, test_path};
+    FILE *files[2] = {train_results, test_results};
 
-    evaluate_labels(nerd, settings, test_path, labels, delimiter, has_header, &accuracy, &abstain);
-    fprintf(test_results, "%u %u %f %f\n", iteration_number, instance_number, accuracy, abstain);
-    fclose(test_results);
+    for (k = 0; k < 2; ++k) {
+        evaluate_labels(nerd, settings, paths[k], labels, delimiter, has_header, NULL, NULL,
+        &total_observations, NULL, &result);
+        for (i = 0; i < total_observations; ++i) {
+            for (j = 0; j < result[i]->size; ++j) {
+                if (j != 0) {
+                    fprintf(files[k], " ");
+                }
+                str = literal_to_string(result[i]->literals[j]);
+                fprintf(files[k], "%s", str);
+                safe_free(str);
+            }
+            fprintf(files[k], "\n");
+            scene_destructor(&(result[i]));
+        }
+        safe_free(result);
+        fclose(files[k]);
+        remove(paths[k]);
+        free(paths[k]);
+    }
 
     prudensjs_settings_destructor(&settings);
-    remove(train_path);
-    free(train_path);
-    remove(test_path);
-    free(test_path);
-    free(test_directory);
     context_destructor(&labels);
     nerd_destructor(&nerd);
     return EXIT_SUCCESS;
