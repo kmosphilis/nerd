@@ -13,9 +13,9 @@ Airplane Fly -Feathers
 Stone -Fly -Feathers -Wings
 Bat Fly -Bird Mammal
 Human Mammal -Fly
-Mammal -Bird
-Bird -Mammal
-Flying_Squirrel Mammal Glide
+Mammal -Bird -Fly
+Bird -Mammal Fly
+Flying_Squirrel Mammal glide
 Glide -Fly
 Draco Reptile Glide
-Reptile -Mammal
+Reptile -Mammal -Fly
