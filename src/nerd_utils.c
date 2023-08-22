@@ -135,8 +135,7 @@ FILE **train, FILE **test) {
     FILE *file_to_write;
     unsigned int test_indices_index = 0;
     for (i = 0; i < dataset_size; ++i) {
-        if (test_indices[test_indices_index] == i) {
-            ++test_indices_index;
+        if ((test_indices_index != test_size) && (test_indices[test_indices_index++] == i)) {
             file_to_write = test_;
         } else {
             file_to_write = train_;
