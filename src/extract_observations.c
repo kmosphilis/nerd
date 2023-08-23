@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
     size_t buffer_size = BUFFER_SIZE;
     size_t i = 0;
-    char *buffer = (char *) calloc(buffer_size, sizeof(char)), *end = NULL;
+    char *buffer = (char *) calloc(buffer_size, sizeof(char)), *end = NULL, delimiter = ' ';
 
     bool has_header = false, header_set = false;
     unsigned long *state_seed = NULL, *seq_seed = NULL, temp;
@@ -45,6 +45,10 @@ int main(int argc, char *argv[]) {
                 if (!(dataset = fopen(value, "r"))) {
                     printf("'f' value '%s' is not valid. Filepath does not exist.\n", value);
                     goto failed;
+                }
+
+                if (strstr(buffer, ".csv")) {
+                    delimiter = ',';
                 }
             } else if (strstr(buffer, "state_seed=")) {
                 temp = strtoul(value, &end, DECIMAL_BASE);
@@ -132,17 +136,56 @@ failed:
 
     char *training_path =
     (char *) calloc(strlen(test_dir) + strlen(TRAINING_FILE) + 1, sizeof(char)),
-    *testing_path = (char *) calloc(strlen(test_dir) + strlen(TESTING_FILE) + 1, sizeof(char));
+    *testing_path = (char *) calloc(strlen(test_dir) + strlen(TESTING_FILE) + 1, sizeof(char)),
+    *training_temp_path =
+    (char *) calloc(strlen(test_dir) + strlen(TRAINING_FILE) + 2, sizeof(char)),
+    *testing_temp_path = (char *) calloc(strlen(test_dir) + strlen(TESTING_FILE) + 2, sizeof(char));
 
     sprintf(training_path, "%s%s", test_dir, TRAINING_FILE);
     sprintf(testing_path, "%s%s", test_dir, TESTING_FILE);
+    sprintf(training_temp_path, "%s.%s", test_dir, TRAINING_FILE);
+    sprintf(testing_temp_path, "%s.%s", test_dir, TESTING_FILE);
     free(test_dir);
 
     umask(S_IROTH | S_IWOTH | S_IWGRP);
-    train_test_split(dataset, has_header, 0.2, &rng, training_path, testing_path, NULL, NULL);
-    free(training_path);
-    free(testing_path);
+    train_test_split(dataset, has_header, 0.2, &rng, training_temp_path, testing_temp_path, NULL,
+    NULL);
     fclose(dataset);
+
+    Sensor *sensor = NULL;
+    Scene *observation = NULL;
+
+    char *file_paths[] = {training_path, testing_path};
+    char *temp_paths[] = {training_temp_path, testing_temp_path};
+    char *str = NULL;
+    FILE *file;
+
+    size_t j;
+    for (i = 0; i < 2; ++i) {
+        file = fopen(file_paths[i], "wb");
+        sensor = sensor_constructor_from_file(temp_paths[i], delimiter, false, has_header);
+        free(file_paths[i]);
+
+        sensor_get_next_scene(sensor, &observation, false, NULL);
+        for (;observation; sensor_get_next_scene(sensor, &observation, false, NULL)) {
+            for (j = 0; j < observation->size; ++j) {
+                if (j != 0) {
+                    fprintf(file, " ");
+                }
+                str = literal_to_string(observation->literals[j]);
+                fprintf(file, "%s", str);
+                safe_free(str);
+            }
+            fprintf(file, "\n");
+
+            scene_destructor(&observation);
+        }
+
+        sensor_destructor(&sensor);
+        fclose(file);
+        remove(temp_paths[i]);
+        free(temp_paths[i]);
+    }
 
     return EXIT_SUCCESS;
 }
