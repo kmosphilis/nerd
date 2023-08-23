@@ -155,9 +155,7 @@ START_TEST(get_scene_test) {
     scene_destructor(&scene);
 
     sensor_get_next_scene(sensor, &scene, 0, NULL);
-    ck_assert_int_eq(scene->size, 0);
-    ck_assert_ptr_null(scene->literals);
-    scene_destructor(&scene);
+    ck_assert_ptr_null(scene);
 
     sensor_get_next_scene(sensor, NULL, 0, NULL);
 

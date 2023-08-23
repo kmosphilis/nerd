@@ -147,7 +147,6 @@ size_t sensor_get_total_observations(const Sensor * const sensor) {
 void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output,
 const bool partial_observation, Scene ** const restrict initial_observation) {
     if (sensor && output) {
-        *output = scene_constructor(true);
         if (sensor->environment) {
             int c = fgetc(sensor->environment);
 
@@ -162,6 +161,8 @@ const bool partial_observation, Scene ** const restrict initial_observation) {
                     return;
                 }
             }
+
+            *output = scene_constructor(true);
 
             size_t buffer_size = BUFFER_SIZE;
             char *buffer = (char *) malloc(buffer_size * sizeof(char));
@@ -229,10 +230,10 @@ end_literal_loop:
                 (pcg32_random_r(rng) % (*output)->size);
 
                 if (number_of_literals == (*output)->size) {
-                    return;
+                    goto finish;
                 } else if (number_of_literals == 1) {
                     scene_remove_literal(*output, pcg32_random_r(rng) % (*output)->size, NULL);
-                    return;
+                    goto finish;
                 }
 
                 unsigned int *random_literals = (unsigned int *) calloc(number_of_literals,
@@ -249,6 +250,7 @@ end_literal_loop:
                 }
                 free(random_literals);
 
+finish:
                 if (!global_rng) {
                     free(rng);
                 }
