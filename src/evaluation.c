@@ -118,10 +118,10 @@ failed:
             memset(value_buffer, 0, strlen(value_buffer));
             i = 0;
         } else {
-            if (i == value_buffer_size) {
-                value_buffer_size *= 2;
+            if ((i + 1) == value_buffer_size) {
+                value_buffer_size <<= 1;
                 value_buffer = (char *) realloc(value_buffer, value_buffer_size);
-                memset(value_buffer + (value_buffer_size / 2), 0, value_buffer_size / 2);
+                memset(value_buffer + (value_buffer_size >> 1), 0, value_buffer_size >> 1);
             }
             value_buffer[i++] = c;
         }

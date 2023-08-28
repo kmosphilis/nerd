@@ -43,9 +43,10 @@ const bool reuse, const bool header) {
 
                 while (!end_of_line) {
                     if (c != sensor->delimiter) {
-                        if (i + 1 == buffer_size) {
-                            buffer_size *= 2;
+                        if ((i + 1) == buffer_size) {
+                            buffer_size <<= 1;
                             buffer = (char *) realloc(buffer, buffer_size);
+                            memset(buffer + (buffer_size >> 1), 0, buffer_size >> 1);
                         }
 
                         buffer[i++] = (char) c;

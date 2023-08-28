@@ -86,10 +86,10 @@ int main(int argc, char *argv[]) {
         } else {
             buffer[i++] = c;
 
-            if (i == buffer_size) {
-                buffer_size <<= 2;
+            if ((i + 1) == buffer_size) {
+                buffer_size <<= 1;
                 buffer = (char *) realloc(buffer, buffer_size);
-                memset(buffer + (buffer_size >> 2), 0, buffer_size >> 2);
+                memset(buffer + (buffer_size >> 1), 0, buffer_size >> 1);
             }
         }
     }

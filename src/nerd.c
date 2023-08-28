@@ -170,9 +170,10 @@ const bool use_backward_chaining, const bool reuse_sensor) {
         memset(buffer, 0, strlen(buffer));
 
         while(fgets(buffer, buffer_size, file) != NULL) {
-            if (strlen(buffer) == buffer_size) {
+            if ((strlen(buffer) + 1) == buffer_size) {
                 buffer_size <<= 1;
                 buffer = realloc(buffer, buffer_size * sizeof(char));
+                memset(buffer + (buffer_size >> 1), 0, buffer_size >> 1);
                 fsetpos(file, &position);
                 continue;
             }
