@@ -31,6 +31,7 @@ int close_dataset_and_exit(FILE *dataset) {
 }
 
 int main(int argc, char *argv[]) {
+    int exit_code = EXIT_SUCCESS;
     if (argc < 13) {
         printf("Required parameters:\n-f <filepath> The path of the file,\n-h <bool> Does the file "
         "have a header or not?,\n-t <float> > 0 Threshold value. It must be bigger than 0,\n-p "
@@ -393,6 +394,89 @@ int main(int argc, char *argv[]) {
     }
     fclose(dataset);
 
+    Sensor *sensor = sensor_constructor_from_file(train_path, delimiter, false, has_header);
+    size_t total_observations = sensor_get_total_observations(sensor);
+    Scene *observation, *result;
+
+    for (i = 0; i < total_observations; ++i) {
+        sensor_get_next_scene(sensor, &observation, false, NULL);
+
+        scene_intersect(observation, labels, &result);
+
+        if (result->size == 0) {
+            char *str = scene_to_string(observation), *labels_str = scene_to_string(labels);
+            printf("labels files does not contain a label for observation\nLabels: %s\nObservation:"
+            " %s\n", labels_str, str);
+
+            free(str);
+            free(labels_str);
+            scene_destructor(&result);
+            scene_destructor(&observation);
+            exit_code = EXIT_FAILURE;
+            break;
+        }
+
+        scene_destructor(&result);
+        scene_destructor(&observation);
+    }
+    sensor_destructor(&sensor);
+
+    if (exit_code) {
+        goto failed;
+    }
+
+    FILE *constraints = fopen(constraints_file, "r");
+    Literal *l1, *l2;
+    char *first_literal = (char *) calloc(BUFFER_SIZE, sizeof(char)),
+    *second_literal = (char *) calloc(BUFFER_SIZE, sizeof(char));
+
+    i = 0;
+    while (fscanf(constraints, "%*s :: %s # %s\n", first_literal, second_literal) == 2) {
+        if (strrchr(second_literal, ';')) {
+            second_literal[strlen(second_literal) - 1] = '\0';
+        } else {
+            printf("A simicolon ; is missing at the end of the rule at line %u", i);
+            exit_code = EXIT_FAILURE;
+            break;
+        }
+
+        ++i;
+        l1 = literal_constructor_from_string(first_literal);
+        l2 = literal_constructor_from_string(second_literal);
+
+        int should_fail = -1;
+
+        if (scene_literal_index(labels, l1) < 0) {
+            should_fail = 0;
+        } else if (scene_literal_index(labels, l2) < 0) {
+            should_fail = 1;
+        }
+        if (should_fail > -1) {
+            Literal *chosen_literal = (should_fail == 0) ? l1 : l2;
+            char *str = literal_to_string(chosen_literal);
+            printf("Literal: %s in line %u does not exist in the labels. Check again.\n",
+            str, i);
+
+            free(str);
+            literal_destructor(&l1);
+            literal_destructor(&l2);
+            exit_code = EXIT_FAILURE;
+            break;
+        }
+
+        literal_destructor(&l1);
+        literal_destructor(&l2);
+        memset(first_literal, 0, strlen(first_literal));
+        memset(second_literal, 0, strlen(second_literal));
+    }
+    free(first_literal);
+    free(second_literal);
+    fclose(constraints);
+
+    if (exit_code) {
+        goto failed;
+    }
+
     Nerd *nerd =
     nerd_constructor(train_path, delimiter, true, has_header, threshold, max_rules_per_instance,
     breadth, 1, iterations, promotion, demotion, use_back_chaining, increasing_demotion,
@@ -406,11 +490,11 @@ int main(int argc, char *argv[]) {
 
     nerd_destructor(&nerd);
     prudensjs_settings_destructor(&settings);
+failed:
     context_destructor(&labels);
-
     remove(train_path);
     free(train_path);
 
     free(test_directory);
-    return EXIT_SUCCESS;
+    return exit_code;
 }
