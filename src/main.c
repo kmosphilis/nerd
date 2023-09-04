@@ -346,16 +346,15 @@ int main(int argc, char *argv[]) {
             max_rules_per_instance, given_number);
             free(dataset_value);
 
-            if (increasing_demotion) {
-                fprintf(file, "di=true\n");
-            } else {
-                fprintf(file, "di=false\n");
-            }
-
             if (!use_back_chaining) {
                 fprintf(file, "c=true\n");
             } else {
                 fprintf(file, "c=false\n");
+                if (increasing_demotion) {
+                    fprintf(file, "di=true\n");
+                } else {
+                    fprintf(file, "di=false\n");
+                }
             }
 
             if (partial_observation) {
