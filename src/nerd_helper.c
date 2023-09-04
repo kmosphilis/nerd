@@ -101,6 +101,7 @@ const char * const test_directory, const char * const constraints_file, char *ex
 
             memcpy((*settings)->prudensjs_call + string_set_so_far, constraints_file,
             current_string_length);
+            string_set_so_far += current_string_length;
         }
     }
 
