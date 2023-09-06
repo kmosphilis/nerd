@@ -238,7 +238,7 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
     fig.savefig(plots_directory/f"{filename}.pdf", bbox_inches='tight', dpi=150)
 
 def main():
-    if len(sys.argv) > 3 :
+    if len(sys.argv) < 3 :
         print("Please include the path to the test or a directory with many test, the path to the "
               "labels file, and optional the max number of iterations to evaluate.")
         exit(1)
