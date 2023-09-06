@@ -163,7 +163,7 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
                     title += "With labels, "
                 else:
                     title += "Without labels, "
-        filename.removesuffix(', ')
+        filename = filename.removesuffix(', ')
         fig.suptitle(title.removesuffix(', '))
     fig.supxlabel("Iterations")
 
