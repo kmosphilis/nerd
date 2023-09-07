@@ -142,28 +142,28 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             elif line.startswith('o='):
                 filename += f"{line.strip()}, "
                 value = bool(line.strip().removeprefix('o='))
-                if (value):
+                if not value:
                     title += "Partial observation, "
                 else:
                     title += "Full observation, "
             elif line.startswith('c='):
                 filename += f"{line.strip()}, "
                 value = bool(line.strip().removeprefix('c='))
-                if (value):
+                if value:
                     title += "Classic, "
                 else:
                     title += "Backward chaining, "
             elif line.startswith('di='):
                 filename += f"{line.strip()}, "
                 value = bool(line.strip().removeprefix('di='))
-                if (value):
+                if value:
                     title += "Increasing demotion, "
                 else:
                     title += "Decreasing demotion, "
             elif line.startswith('h='):
                 filename += f"{line.strip()}, "
                 value = bool(line.strip().removeprefix('h='))
-                if (value):
+                if value:
                     title += "With labels, "
                 else:
                     title += "Without labels, "
