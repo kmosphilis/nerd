@@ -120,8 +120,11 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
     filename = ""
     with info_file.open() as info:
         title = ""
+        run = ""
         for line in info:
-            if line.startswith('t='):
+            if line.startswith('run='):
+                run = line
+            elif line.startswith('t='):
                 filename += f"{line.strip()}, "
                 title += f"Threshold: {float(line.strip().removeprefix('t='))}, "
             elif line.startswith('p='):
@@ -164,8 +167,13 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
                     title += "With labels, "
                 else:
                     title += "Without labels, "
-        filename = filename.removesuffix(', ')
-        fig.suptitle(title.removesuffix(', '))
+
+        if len(directory) == 1:
+            filename = filename + run
+            fig.suptitle(f"{title}Trial: {run.strip().removeprefix('run=')}")
+        else:
+            filename = filename.removesuffix(', ')
+            fig.suptitle(title.removesuffix(', '))
     fig.supxlabel("Iterations")
 
     biggest_index = np.argmax(total_kbs)
