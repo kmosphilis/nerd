@@ -11,15 +11,15 @@ def calculate_correct_abstained_incorrect(observation: list, filepath: Path, lab
 
     with filepath.open() as file:
         content = file.readlines()
-        if (len(observation) != len(content)):
+        if len(observation) != len(content):
             exit(3)
         for i, current_line in enumerate(content):
             label_to_find = set(observation[i]).intersection(labels)
             label_found = set(current_line.strip().split(" ")).intersection(labels)
 
-            if (label_to_find == label_found):
+            if label_to_find == label_found:
                 correct += 1
-            elif (not label_found):
+            elif not label_found:
                 abstained += 1
             else:
                 incorrect += 1
@@ -28,7 +28,7 @@ def calculate_correct_abstained_incorrect(observation: list, filepath: Path, lab
 
 def create_plot(path: Path, labels: Path, max_iterations: int | None):
     directory = []
-    if ('timestamp' in path.name):
+    if 'timestamp' in path.name:
         directory.append(path)
     else:
         directory = list(path.glob("timestamp*"))
@@ -42,7 +42,7 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
 
     for i, current_dir in enumerate(directory):
         results = current_dir/"results"
-        if (not results.exists() or not results.is_dir()):
+        if not results.exists() or not results.is_dir():
             exit(2)
 
         training_file = results/"training-dataset.txt"
@@ -68,9 +68,10 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         total = re.findall('\d+', kb_result_directories[i][-1].name)
         iterations.append(int(total[0]))
 
-        if ((max_iterations is not None) and (iterations[i] >= max_iterations)):
+        if max_iterations is not None and iterations[i] >= max_iterations:
             iterations[i] = max_iterations
-            kb_result_directories[i] = [item for item in kb_result_directories[i] if (max_iterations >= int(re.findall("\d+", item.name)[0]))]
+            kb_result_directories[i] = [item for item in kb_result_directories[i]
+                                        if max_iterations >= int(re.findall("\d+", item.name)[0])]
             total_kbs[i] = len(kb_result_directories[i])
 
         training_ratios.append(np.full((total_kbs[i], 3), np.nan))
