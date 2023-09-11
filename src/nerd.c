@@ -293,7 +293,7 @@ const Context * const restrict labels) {
             nerd->breadth, nerd->max_rules_per_instance, labels);
 
             rule_hypergraph_update_rules(nerd->knowledge_base, observation, inferred,
-            nerd->promotion_weight, nerd->demotion_weight, nerd->increasing_demotion);
+            nerd->promotion_weight, nerd->demotion_weight, nerd->increasing_demotion, labels);
 
             scene_destructor(&observation);
             scene_destructor(&inferred);

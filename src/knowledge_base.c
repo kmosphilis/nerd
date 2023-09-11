@@ -113,7 +113,7 @@ const Context * const restrict focused_labels) {
         bool head_set = false;
 
         scene_union(observed, inferred, &temp_scene);
-        scene_opposed_literals(observed, inferred, &opposed);
+        scene_opposed_literals(observed, inferred, &opposed, focused_labels);
         scene_difference(temp_scene, opposed, &combined);
         scene_destructor(&temp_scene);
         scene_destructor(&opposed);
