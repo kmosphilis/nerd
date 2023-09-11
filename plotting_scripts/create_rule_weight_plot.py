@@ -26,11 +26,17 @@ def plot_rule_journey(directory: Path, nerd_file: Path, rules_to_examine: int | 
         rules = []
         final_rule = rules_to_examine
         if isinstance(rules_to_examine, range):
-            final_rule = rules_to_examine.stop - 1
+            final_rule = rules_to_examine.stop
+            found_rules = False
+
+            for i in range(rules_to_examine.start):
+                k.readline()
+
             for i in rules_to_examine:
+                print(i)
                 rules.append(k.readline().rsplit('(', 1)[0].strip())
         else:
-            for i in range(rules_to_examine):
+            for i in range(rules_to_examine - 1):
                 k.readline()
             rules.append(k.readline().rsplit('(', 1)[0].strip())
 
@@ -89,7 +95,7 @@ def plot_rule_journey(directory: Path, nerd_file: Path, rules_to_examine: int | 
         axis.autoscale(True, tight=True)
         axis.legend()
 
-        fig.savefig(plots_directory/f"rule{rule}_"
+        fig.savefig(plots_directory/f"rule{rules_to_examine}_{rule}_"
                     "weight-history.pdf", bbox_inches='tight')
 
     else:
@@ -113,7 +119,8 @@ def plot_rule_journey(directory: Path, nerd_file: Path, rules_to_examine: int | 
                 axes[x, y].autoscale(True, tight=True)
                 axes[x, y].legend()
 
-            fig.savefig(plots_directory/f"rules_{(fig_number * 4) + 1}-{min((fig_number * 4) + 4, len(rules))}_"
+            fig.savefig(plots_directory/f"rules_{(fig_number * 4) + 1 + rules_to_examine.start}-"
+                        f"{min((fig_number * 4) + 4, len(rules)) + rules_to_examine.start}_"
                         "weight-history.pdf", bbox_inches='tight')
 
 def main():
@@ -137,7 +144,7 @@ def main():
                             else:
                                 _range[i] = int(n)
                         if _range[0] < _range[1]:
-                            plot_rule_journey(path, file, range(_range[0], _range[1] + 1))
+                            plot_rule_journey(path, file, range(_range[0] - 1, _range[1]))
                             exit(0)
                         print("Insert a valid range.")
                     else:
