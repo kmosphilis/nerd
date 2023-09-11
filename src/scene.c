@@ -446,9 +446,14 @@ const Scene * const restrict scene2) {
  * If at least one of the given Scenes (scene1 and scene2) was constrcuted to take ownership, the
  * Literals in the result will be copies of its parents Literals. If both were not constructed to
  * take ownership, the result will contain the same references and will not take ownership either.
+ * @param oppositions (Optional) A Scene that contains more literals that are opposing eachother,
+ * instead of just the usual opposed. Example:
+ * Normal oppositions: Y1 opposes ¬Y1,
+ * With more oppositions: Y1 opposes ¬Y1 (by default) and also Y2, Y3 (by parameter).
 */
 void scene_opposed_literals(const Scene * const restrict scene1,
-const Scene * const restrict scene2, Scene ** const restrict result) {
+const Scene * const restrict scene2, Scene ** const restrict result,
+const Scene * const restrict oppositions) {
     if (result) {
         if (scene1) {
             if (scene2) {
@@ -465,7 +470,7 @@ const Scene * const restrict scene2, Scene ** const restrict result) {
                     for (j = 0; j < scene2->size; ++j) {
                         if (!literal_equals(scene1->literals[i], scene2->literals[j])) {
                             if (strcmp(scene1->literals[i]->atom, scene2->literals[j]->atom) == 0) {
-                                add_literal(*result, &scene2->literals[j]);
+                                add_literal(*result, &(scene2->literals[j]));
                                 break;
                             }
                         } else {
@@ -473,6 +478,35 @@ const Scene * const restrict scene2, Scene ** const restrict result) {
                         }
                     }
                 }
+
+                if (oppositions) {
+                    int scene1_opposition_index, scene2_opposition_index, current_index;
+                    bool found_scene1_opposition = false, found_scene2_opposition = false;
+                    for (i = 0; i < oppositions->size; ++i) {
+                        current_index = scene_literal_index(scene1, oppositions->literals[i]);
+                        if (current_index >= 0) {
+                            scene1_opposition_index = current_index;
+                            found_scene1_opposition = true;
+                        }
+
+                        current_index = scene_literal_index(scene2, oppositions->literals[i]);
+                        if (current_index >= 0) {
+                            scene2_opposition_index = current_index;
+                            found_scene2_opposition = true;
+                        }
+                    }
+
+                    if (found_scene1_opposition && found_scene2_opposition) {
+                        int opposed = literal_opposed(scene1->literals[scene1_opposition_index],
+                        scene2->literals[scene2_opposition_index]);
+
+                        if (opposed != 1) {
+                            add_literal(*result, &(scene2->literals[scene2_opposition_index]));
+                        }
+                    }
+                }
+
+
             } else {
                 *result = scene_constructor(((_Scene *) scene1)->ownership);
             }

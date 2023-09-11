@@ -871,13 +871,13 @@ START_TEST(opposed_literals_test) {
 
     scene_add_literal(scene1, &l5);
 
-    scene_opposed_literals(scene1, scene2, &result);
+    scene_opposed_literals(scene1, scene2, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_int_eq(scene_is_taking_ownership(scene2), scene_is_taking_ownership(result));
     ck_assert_scene_eq(expected2, result);
     scene_destructor(&result);
 
-    scene_opposed_literals(scene2, scene1, &result);
+    scene_opposed_literals(scene2, scene1, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_int_eq(scene_is_taking_ownership(scene2), scene_is_taking_ownership(result));
     ck_assert_scene_eq(expected1, result);
@@ -887,26 +887,26 @@ START_TEST(opposed_literals_test) {
     literal_copy(&l6, c6);
     scene_add_literal(expected2, &l6);
 
-    scene_opposed_literals(scene1, scene2, &result);
+    scene_opposed_literals(scene1, scene2, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_int_eq(scene_is_taking_ownership(scene2), scene_is_taking_ownership(result));
     ck_assert_scene_eq(expected2, result);
     scene_destructor(&result);
 
-    scene_opposed_literals(scene1, NULL, &result);
+    scene_opposed_literals(scene1, NULL, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_scene_empty(result);
     scene_destructor(&result);
 
-    scene_opposed_literals(NULL, scene2, &result);
+    scene_opposed_literals(NULL, scene2, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_scene_empty(result);
     scene_destructor(&result);
 
-    scene_opposed_literals(NULL, NULL, &result);
+    scene_opposed_literals(NULL, NULL, &result, NULL);
     ck_assert_ptr_null(result);
 
-    scene_opposed_literals(scene1, scene2, NULL);
+    scene_opposed_literals(scene1, scene2, NULL, NULL);
 
     scene_destructor(&scene1);
     scene1 = scene_constructor(false);
@@ -915,7 +915,7 @@ START_TEST(opposed_literals_test) {
     scene_add_literal(scene1, &c3);
     scene_add_literal(scene1, &c5);
 
-    scene_opposed_literals(scene1, scene2, &result);
+    scene_opposed_literals(scene1, scene2, &result, NULL);
     ck_assert_int_ne(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_int_eq(scene_is_taking_ownership(scene2), scene_is_taking_ownership(result));
     ck_assert_scene_eq(result, expected2);
@@ -928,33 +928,84 @@ START_TEST(opposed_literals_test) {
     scene_add_literal(scene2, &c4);
     scene_add_literal(scene2, &c6);
 
-    scene_opposed_literals(scene1, scene2, &result);
+    scene_opposed_literals(scene1, scene2, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_int_eq(scene_is_taking_ownership(scene2), scene_is_taking_ownership(result));
     ck_assert_scene_eq(result, expected2);
     scene_destructor(&result);
 
-    scene_opposed_literals(scene1, NULL, &result);
+    scene_opposed_literals(scene1, NULL, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_scene_empty(result);
     scene_destructor(&result);
 
-    scene_opposed_literals(NULL, scene2, &result);
+    scene_opposed_literals(NULL, scene2, &result, NULL);
     ck_assert_int_eq(scene_is_taking_ownership(scene1), scene_is_taking_ownership(result));
     ck_assert_scene_empty(result);
     scene_destructor(&result);
+    scene_destructor(&scene1);
+    scene_destructor(&scene2);
+    scene_destructor(&expected1);
+
+    scene1 = scene_constructor(false);
+    scene2 = scene_constructor(false);
+    Literal *c7 = literal_constructor("glide", true);
+    scene_add_literal(scene1, &c3);
+    scene_add_literal(scene2, &c7);
+    scene_opposed_literals(scene1, scene2, &result, NULL);
+    ck_assert_scene_empty(result);
+    scene_destructor(&result);
+
+    Scene *oppositions = scene_constructor(false);
+    scene_add_literal(oppositions, &c3);
+    scene_add_literal(oppositions, &c7);
+    expected1 = scene_constructor(false);
+    scene_add_literal(expected1, &c7);
+    scene_opposed_literals(scene1, scene2, &result, oppositions);
+    ck_assert_scene_notempty(result);
+    ck_assert_scene_eq(expected1, result);
+    scene_destructor(&result);
+    scene_destructor(&expected1);
+
+    scene_remove_literal(scene1, 0, NULL);
+    scene_add_literal(scene1, &c4);
+    scene_opposed_literals(scene1, scene2, &result, oppositions);
+    ck_assert_scene_empty(result);
+    scene_destructor(&result);
+
+    scene_add_literal(oppositions, &c4);
+    ck_assert_int_ne(scene_literal_index(oppositions, c3), -1);
+    ck_assert_int_ne(scene_literal_index(oppositions, c4), -1);
+    ck_assert_int_ne(scene_literal_index(oppositions, c7), -1);
+    expected1 = scene_constructor(false);
+    scene_add_literal(expected1, &c4);
+    scene_opposed_literals(scene1, scene2, &result, oppositions);
+    ck_assert_scene_notempty(result);
+    ck_assert_scene_eq(expected1, result);
+    scene_destructor(&expected1);
+    scene_destructor(&result);
+
+    scene_remove_literal(scene2, 0, NULL);
+    scene_add_literal(scene2, &c3);
+    expected1 = scene_constructor(false);
+    scene_add_literal(expected1, &c3);
+    scene_opposed_literals(scene1, scene2, &result, oppositions);
+    ck_assert_scene_notempty(result);
+    ck_assert_scene_eq(expected1, result);
 
     scene_destructor(&scene1);
     scene_destructor(&scene2);
     scene_destructor(&expected1);
     scene_destructor(&expected2);
     scene_destructor(&result);
+    scene_destructor(&oppositions);
     literal_destructor(&c1);
     literal_destructor(&c2);
     literal_destructor(&c3);
     literal_destructor(&c4);
     literal_destructor(&c5);
     literal_destructor(&c6);
+    literal_destructor(&c7);
 }
 END_TEST
 

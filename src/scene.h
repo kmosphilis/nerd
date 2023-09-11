@@ -29,7 +29,8 @@ int scene_is_subset(const Scene * const restrict scene1, const Scene * const res
 int scene_number_of_similar_literals(const Scene * const restrict scene1,
 const Scene * const restrict scene2);
 void scene_opposed_literals(const Scene * const restrict scene1,
-const Scene * const restrict scene2, Scene ** const restrict result);
+const Scene * const restrict scene2, Scene ** const restrict result,
+const Scene * const restrict oppositions);
 char *scene_to_string(const Scene * const scene);
 
 #endif
