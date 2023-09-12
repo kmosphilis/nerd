@@ -449,20 +449,22 @@ const float demotion_rate, const bool increasing_demotion, const Scene * const l
         vertex_destructor(&vertex_to_find, false);
 
         if (current_vertex && (current_vertex->number_of_edges != 0)) {
-            // TODO Make test cases to check whether it is working as expected or not.
             if (!knowledge_base->hypergraph->use_backward_chaining) {
                 for (i = 0; i < current_vertex->number_of_edges; ++i) {
                     current_rule = current_vertex->edges[i]->rule;
                     // Checks if the Rule is applicable given the inferred and observed Literals.
                     if (rule_applicable(current_rule, observed_and_inferred)) {
-                        bool is_active =
+                        bool was_active =
                         current_rule->weight >= knowledge_base->activation_threshold;
                         current_rule->weight -= demotion_rate;
 
-                        if (is_active &&
+                        if (was_active &&
                         (current_rule->weight < knowledge_base->activation_threshold)) {
                             rule_queue_remove_rule(knowledge_base->active,
                             rule_queue_find(knowledge_base->active, current_rule), NULL);
+                        }
+                        if (current_rule->weight <= 0) {
+                            vertex_remove_edge(current_vertex, i);
                         }
                     }
                 }
@@ -545,16 +547,12 @@ end_of_edge_vertices_loop:
                     (current_rule->weight < knowledge_base->activation_threshold)) {
                         rule_queue_remove_rule(knowledge_base->active,
                         rule_queue_find(knowledge_base->active, current_rule), NULL);
-                        if (current_rule->weight <= 0) {
-                            goto remove_edge;
-                        }
-                    } else if (is_inactive) {
-                        if (current_rule->weight <= 0) {
-remove_edge:
-                            vertex_remove_edge(current_vertex, *current_edge_position);
-                            if ((*current_edge_position) != 0) {
-                                --(*current_edge_position);
-                            }
+                    }
+
+                    if (current_rule->weight <= 0) {
+                        vertex_remove_edge(current_vertex, *current_edge_position);
+                        if ((*current_edge_position) != 0) {
+                            --(*current_edge_position);
                         }
                     }
 
@@ -1987,6 +1985,80 @@ START_TEST(update_rules_test) {
     ck_assert_rule_eq(knowledge_base->active->rules[0], r7);
     ck_assert_rule_eq(knowledge_base->active->rules[1], r10);
 
+    Rule *r12 = rule_constructor(1, &l7, &opposed_l3, 6, false),
+    *r13 = rule_constructor(1, &opposed_l3, &l2, 6, false);
+    scene_destructor(&observations);
+    observations = scene_constructor(false);
+    scene_destructor(&inferences);
+    inferences = scene_constructor(false);
+    scene_add_literal(observations, &l7);
+    scene_add_literal(observations, &l4);
+    scene_add_literal(inferences, &opposed_l3);
+    scene_add_literal(inferences, &l2);
+    knowledge_base_add_rule(knowledge_base, &r12);
+    knowledge_base_add_rule(knowledge_base, &r13);
+    ck_assert_float_eq_tol(r12->weight, 6, 0.000001);
+    ck_assert_float_eq_tol(r13->weight, 6, 0.000001);
+    ck_assert_int_eq(knowledge_base->active->length, 4);
+    rule_hypergraph_update_rules(knowledge_base, observations, inferences, 0.5, 3, false, labels);
+    ck_assert_float_eq_tol(r1->weight, 0.416667, 0.000001);
+    ck_assert_float_eq_tol(r4->weight, 0.916667, 0.000001);
+    ck_assert_float_eq_tol(r6->weight, 0.666667, 0.000001);
+    ck_assert_float_eq_tol(r7->weight, 3.5, 0.000001);
+    ck_assert_float_eq_tol(r9->weight, 2.5, 0.000001);
+    ck_assert_float_eq_tol(r10->weight, 6, 0.000001);
+    ck_assert_float_eq_tol(r12->weight, 4.5, 0.000001);
+    ck_assert_float_eq_tol(r13->weight, 3, 0.000001);
+    ck_assert_rule_queue_notempty(knowledge_base->active);
+    ck_assert_int_eq(knowledge_base->active->length, 4);
+    ck_assert_rule_eq(knowledge_base->active->rules[0], r7);
+    ck_assert_rule_eq(knowledge_base->active->rules[1], r10);
+    ck_assert_rule_eq(knowledge_base->active->rules[2], r12);
+    ck_assert_rule_eq(knowledge_base->active->rules[3], r13);
+
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    old_inactives_size = inactive_rules->length;
+    rule_queue_destructor(&inactive_rules);
+    knowledge_base->hypergraph->use_backward_chaining = false;
+    rule_hypergraph_update_rules(knowledge_base, observations, inferences, 0.5, 1, false, labels);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    ck_assert_int_lt(old_inactives_size, inactive_rules->length);
+    rule_queue_destructor(&inactive_rules);
+    ck_assert_float_eq_tol(r1->weight, 0.416667, 0.000001);
+    ck_assert_float_eq_tol(r4->weight, 0.916667, 0.000001);
+    ck_assert_float_eq_tol(r6->weight, 0.666667, 0.000001);
+    ck_assert_float_eq_tol(r7->weight, 3.5, 0.000001);
+    ck_assert_float_eq_tol(r9->weight, 2.5, 0.000001);
+    ck_assert_float_eq_tol(r10->weight, 6, 0.000001);
+    ck_assert_float_eq_tol(r12->weight, 4.5, 0.000001);
+    ck_assert_float_eq_tol(r13->weight, 2, 0.000001);
+    ck_assert_rule_queue_notempty(knowledge_base->active);
+    ck_assert_int_eq(knowledge_base->active->length, 3);
+    ck_assert_rule_eq(knowledge_base->active->rules[0], r7);
+    ck_assert_rule_eq(knowledge_base->active->rules[1], r10);
+    ck_assert_rule_eq(knowledge_base->active->rules[2], r12);
+
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    old_inactives_size = inactive_rules->length;
+    rule_queue_destructor(&inactive_rules);
+    knowledge_base->hypergraph->use_backward_chaining = false;
+    rule_hypergraph_update_rules(knowledge_base, observations, inferences, 0.5, 3, false, labels);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    ck_assert_int_lt(inactive_rules->length, old_inactives_size);
+    rule_queue_destructor(&inactive_rules);
+    ck_assert_float_eq_tol(r1->weight, 0.416667, 0.000001);
+    ck_assert_float_eq_tol(r4->weight, 0.916667, 0.000001);
+    ck_assert_float_eq_tol(r6->weight, 0.666667, 0.000001);
+    ck_assert_float_eq_tol(r7->weight, 3.5, 0.000001);
+    ck_assert_float_eq_tol(r9->weight, 2.5, 0.000001);
+    ck_assert_float_eq_tol(r10->weight, 6, 0.000001);
+    ck_assert_float_eq_tol(r12->weight, 4.5, 0.000001);
+    ck_assert_rule_queue_notempty(knowledge_base->active);
+    ck_assert_int_eq(knowledge_base->active->length, 3);
+    ck_assert_rule_eq(knowledge_base->active->rules[0], r7);
+    ck_assert_rule_eq(knowledge_base->active->rules[1], r10);
+    ck_assert_rule_eq(knowledge_base->active->rules[2], r12);
+
     scene_destructor(&labels);
     scene_destructor(&observations);
     scene_destructor(&inferences);
@@ -2000,7 +2072,6 @@ START_TEST(update_rules_test) {
     literal_destructor(&opposed_l4);
     literal_destructor(&opposed_l1);
     literal_destructor(&opposed_l6);
-    literal_destructor(&opposed_l3);
     literal_destructor(&l8);
     knowledge_base_destructor(&knowledge_base);
 }
