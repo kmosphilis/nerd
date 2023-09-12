@@ -74,8 +74,8 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
                                         if max_iterations >= int(re.findall("\d+", item.name)[0])]
             total_kbs[i] = len(kb_result_directories[i])
 
-        training_ratios.append(np.full((total_kbs[i], 3), np.nan))
-        testing_ratios.append(np.full((total_kbs[i], 3), np.nan))
+        training_ratios.append(np.full((total_kbs[i], 4), np.nan))
+        testing_ratios.append(np.full((total_kbs[i], 4), np.nan))
 
         for index, kb in enumerate(kb_result_directories[i]):
             training_inferences = kb/"train.txt"
@@ -88,6 +88,8 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             training_ratios[i][index][0] = correct
             training_ratios[i][index][1] = abstained
             training_ratios[i][index][2] = incorrect
+            training_ratios[i][index][3] = np.divide(correct, correct + incorrect,
+                                                     where=(correct + incorrect) != 0)
 
             correct, abstained, incorrect = calculate_correct_abstained_incorrect(testing_dataset,
                                                                                   testing_inferences,
@@ -96,6 +98,8 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             testing_ratios[i][index][0] = correct
             testing_ratios[i][index][1] = abstained
             testing_ratios[i][index][2] = incorrect
+            testing_ratios[i][index][3] = np.divide(correct, correct + incorrect,
+                                                     where=(correct + incorrect) != 0)
 
         active_rules.append(np.zeros(total_kbs[i], int))
 
@@ -195,31 +199,35 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
 
     for i, (ratio, name) in enumerate(zip([training_ratios, testing_ratios], ["Training", "Testing"])):
         if len(ratio) == 1:
-            axes[i].plot(x, ratio[0][:, 0], label='correct', color='b')
-            axes[i].plot(x, ratio[0][:, 1], label='abstain', color='g')
-            axes[i].plot(x, 1 - ratio[0][:, 0] - ratio[0][:, 1], label='incorrect', color='r')
+            axes[i].plot(x, ratio[0][:, 0], label='Correct', color='b')
+            axes[i].plot(x, ratio[0][:, 1], label='Abstain', color='g')
+            axes[i].plot(x, ratio[0][:, 2], label='Incorrect', color='r')
+            axes[i].plot(x, ratio[0][:, 3], label='Accuracy', color='m')
         else:
             ratio = np.array(ratio)
             median = np.median(ratio, axis=0)
             mean = np.mean(ratio, axis=0)
             q1 = np.percentile(ratio, 25, axis=0)
             q3 = np.percentile(ratio, 75, axis=0)
-            axes[i].plot(x, median[:, 0], label='correct-median', color='b')
-            axes[i].plot(x, mean[:, 0], label='correct-mean', linestyle=':', color='b')
-            axes[i].fill_between(x, q1[:, 0], q3[:, 0], label='Q1 - Q3', color='b', alpha=0.1)
-            axes[i].plot(x, median[:, 1], label='abstain-median', color='g')
-            axes[i].plot(x, mean[:, 1], label='abstain-mean', linestyle=':', color='g')
-            axes[i].fill_between(x, q1[:, 1], q3[:, 1], label='Q1 - Q3', color='g', alpha=0.1)
-            axes[i].plot(x, median[:, 2], label='incorrect-median', color='r')
-            axes[i].plot(x, mean[:, 2], label='incorrect-mean', linestyle=':', color='r')
-            axes[i].fill_between(x, q1[:, 2], q3[:, 2], label='Q1 - Q3', color='r', alpha=0.1)
+            axes[i].plot(x, median[:, 0], label='Correct median', color='b')
+            axes[i].plot(x, mean[:, 0], label='Correct mean', linestyle=':', color='b')
+            axes[i].fill_between(x, q1[:, 0], q3[:, 0], label='Correct Q1 - Q3', color='b', alpha=0.1)
+            axes[i].plot(x, median[:, 1], label='Abstain median', color='g')
+            axes[i].plot(x, mean[:, 1], label='Abstain mean', linestyle=':', color='g')
+            axes[i].fill_between(x, q1[:, 1], q3[:, 1], label='Abstain Q1 - Q3', color='g', alpha=0.1)
+            axes[i].plot(x, median[:, 2], label='Incorrect median', color='r')
+            axes[i].plot(x, mean[:, 2], label='Incorrect mean', linestyle=':', color='r')
+            axes[i].fill_between(x, q1[:, 2], q3[:, 2], label='Incorrect Q1 - Q3', color='r', alpha=0.1)
+            axes[i].plot(x, median[:, 3], label='Accuracy median', color='m')
+            axes[i].plot(x, mean[:, 3], label='Accuracy mean', linestyle=':', color='m')
+            axes[i].fill_between(x, q1[:, 3], q3[:, 3], label='Accuracy Q1 - Q3', color='m', alpha=0.1)
         axes[i].set_ylabel(f"{name} Performance")
         axes[i].set_ylim(0, 1)
         axes[i].grid(axis='y', alpha=0.5)
         axes[i].grid(axis='x', color='k', alpha=1)
         axes[i].autoscale(True, axis= 'x', tight=True)
         axes[i].set_xticks(x_ticks, x_tick_labels)
-        axes[i].legend(ncols=3)
+        axes[i].legend(ncols=4)
 
     if (len(active_rules) == 1):
         axes[2].plot(x, active_rules[0], color='g')
@@ -228,9 +236,9 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         mean = np.mean(active_rules, axis=0)
         q1 = np.percentile(active_rules, 25, axis=0)
         q3 = np.percentile(active_rules, 75, axis=0)
-        axes[2].plot(x, median, label='median', color='g')
-        axes[2].plot(x, mean, label='mean', linestyle=':', color='g')
-        axes[2].fill_between(x, q1, q3, label='Q1 - Q3', color='g', alpha=0.1)
+        axes[2].plot(x, median, label='Median', color='k')
+        axes[2].plot(x, mean, label='Mean', linestyle=':', color='k')
+        axes[2].fill_between(x, q1, q3, label='Q1 - Q3', color='k', alpha=0.1)
         axes[2].legend(ncols=3)
     axes[2].set_ylabel("Active Rules")
     axes[2].grid(axis='y', alpha=0.5)
