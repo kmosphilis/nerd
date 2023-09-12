@@ -146,7 +146,7 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             elif line.startswith('o='):
                 filename += f"{line.strip()}, "
                 value = line.strip().removeprefix('o=').lower() == 'true'
-                if not value:
+                if value:
                     title += "Partial observation, "
                 else:
                     title += "Full observation, "
