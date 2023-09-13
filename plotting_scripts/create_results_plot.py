@@ -139,10 +139,10 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
                 title += f"Demotion: {float(line.strip().removeprefix('d='))}, "
             elif line.startswith('b='):
                 filename += f"{line.strip()}, "
-                title += f"Max breadth: {int(line.strip().removeprefix('b='))}, "
-            elif line.startswith('t='):
+                title += f"Max breadth per rule: {int(line.strip().removeprefix('b='))}, "
+            elif line.startswith('r='):
                 filename += f"{line.strip()}, "
-                title += f"Max rules: {int(line.strip().removeprefix('r='))}, "
+                title += f"Max rules per instance: {int(line.strip().removeprefix('r='))}, "
             elif line.startswith('o='):
                 filename += f"{line.strip()}, "
                 value = line.strip().removeprefix('o=').lower() == 'true'
