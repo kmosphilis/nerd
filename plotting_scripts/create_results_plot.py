@@ -172,6 +172,9 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
                 else:
                     title += "Without labels, "
 
+        if max_iterations is not None:
+            filename += f"e={max_iterations}, "
+
         if len(directory) == 1:
             filename = filename + run
             fig.suptitle(f"{title}Trial: {run.strip().removeprefix('run=')}")
