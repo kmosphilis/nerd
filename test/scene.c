@@ -992,6 +992,17 @@ START_TEST(opposed_literals_test) {
     scene_opposed_literals(scene1, scene2, &result, oppositions);
     ck_assert_scene_notempty(result);
     ck_assert_scene_eq(expected1, result);
+    scene_destructor(&result);
+
+    scene_destructor(&scene1);
+    scene1 = scene_constructor(false);
+    scene_add_literal(scene1, &c3);
+    scene_destructor(&scene2);
+    scene2 = scene_constructor(false);
+    scene_add_literal(scene2, &c3);
+    scene_destructor(&expected1);
+    scene_opposed_literals(scene1, scene2, &result, oppositions);
+    ck_assert_scene_empty(result);
 
     scene_destructor(&scene1);
     scene_destructor(&scene2);

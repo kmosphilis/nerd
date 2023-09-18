@@ -500,7 +500,7 @@ const Scene * const restrict oppositions) {
                         int opposed = literal_opposed(scene1->literals[scene1_opposition_index],
                         scene2->literals[scene2_opposition_index]);
 
-                        if (opposed != 1) {
+                        if (opposed != 0) {
                             add_literal(*result, &(scene2->literals[scene2_opposition_index]));
                         }
                     }
