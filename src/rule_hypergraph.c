@@ -481,6 +481,7 @@ const float demotion_rate, const bool increasing_demotion, const Scene * const l
             size_t current_vertex_position;
             int *current_edge_position = NULL;
 
+            // FIXME start again. Make the do while loop do eveything at depth 1, and the for depth n.
             do {
                 current_vertex_position = vertex_edge_position->size - 1;
                 current_vertex = vertex_array[current_vertex_position];
@@ -2107,6 +2108,17 @@ START_TEST(update_rules_test) {
     ck_assert_float_eq_tol(peng_fly->weight, 1, 0.000001);
     rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
     ck_assert_int_gt(inactive_rules->length, old_inactives_size);
+    old_inactives_size = inactive_rules->length;
+    rule_queue_destructor(&inactive_rules);
+
+    scene_destructor(&observation);
+    observation = scene_constructor(false);
+    scene_add_literal(observation, &fly);
+    scene_add_literal(observation, &peng);
+    rule_hypergraph_update_rules(knowledge_base, observation, inference, 1, 3, false, labels);
+    ck_assert_float_eq_tol(peng_fly->weight, 2, 0.0000001);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+    ck_assert_int_eq(inactive_rules->length, old_inactives_size);
     rule_queue_destructor(&inactive_rules);
 
     literal_destructor(&glide);
