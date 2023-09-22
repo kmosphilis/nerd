@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
         "is set to 'true'.\n-l <filepath> This option enables the rule learning to focus on these\n"
         " labels found in the given file.\n-s1 <unsigned long>  Seed 1 (state seed) for the PRNG. "
         "\n-s2 <unsigned long>  Seed 2 (sequence seed) for the PRNG.\n It must be bigger than 0.\n"
+        "-kb <filepath> The path to an .nd file which contains a KB to\n be re-used.\n"
         "\nBy adding an additional number at the end of these parameters, you mark\n the number of "
         "this run and it will save its given parameters.\n");
         return EXIT_FAILURE;
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
     unsigned int i, breadth = 0, max_rules_per_instance = 5;
-    char *current_arg, *arg_end, *dataset_value = NULL, *constraints_file = NULL;
+    char *current_arg, *arg_end, *dataset_value = NULL, *constraints_file = NULL, *kb = NULL;
     size_t iterations = 1, s1 = 0, s2 = 0;
     for (i = 1;
     i < (((unsigned int) argc % 2 == 0) ? (unsigned int) (argc - 1) : (unsigned int) argc); ++i) {
@@ -97,6 +98,8 @@ int main(int argc, char *argv[]) {
                         return close_dataset_and_exit(dataset);
                     }
                     s2_set = true;
+                } else if (strcmp(large_option, "kb") == 0) {
+                    kb = current_arg;
                 } else {
                     printf("Option '-%s' is not available.\n", large_option);
                     return close_dataset_and_exit(dataset);
@@ -296,6 +299,15 @@ int main(int argc, char *argv[]) {
         return close_dataset_and_exit(dataset);
     }
 
+    Nerd *given_nerd = NULL;
+    if (kb) {
+        given_nerd = nerd_constructor_from_file(kb, iterations, use_back_chaining, false);
+        if (!given_nerd) {
+            printf("%s has a bad format.\n", kb);
+            return close_dataset_and_exit(dataset);
+        }
+    }
+
     pcg32_random_t generator;
 
     pcg32_srandom_r(&generator, STATE_SEED, SEQUENCE_SEED);
@@ -480,10 +492,20 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Nerd *nerd =
-    nerd_constructor(train_path, delimiter, true, has_header, threshold, max_rules_per_instance,
-    breadth, 1, iterations, promotion, demotion, use_back_chaining, increasing_demotion,
-    partial_observation);
+    // Nerd *nerd =
+    // if (!nerd) {
+    Nerd *nerd = nerd_constructor(train_path, delimiter, true, has_header, threshold,
+    max_rules_per_instance, breadth, 1, iterations, promotion, demotion, use_back_chaining,
+    increasing_demotion, partial_observation);
+
+    if (given_nerd) {
+        knowledge_base_destructor(&(nerd->knowledge_base));
+        knowledge_base_copy(&(nerd->knowledge_base), given_nerd->knowledge_base);
+        nerd_destructor(&given_nerd);
+    }
+
+    nerd_constructor_from_file("", iterations, false, false);
+
 
     PrudensSettings_ptr settings = NULL;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
