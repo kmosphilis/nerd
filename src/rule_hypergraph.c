@@ -255,21 +255,22 @@ void rule_hypergraph_destructor(RuleHyperGraph ** const rule_hypergraph) {
 }
 
 /**
- * @brief Makes a copy of the given RuleHyperGraph. If any of the parameters is NULL, the process
- * will fail.
+ * @brief Makes a copy of the RuleHyperGraph in the given KnowledgeBase. If any of the parameters is
+ * NULL, the process will fail.
  *
- * @param destination The RuleHyperGraph to save the copy. It should be a reference to the struct's
- * pointer (to a Rule * - &(Rule *)).
- * @param source The RuleHyperGraph to be copied.
+ * @param destination The KnowledgeBase to save the copy. It should be a reference to the struct's
+ * pointer (to a KnowledgeBase * - &(KnowledgeBase *)).
+ * @param source The KnowledgeBase to be copied.
 */
-void rule_hypergraph_copy(RuleHyperGraph ** const destination,
-const RuleHyperGraph * const source) {
+void rule_hypergraph_copy(KnowledgeBase ** const destination,
+const KnowledgeBase * const source) {
     if (destination && source) {
-        *destination = rule_hypergraph_empty_constructor(source->use_backward_chaining);
+        (*destination)->hypergraph =
+        rule_hypergraph_empty_constructor(source->hypergraph->use_backward_chaining);
 
         struct prb_traverser traverser;
 
-        Vertex *current_vertex = prb_t_first(&traverser, source->literal_tree);
+        Vertex *current_vertex = prb_t_first(&traverser, source->hypergraph->literal_tree);
 
         unsigned int i, j;
         while (current_vertex) {
@@ -284,7 +285,7 @@ const RuleHyperGraph * const source) {
                 rule_constructor(j, body, &head, current_vertex->edges[i]->rule->weight, true);
                 free(body);
 
-                rule_hypergraph_add_rule(*destination, &rule);
+                knowledge_base_add_rule(*destination, &rule);
             }
             current_vertex = prb_t_next(&traverser);
         }
@@ -1221,7 +1222,7 @@ START_TEST(get_inactive_rules_test) {
 END_TEST
 
 START_TEST(hypergraph_copy_test) {
-    RuleHyperGraph *hypergraph1 = rule_hypergraph_empty_constructor(true), *hypergraph2 = NULL;
+    KnowledgeBase *kb1 = knowledge_base_constructor(10, true), *kb2 = NULL;
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true), *l4 = literal_constructor("fly", true),
     *l5 = literal_constructor("wings", true), *l_array[2] = {l3, l5};
@@ -1233,23 +1234,26 @@ START_TEST(hypergraph_copy_test) {
     l_array[1] = l1;
     Rule *r6 = rule_constructor(2, l_array, &l2, 0, false);
 
-    rule_hypergraph_add_rule(hypergraph1, &r1);
-    rule_hypergraph_add_rule(hypergraph1, &r2);
-    rule_hypergraph_add_rule(hypergraph1, &r3);
-    rule_hypergraph_add_rule(hypergraph1, &r4);
-    rule_hypergraph_add_rule(hypergraph1, &r5);
-    rule_hypergraph_add_rule(hypergraph1, &r6);
+    rule_hypergraph_add_rule(kb1->hypergraph, &r1);
+    rule_hypergraph_add_rule(kb1->hypergraph, &r2);
+    rule_hypergraph_add_rule(kb1->hypergraph, &r3);
+    rule_hypergraph_add_rule(kb1->hypergraph, &r4);
+    rule_hypergraph_add_rule(kb1->hypergraph, &r5);
+    rule_hypergraph_add_rule(kb1->hypergraph, &r6);
 
-    ck_assert_ptr_null(hypergraph2);
-    rule_hypergraph_copy(&hypergraph2, hypergraph1);
-    ck_assert_ptr_nonnull(hypergraph2);
-    ck_assert_ptr_ne(hypergraph1, hypergraph2);
-    ck_assert_ptr_ne(hypergraph1->literal_tree, hypergraph2->literal_tree);
+    ck_assert_ptr_null(kb2);
+    kb2 = (KnowledgeBase *) malloc(sizeof(KnowledgeBase));
+    kb2->activation_threshold = kb1->activation_threshold;
+    kb2->active = rule_queue_constructor(false);
+    rule_hypergraph_copy(&kb2, kb1);
+    ck_assert_ptr_nonnull(kb2->hypergraph);
+    ck_assert_ptr_ne(kb1->hypergraph, kb2->hypergraph);
+    ck_assert_ptr_ne(kb1->hypergraph->literal_tree, kb2->hypergraph->literal_tree);
 
     struct prb_traverser h1_traverser, h2_traverser;
 
-    Vertex *h1_vertex = prb_t_first(&h1_traverser, hypergraph1->literal_tree),
-    *h2_vertex = prb_t_first(&h2_traverser, hypergraph2->literal_tree);
+    Vertex *h1_vertex = prb_t_first(&h1_traverser, kb1->hypergraph->literal_tree),
+    *h2_vertex = prb_t_first(&h2_traverser, kb2->hypergraph->literal_tree);
 
     unsigned int i;
     size_t total_vertices = 0, total_edges = 0;
@@ -1265,13 +1269,13 @@ START_TEST(hypergraph_copy_test) {
         h1_vertex = prb_t_next(&h1_traverser);
         h2_vertex = prb_t_next(&h2_traverser);
     }
-    ck_assert_rule_hypergraph_eq(hypergraph1, hypergraph2);
+    ck_assert_rule_hypergraph_eq(kb1->hypergraph, kb2->hypergraph);
 
-    rule_hypergraph_destructor(&hypergraph1);
-    ck_assert_ptr_null(hypergraph1);
-    ck_assert_ptr_nonnull(hypergraph2);
+    knowledge_base_destructor(&kb1);
+    ck_assert_ptr_null(kb1);
+    ck_assert_ptr_nonnull(kb2);
 
-    h2_vertex = prb_t_first(&h2_traverser, hypergraph2->literal_tree);
+    h2_vertex = prb_t_first(&h2_traverser, kb2->hypergraph->literal_tree);
     size_t copy_total_vertices = 0, copy_total_edges = 0;
     while (h2_vertex) {
         ++copy_total_vertices;
@@ -1284,14 +1288,14 @@ START_TEST(hypergraph_copy_test) {
     ck_assert_int_eq(total_vertices, copy_total_vertices);
     ck_assert_int_eq(total_edges, copy_total_edges);
 
-    rule_hypergraph_copy(NULL, hypergraph2);
-    ck_assert_ptr_nonnull(hypergraph2);
+    rule_hypergraph_copy(NULL, kb2);
+    ck_assert_ptr_nonnull(kb2->hypergraph);
 
-    rule_hypergraph_copy(&hypergraph1, NULL);
-    ck_assert_ptr_null(hypergraph1);
+    knowledge_base_copy(&kb1, NULL);
+    ck_assert_ptr_null(kb1);
 
-    rule_hypergraph_destructor(&hypergraph2);
-    ck_assert_ptr_null(hypergraph2);
+    knowledge_base_destructor(&kb2);
+    ck_assert_ptr_null(kb2);
 }
 END_TEST
 

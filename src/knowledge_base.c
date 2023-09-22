@@ -55,8 +55,8 @@ const KnowledgeBase * const restrict source) {
     if (destination && source) {
         *destination = (KnowledgeBase *) malloc(sizeof(KnowledgeBase));
         (*destination)->activation_threshold = source->activation_threshold;
-        rule_queue_copy(&((*destination)->active), source->active);
-        rule_hypergraph_copy(&((*destination)->hypergraph), source->hypergraph);
+        (*destination)->active = rule_queue_constructor(false);
+        rule_hypergraph_copy(destination, source);
     }
 }
 
