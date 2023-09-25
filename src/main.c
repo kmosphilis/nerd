@@ -50,16 +50,18 @@ int main(int argc, char *argv[]) {
         "is set to 'true'.\n-l <filepath> This option enables the rule learning to focus on these\n"
         " labels found in the given file.\n-s1 <unsigned long>  Seed 1 (state seed) for the PRNG. "
         "\n-s2 <unsigned long>  Seed 2 (sequence seed) for the PRNG.\n It must be bigger than 0.\n"
-        "-kb <filepath> The path to an .nd file which contains a KB to\n be re-used.\n"
-        "\nBy adding an additional number at the end of these parameters, you mark\n the number of "
-        "this run and it will save its given parameters.\n");
+        "-kb <filepath> The path to an .nd file which contains a KB to\n be re-used.\n-entire "
+        "<bool> Should it use the given dataset for training only?\n Default value is set to "
+        "'false'.\n\nBy adding an additional number at the end of these parameters, you mark\n the "
+        "number of this run and it will save its given parameters.\n");
         return EXIT_FAILURE;
     }
 
     Context *labels = NULL;
     bool h_set = false, b_set = false;
     bool has_header = false, use_back_chaining = true, partial_observation = true,
-    should_evaluate = false, s1_set = false, s2_set = false, increasing_demotion = false;
+    should_evaluate = false, s1_set = false, s2_set = false, increasing_demotion = false,
+    entire = false;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
     float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
@@ -100,6 +102,16 @@ int main(int argc, char *argv[]) {
                     s2_set = true;
                 } else if (strcmp(large_option, "kb") == 0) {
                     kb = current_arg;
+                } else if (strcmp(large_option, "entire") == 0) {
+                    if (strcmp(current_arg, "true") == 0) {
+                            entire = true;
+                        } else if (strcmp(current_arg, "false") == 0) {
+                            entire = false;
+                        } else {
+                            printf("'-entire' has a wrong value '%s'. It must be a boolean value, "
+                            "'true' or 'false'\n", current_arg);
+                            return close_dataset_and_exit(dataset);
+                        }
                 } else {
                     printf("Option '-%s' is not available.\n", large_option);
                     return close_dataset_and_exit(dataset);
@@ -356,7 +368,6 @@ int main(int argc, char *argv[]) {
             fprintf(file, "f=%s\nt=%f\np=%f\nd=%f\nb=%u\ne=%zu\nr=%u\nrun=%d\n",
             dataset_value, threshold, promotion, demotion, breadth, iterations,
             max_rules_per_instance, given_number);
-            free(dataset_value);
 
             if (!use_back_chaining) {
                 fprintf(file, "c=true\n");
@@ -381,6 +392,12 @@ int main(int argc, char *argv[]) {
                 fprintf(file, "h=false\n");
             }
 
+            if (entire) {
+                fprintf(file, "entire=true\n");
+            } else {
+                fprintf(file, "entire=false\n");
+            }
+
             if (constraints_file) {
                 char *abs_constraints_file = realpath(constraints_file, NULL);
                 fprintf(file, "i=%s\n", abs_constraints_file);
@@ -393,16 +410,22 @@ int main(int argc, char *argv[]) {
     }
     global_rng = &generator;
 
-    char *train_path = (char *) calloc((strlen(TRAIN) + strlen(test_directory) + 1), sizeof(char));
+    char *train_path = NULL;
 
-    sprintf(train_path, "%s%s", test_directory, TRAIN);
 
-    if (train_test_split(dataset, has_header, 0.2, global_rng, train_path, NULL, NULL, NULL) != 0) {
-        context_destructor(&labels);
-        free(train_path);
-        free(test_directory);
-        return EXIT_FAILURE;
+    if (!entire) {
+        train_path = (char *) calloc((strlen(TRAIN) + strlen(test_directory) + 1), sizeof(char));
+        sprintf(train_path, "%s%s", test_directory, TRAIN);
+        if (train_test_split(dataset, has_header, 0.2, global_rng, train_path, NULL, NULL, NULL) != 0) {
+            context_destructor(&labels);
+            free(train_path);
+            free(test_directory);
+            return EXIT_FAILURE;
+        }
+    } else {
+        train_path = strdup(dataset_value);
     }
+    free(dataset_value);
     fclose(dataset);
 
     if (labels) {
@@ -517,7 +540,9 @@ int main(int argc, char *argv[]) {
     prudensjs_settings_destructor(&settings);
 failed:
     context_destructor(&labels);
-    remove(train_path);
+    if (!entire) {
+        remove(train_path);
+    }
     free(train_path);
 
     free(test_directory);

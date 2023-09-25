@@ -20,8 +20,9 @@
 #define TEST ".test_set"
 
 int main(int argc, char *argv[]) {
-    if (argc != 4) {
-        printf("Nerd info filepath, nerd file (.nd) and labels file required!\n");
+    if ((argc < 4) && (argc > 5)) {
+        printf("Nerd info filepath, nerd file (.nd) and labels file required, and optionally a"
+        "testing datset.\n");
         return EXIT_FAILURE;
     }
 
@@ -29,6 +30,17 @@ int main(int argc, char *argv[]) {
     if (!info_file) {
         printf("Info file does not exist. Please provide a valid path.\n");
         return EXIT_FAILURE;
+    }
+    char *testing_dataset = NULL;
+    if (argc == 5) {
+        testing_dataset = strdup(argv[4]);
+        FILE *test = fopen(testing_dataset, "r");
+        if (!test) {
+            printf("Testing dataset %s is not valid.\n", testing_dataset);
+            fclose(info_file);
+            return EXIT_FAILURE;
+        }
+        fclose(test);
     }
 
     int c;
@@ -39,15 +51,15 @@ int main(int argc, char *argv[]) {
     FILE *dataset = NULL;
     size_t state_seed, seq_seed;
     char delimiter= ' ';
-    bool use_back_chaining = true, has_header = false;
-    char *constraints_file = NULL;
+    bool use_back_chaining = true, has_header = false, entire = false;
+    char *constraints_file = NULL, *dataset_value = NULL;
 
     while ((c = fgetc(info_file)) != EOF) {
         if (c == '\n') {
             char *equals_location = strstr(value_buffer, "=");
             if (equals_location) {
                 int equals_index = equals_location - value_buffer;
-                const char *true_value = equals_location + 1;
+                char *true_value = equals_location + 1;
                 char *option = (char *) calloc(equals_index + 1, sizeof(char));
                 memcpy(option, value_buffer, equals_index);
                 switch (option[0]) {
@@ -56,6 +68,7 @@ int main(int argc, char *argv[]) {
                             printf("Filepath '%s' does not exist.\n", true_value);
                             goto failed;
                         }
+                        dataset_value = strdup(true_value);
                         if (strstr(true_value, ".csv")) {
                             delimiter = ',';
                         }
@@ -92,6 +105,12 @@ int main(int argc, char *argv[]) {
                     case 'd':
                     case 'b':
                     case 'e':
+                        if (strcmp(option, "entire") == 0) {
+                            if (strcmp(true_value, "true") == 0) {
+                                entire = true;
+                            }
+                        }
+                        break;
                     case 'r':
                     case 'c':
                     case 'o':
@@ -200,15 +219,20 @@ failed:
     prudensjs_settings_constructor(&settings, argv[0], result_directory, constraints_file,
     strstr(argv[2], "iteration"));
 
-    char *train_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TRAIN,
-    iteration_number) + 1, sizeof(char)),
-    *test_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TEST,
-    iteration_number) + 1, sizeof(char));
-    sprintf(train_path, "%s%s%u", result_directory, TRAIN, iteration_number);
-    sprintf(test_path, "%s%s%u", result_directory, TEST, iteration_number);
+    char *train_path = NULL, *test_path = NULL;
+    if (entire) {
+        train_path = dataset_value;
+        test_path = testing_dataset;
+    } else {
+        train_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TRAIN,
+        iteration_number) + 1, sizeof(char));
+        test_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TEST,
+        iteration_number) + 1, sizeof(char));
+        sprintf(train_path, "%s%s%u", result_directory, TRAIN, iteration_number);
+        sprintf(test_path, "%s%s%u", result_directory, TEST, iteration_number);
 
-
-    train_test_split(dataset, has_header, 0.2, &seed, train_path, test_path, NULL, NULL);
+        train_test_split(dataset, has_header, 0.2, &seed, train_path, test_path, NULL, NULL);
+    }
     fclose(dataset);
 
     char *instance_directory =
@@ -247,23 +271,26 @@ failed:
     FILE *files[2] = {train_results, test_results};
 
     for (k = 0; k < 2; ++k) {
-        evaluate_labels(nerd, settings, paths[k], labels, delimiter, has_header, NULL, NULL,
-        &total_observations, NULL, &result);
-        for (i = 0; i < total_observations; ++i) {
-            for (j = 0; j < result[i]->size; ++j) {
-                if (j != 0) {
-                    fprintf(files[k], " ");
+        if (evaluate_labels(nerd, settings, paths[k], labels, delimiter, has_header, NULL, NULL,
+        &total_observations, NULL, &result) == 0) {
+            for (i = 0; i < total_observations; ++i) {
+                for (j = 0; j < result[i]->size; ++j) {
+                    if (j != 0) {
+                        fprintf(files[k], " ");
+                    }
+                    str = literal_to_string(result[i]->literals[j]);
+                    fprintf(files[k], "%s", str);
+                    safe_free(str);
                 }
-                str = literal_to_string(result[i]->literals[j]);
-                fprintf(files[k], "%s", str);
-                safe_free(str);
+                fprintf(files[k], "\n");
+                scene_destructor(&(result[i]));
             }
-            fprintf(files[k], "\n");
-            scene_destructor(&(result[i]));
         }
         safe_free(result);
         fclose(files[k]);
-        remove(paths[k]);
+        if (!entire) {
+            remove(paths[k]);
+        }
         free(paths[k]);
     }
 
