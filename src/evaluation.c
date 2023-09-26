@@ -131,6 +131,8 @@ failed:
                 }
                 free(value_buffer);
                 fclose(info_file);
+                free(testing_dataset);
+                free(dataset_value);
                 i = 0;
                 return EXIT_FAILURE;
             }
@@ -232,6 +234,7 @@ failed:
         sprintf(test_path, "%s%s%u", result_directory, TEST, iteration_number);
 
         train_test_split(dataset, has_header, 0.2, &seed, train_path, test_path, NULL, NULL);
+        free(dataset_value);
     }
     fclose(dataset);
 
