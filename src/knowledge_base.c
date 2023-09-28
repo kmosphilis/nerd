@@ -131,6 +131,10 @@ const Context * const restrict focused_labels) {
             if (!head_set) {
                 return;
             }
+
+            if (scene_literal_index(inferred, head) > -1) {
+                return;
+            }
         } else {
             scene_difference(observed, inferred, &uncovered);
         }
