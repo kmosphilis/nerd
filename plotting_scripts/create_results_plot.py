@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 def calculate_correct_abstained_incorrect(
     observation: list, filepath: Path, labels: list
 ):
+    OBSERVATION_LEN = len(observation)
+    if OBSERVATION_LEN == 0:
+        return (0, 0, 0)
+
     correct = 0
     abstained = 0
     incorrect = 0
@@ -16,7 +20,7 @@ def calculate_correct_abstained_incorrect(
 
     with filepath.open() as file:
         content = file.readlines()
-        if len(observation) != len(content):
+        if OBSERVATION_LEN != len(content):
             exit(3)
         for i, current_line in enumerate(content):
             label_to_find = set(observation[i]).intersection(labels)
@@ -30,9 +34,9 @@ def calculate_correct_abstained_incorrect(
                 incorrect += 1
 
     return (
-        correct / len(observation),
-        abstained / len(observation),
-        incorrect / len(observation),
+        correct / OBSERVATION_LEN,
+        abstained / OBSERVATION_LEN,
+        incorrect / OBSERVATION_LEN,
     )
 
 
@@ -206,6 +210,18 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             axes[i].plot(x, ratio[0][:, 1], label="Abstain", color="g")
             axes[i].plot(x, ratio[0][:, 2], label="Incorrect", color="r")
             axes[i].plot(x, ratio[0][:, 3], label="Accuracy", color="m")
+            acc_at_end: float = ratio[0][:, 3][-1]
+            axes[i].annotate(
+                text=f"{acc_at_end:.2f}",
+                xy=(x[-1], acc_at_end),
+                xycoords="data",
+                xytext=(2.0, 0.0),
+                textcoords="offset points",
+                color="m",
+                horizontalalignment="left",
+                verticalalignment="center",
+                fontsize=10.0,
+            )
         else:
             ratio = np.array(ratio)
             median = np.median(ratio, axis=0)
@@ -234,6 +250,19 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             axes[i].fill_between(
                 x, q1[:, 3], q3[:, 3], label="Accuracy Q1 - Q3", color="m", alpha=0.1
             )
+            median_at_end: float = median[:, 3][-1]
+            axes[i].annotate(
+                text=f"{median_at_end:.2f}",
+                xy=(x[-1], median_at_end),
+                xycoords="data",
+                xytext=(2.0, 0.0),
+                textcoords="offset points",
+                color="m",
+                horizontalalignment="left",
+                verticalalignment="center",
+                fontsize=10.0,
+            )
+
         axes[i].set_ylabel(f"{name} Performance")
         axes[i].set_ylim(0, 1)
         axes[i].grid(axis="y", alpha=0.5)
@@ -251,6 +280,19 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         axes[2].plot(x, mean, label="Mean", linestyle=":", color="k")
         axes[2].fill_between(x, q1, q3, label="Q1 - Q3", color="k", alpha=0.1)
         axes[2].legend(ncols=3)
+        median_at_end: float = median[-1]
+        axes[2].annotate(
+            text=f"{median_at_end:.0f}",
+            xy=(x[-1], median_at_end),
+            xycoords="data",
+            xytext=(2.0, 0.0),
+            textcoords="offset points",
+            color="k",
+            horizontalalignment="left",
+            verticalalignment="center",
+            fontsize=10.0,
+        )
+
     axes[2].set_ylabel("Active Rules")
     axes[2].grid(axis="y", alpha=0.5)
     axes[2].grid(axis="x", color="k", alpha=1)
