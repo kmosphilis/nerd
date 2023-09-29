@@ -423,9 +423,12 @@ int main(int argc, char *argv[]) {
 
 
     if (!entire) {
+        pcg32_random_t split_rng;
+        pcg32_srandom_r(&split_rng, s1, s2);
         train_path = (char *) calloc((strlen(TRAIN) + strlen(test_directory) + 1), sizeof(char));
         sprintf(train_path, "%s%s", test_directory, TRAIN);
-        if (train_test_split(dataset, has_header, testing_ratio, global_rng, train_path, NULL, NULL, NULL) != 0) {
+        if (train_test_split(dataset, has_header, testing_ratio, &split_rng, train_path, NULL, NULL,
+        NULL) != 0) {
             context_destructor(&labels);
             free(train_path);
             free(test_directory);
