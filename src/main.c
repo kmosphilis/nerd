@@ -52,8 +52,9 @@ int main(int argc, char *argv[]) {
         "\n-s2 <unsigned long>  Seed 2 (sequence seed) for the PRNG.\n It must be bigger than 0.\n"
         "-kb <filepath> The path to an .nd file which contains a KB to\n be re-used.\n-entire "
         "<bool> Should it use the given dataset for training only?\n Default value is set to "
-        "'false'.\n\nBy adding an additional number at the end of these parameters, you mark\n the "
-        "number of this run and it will save its given parameters.\n");
+        "'false'.\n-ratio <float> The testing dataset ratio. Must be between [0,1]. Default\n value"
+        " is set to 0.2\n\nBy adding an additional number at the end of these parameters, you mark"
+        "\n the number of this run and it will save its given parameters.\n");
         return EXIT_FAILURE;
     }
 
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]) {
     entire = false;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
-    float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY;
+    float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY, testing_ratio = 0.2;
     unsigned int i, breadth = 0, max_rules_per_instance = 5;
     char *current_arg, *arg_end, *dataset_value = NULL, *constraints_file = NULL, *kb = NULL;
     size_t iterations = 1, s1 = 0, s2 = 0;
@@ -112,6 +113,13 @@ int main(int argc, char *argv[]) {
                             "'true' or 'false'\n", current_arg);
                             return close_dataset_and_exit(dataset);
                         }
+                } else if (strcmp(large_option, "ratio") == 0) {
+                    testing_ratio = strtof(current_arg, &arg_end);
+                    if ((*arg_end) || (testing_ratio < 0) || (testing_ratio > 1)) {
+                        printf("'-ratio' value '%s' is not valid. It must be a real number between "
+                        "[0,1]\n", current_arg);
+                        return close_dataset_and_exit(dataset);
+                    }
                 } else {
                     printf("Option '-%s' is not available.\n", large_option);
                     return close_dataset_and_exit(dataset);
@@ -396,6 +404,7 @@ int main(int argc, char *argv[]) {
                 fprintf(file, "entire=true\n");
             } else {
                 fprintf(file, "entire=false\n");
+                fprintf(file, "testing_ratio=%f\n", testing_ratio);
             }
 
             if (constraints_file) {
@@ -416,7 +425,7 @@ int main(int argc, char *argv[]) {
     if (!entire) {
         train_path = (char *) calloc((strlen(TRAIN) + strlen(test_directory) + 1), sizeof(char));
         sprintf(train_path, "%s%s", test_directory, TRAIN);
-        if (train_test_split(dataset, has_header, 0.2, global_rng, train_path, NULL, NULL, NULL) != 0) {
+        if (train_test_split(dataset, has_header, testing_ratio, global_rng, train_path, NULL, NULL, NULL) != 0) {
             context_destructor(&labels);
             free(train_path);
             free(test_directory);
