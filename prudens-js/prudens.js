@@ -421,7 +421,7 @@ function updateGraph(inferredHead, newRule, graph, previousFacts, factsToBeAdded
                 // console.log("isPrior:", isPrior);
                 // debugger;
                 if (isPrior === undefined || isPrior) {
-                    console.log("Here");
+                    // console.log("Here");
                     toBeRemoved.push(rule);
                     if (!utils.deepIncludes({
                         "defeated": rule,
