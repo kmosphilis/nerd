@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
     bool has_header = false, header_set = false, entire = false;
     unsigned long *state_seed = NULL, *seq_seed = NULL, temp;
     int c;
+    float testing_ratio = 0.2;
 
     while ((c = fgetc(info_file)) != EOF) {
         if (c == '\n') {
@@ -102,6 +103,13 @@ int main(int argc, char *argv[]) {
                 } else {
                     printf("'entire' value '%s' is not valid. It should be either 'true' or 'false'"
                     "\n", value);
+                    goto failed;
+                }
+            } else if(strstr(buffer, "testing_ratio=")) {
+                testing_ratio = strtof(value, &end);
+                if (*end || (testing_ratio < 0) || (testing_ratio > 1)) {
+                    printf("'-ratio' value '%s' is not valid. It must be a real number between "
+                    "[0,1]\n", value);
                     goto failed;
                 }
             }
@@ -161,28 +169,37 @@ failed:
         }
     }
 
-    char *training_path =
+    char *training_file_path =
     (char *) calloc(strlen(test_dir) + strlen(TRAINING_FILE) + 1, sizeof(char)),
-    *testing_path = (char *) calloc(strlen(test_dir) + strlen(TESTING_FILE) + 1, sizeof(char)),
-    *training_temp_path = NULL, *testing_temp_path = NULL;
+    *testing_file_path = (char *) calloc(strlen(test_dir) + strlen(TESTING_FILE) + 1, sizeof(char)),
+    *training_set_path = NULL, *testing_set_path = NULL;
 
-    sprintf(training_path, "%s%s", test_dir, TRAINING_FILE);
-    sprintf(testing_path, "%s%s", test_dir, TESTING_FILE);
+    sprintf(training_file_path, "%s%s", test_dir, TRAINING_FILE);
+    sprintf(testing_file_path, "%s%s", test_dir, TESTING_FILE);
 
     umask(S_IROTH | S_IWOTH | S_IWGRP);
     if (entire) {
-        training_temp_path = dataset_value;
-        testing_temp_path = testing_dataset;
+        training_set_path = dataset_value;
+        testing_set_path = testing_dataset;
     } else {
-        training_temp_path =
+        training_set_path =
         (char *) calloc(strlen(test_dir) + strlen(TRAINING_FILE) + 2, sizeof(char));
-        testing_temp_path =
-        (char *) calloc(strlen(test_dir) + strlen(TESTING_FILE) + 2, sizeof(char));
-        sprintf(training_temp_path, "%s.%s", test_dir, TRAINING_FILE);
-        sprintf(testing_temp_path, "%s.%s", test_dir, TESTING_FILE);
+        sprintf(training_set_path, "%s.%s", test_dir, TRAINING_FILE);
 
-        train_test_split(dataset, has_header, 0.2, &rng, training_temp_path, testing_temp_path,
-        NULL, NULL);
+        if (testing_dataset) {
+            testing_set_path = testing_dataset;
+
+            train_test_split(dataset, has_header, testing_ratio, &rng, training_set_path, NULL,
+            NULL, NULL);
+        } else {
+            testing_set_path =
+            (char *) calloc(strlen(test_dir) + strlen(TESTING_FILE) + 2, sizeof(char));
+            sprintf(testing_set_path, "%s.%s", test_dir, TESTING_FILE);
+
+            train_test_split(dataset, has_header, testing_ratio, &rng, training_set_path,
+            testing_set_path, NULL, NULL);
+        }
+
         free(dataset_value);
     }
     free(test_dir);
@@ -191,8 +208,8 @@ failed:
     Sensor *sensor = NULL;
     Scene *observation = NULL;
 
-    char *file_paths[] = {training_path, testing_path};
-    char *temp_paths[] = {training_temp_path, testing_temp_path};
+    char *file_paths[] = {training_file_path, testing_file_path};
+    char *temp_paths[] = {training_set_path, testing_set_path};
     char *str = NULL;
     FILE *file;
 
@@ -219,7 +236,7 @@ failed:
 
         sensor_destructor(&sensor);
         fclose(file);
-        if (!entire) {
+        if ((temp_paths[i] != dataset_value) && (temp_paths[i] != testing_dataset)) {
             remove(temp_paths[i]);
         }
         free(temp_paths[i]);

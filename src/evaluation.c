@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
     char delimiter= ' ';
     bool use_back_chaining = true, has_header = false, entire = false;
     char *constraints_file = NULL, *dataset_value = NULL;
+    float testing_ratio = 0.2;
 
     while ((c = fgetc(info_file)) != EOF) {
         if (c == '\n') {
@@ -101,6 +102,15 @@ int main(int argc, char *argv[]) {
                         }
                         break;
                     case 't':
+                        if (strcmp(option, "testing_ratio") == 0) {
+                            testing_ratio = strtof(true_value, &end);
+                            if (*end || (testing_ratio < 0) || (testing_ratio > 1)) {
+                                printf("'-ratio' value '%s' is not valid. It must be a real number "
+                                "between [0,1]\n", true_value);
+                                goto option_failed1;
+                            }
+                        }
+                        break;
                     case 'p':
                     case 'd':
                     case 'b':
@@ -228,12 +238,22 @@ failed:
     } else {
         train_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TRAIN,
         iteration_number) + 1, sizeof(char));
-        test_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TEST,
-        iteration_number) + 1, sizeof(char));
         sprintf(train_path, "%s%s%u", result_directory, TRAIN, iteration_number);
-        sprintf(test_path, "%s%s%u", result_directory, TEST, iteration_number);
 
-        train_test_split(dataset, has_header, 0.2, &seed, train_path, test_path, NULL, NULL);
+        if (testing_dataset) {
+            test_path = testing_dataset;
+
+            train_test_split(dataset, has_header, testing_ratio, &seed, train_path, NULL, NULL,
+            NULL);
+        } else {
+            test_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TEST,
+            iteration_number) + 1, sizeof(char));
+            sprintf(test_path, "%s%s%u", result_directory, TEST, iteration_number);
+
+            train_test_split(dataset, has_header, testing_ratio, &seed, train_path, test_path, NULL,
+            NULL);
+        }
+
         free(dataset_value);
     }
     fclose(dataset);
