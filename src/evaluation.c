@@ -311,8 +311,8 @@ failed:
         }
         safe_free(result);
         fclose(files[k]);
-        if (!entire) {
-            remove(paths[k]);
+        if ((paths[i] != dataset_value) && (paths[i] != testing_dataset)) {
+            remove(paths[i]);
         }
         free(paths[k]);
     }
