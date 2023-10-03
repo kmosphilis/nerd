@@ -137,59 +137,61 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
     with info_file.open() as info:
         title = ""
         run = ""
+        current_value = None
         for line in info:
             if line.startswith("run="):
                 run = line
             elif line.startswith("t="):
-                filename += f"{line.strip()}, "
-                title += f"Threshold: {float(line.strip().removeprefix('t='))}, "
+                current_value = float(line.strip().removeprefix("t="))
+                filename += f"t{current_value}, "
+                title += f"Threshold: {current_value}, "
             elif line.startswith("p="):
-                filename += f"{line.strip()}, "
-                title += f"Promotion: {float(line.strip().removeprefix('p='))}, "
+                current_value = float(line.strip().removeprefix("p="))
+                filename += f"p{current_value}, "
+                title += f"Promotion: {current_value}, "
             elif line.startswith("d="):
-                filename += f"{line.strip()}, "
-                title += f"Demotion: {float(line.strip().removeprefix('d='))}, "
+                current_value = float(line.strip().removeprefix("d="))
+                filename += f"d{current_value}, "
+                title += f"Demotion: {current_value}, "
             elif line.startswith("b="):
-                filename += f"{line.strip()}, "
-                title += (
-                    f"Max breadth per rule: {int(line.strip().removeprefix('b='))}, "
-                )
+                current_value = int(line.strip().removeprefix("b="))
+                filename += f"b{current_value}, "
+                title += f"Max breadth per rule: {current_value}, "
             elif line.startswith("r="):
-                filename += f"{line.strip()}, "
-                title += (
-                    f"Max rules per instance: {int(line.strip().removeprefix('r='))}, "
-                )
+                current_value = int(line.strip().removeprefix("r="))
+                filename += f"r{current_value}, "
+                title += f"Max rules per instance: {current_value}, "
             elif line.startswith("o="):
-                filename += f"{line.strip()}, "
-                value = line.strip().removeprefix("o=").lower() == "true"
-                if value:
+                current_value = line.strip().removeprefix("o=").lower() == "true"
+                filename += f"o{current_value}, "
+                if current_value:
                     title += "Partial observation, "
                 else:
                     title += "Full observation, "
             elif line.startswith("c="):
-                filename += f"{line.strip()}, "
-                value = line.strip().removeprefix("c=").lower() == "true"
-                if value:
+                current_value = line.strip().removeprefix("c=").lower() == "true"
+                filename += f"c{current_value}, "
+                if current_value:
                     title += "Classic, "
                 else:
                     title += "Backward chaining, "
             elif line.startswith("di="):
-                filename += f"{line.strip()}, "
-                value = line.strip().removeprefix("di=").lower() == "true"
-                if value:
+                current_value = line.strip().removeprefix("di=").lower() == "true"
+                filename += f"di{current_value}, "
+                if current_value:
                     title += "Increasing demotion, "
                 else:
                     title += "Decreasing demotion, "
             elif line.startswith("h="):
-                filename += f"{line.strip()}, "
-                value = line.strip().removeprefix("h=").lower() == "true"
-                if value:
+                current_value = line.strip().removeprefix("h=").lower() == "true"
+                filename += f"h{current_value}, "
+                if current_value:
                     title += "With labels, "
                 else:
                     title += "Without labels, "
 
         if max_iterations is not None:
-            filename += f"e={max_iterations}, "
+            filename += f"e{max_iterations}, "
 
         if len(directory) == 1:
             filename = filename + run
