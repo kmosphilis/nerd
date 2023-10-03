@@ -270,7 +270,19 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         axes[i].legend(ncols=4)
 
     if len(active_rules) == 1:
-        axes[2].plot(x, active_rules[0], color="g")
+        axes[2].plot(x, active_rules[0], color="k")
+        axes[2].annotate(
+            text=f"{active_rules[0][-1]:.0f}",
+            xy=(x[-1], active_rules[0][-1]),
+            xycoords="data",
+            xytext=(2.0, 0.0),
+            textcoords="offset points",
+            color="k",
+            horizontalalignment="left",
+            verticalalignment="center",
+            fontsize=10.0,
+        )
+
     else:
         median = np.median(active_rules, axis=0)
         mean = np.mean(active_rules, axis=0)
