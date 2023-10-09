@@ -414,9 +414,32 @@ const float demotion_rate, const bool increasing_demotion, const Scene * const l
     Vertex *vertex_to_find, *current_vertex;
     Scene *opposed, *observed_and_inferred;
     Rule *current_rule;
+    bool demote_only_inactive = false;
 
     scene_opposed_literals(observations, inferences, &opposed, labels);
     scene_union(observations, inferences, &observed_and_inferred);
+
+    if (opposed->size == 0 && labels) {
+        demote_only_inactive = true;
+        Scene *copy;
+        scene_copy(&copy, labels);
+        int label_index = -1;
+        for (i = 0; i < labels->size; ++i) {
+            label_index = scene_literal_index(observations, labels->literals[i]);
+            if (label_index != -1) {
+                break;
+            }
+        }
+
+        if (label_index != -1) {
+            scene_remove_literal(copy, scene_literal_index(copy, observations->literals[label_index]),
+            NULL);
+            scene_destructor(&opposed);
+            opposed = copy;
+        } else {
+            scene_destructor(&copy);
+        }
+    }
 
     // Finds all the Rules that concur by finding the observed Literal in the RB-tree.
     for (j = 0; j < observations->size; ++j) {
@@ -454,9 +477,9 @@ const float demotion_rate, const bool increasing_demotion, const Scene * const l
                 for (i = 0; i < current_vertex->number_of_edges; ++i) {
                     current_rule = current_vertex->edges[i]->rule;
                     // Checks if the Rule is applicable given the inferred and observed Literals.
-                    if (rule_applicable(current_rule, observed_and_inferred)) {
-                        bool was_active =
-                        current_rule->weight >= knowledge_base->activation_threshold;
+                    bool was_active = current_rule->weight >= knowledge_base->activation_threshold;
+
+                    if (!(was_active && demote_only_inactive) && rule_applicable(current_rule, observed_and_inferred)) {
                         current_rule->weight -= demotion_rate;
 
                         if (was_active &&
