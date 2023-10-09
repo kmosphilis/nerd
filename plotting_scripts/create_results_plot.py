@@ -77,12 +77,21 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
 
         kb_result_directories = sorted(results.glob("iteration_*-instance_*"))
 
-        total_kbs.append(len(kb_result_directories))
+        if max_iterations is not None:
+            no_kb_to_plot = 0
+            for kb in kb_result_directories:
+                kb_indices = re.findall(r"\d+", kb.name)
+                if max_iterations < int(kb_indices[0]):
+                    break
+                no_kb_to_plot += 1
+            total_kbs.append(no_kb_to_plot)
+        else:
+            total_kbs.append(len(kb_result_directories))
 
         training_ratios.append(np.full((total_kbs[i], 4), np.nan))
         testing_ratios.append(np.full((total_kbs[i], 4), np.nan))
         iterations_and_instances.append([])
-        for index, kb in enumerate(kb_result_directories):
+        for index, kb in enumerate(kb_result_directories[: total_kbs[i]]):
             training_inferences = kb / "train.txt"
             testing_inferences = kb / "test.txt"
             kb_indices = re.findall(r"\d+", kb.name)
@@ -112,7 +121,7 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
 
         active_rules.append(np.zeros(total_kbs[i], int))
 
-        for index, kb in enumerate(kb_result_directories):
+        for index, kb in enumerate(kb_result_directories[: total_kbs[i]]):
             file = current_dir / kb.name
             with file.open() as f:
                 while "knowledge_base" not in f.readline():
