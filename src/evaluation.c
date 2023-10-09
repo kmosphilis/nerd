@@ -20,7 +20,7 @@
 #define TEST ".test_set"
 
 int main(int argc, char *argv[]) {
-    if ((argc < 4) && (argc > 5)) {
+    if ((argc < 4) || (argc > 5)) {
         printf("Nerd info filepath, nerd file (.nd) and labels file required, and optionally a"
         "testing datset.\n");
         return EXIT_FAILURE;
@@ -83,14 +83,14 @@ int main(int argc, char *argv[]) {
                         constraints_file = strdup(true_value);
                         break;
                     case 's':
-                        if (strcmp(option, "state_seed")) {
+                        if (strcmp(option, "state_seed") == 0) {
                             state_seed = strtoul(true_value, &end, DECIMAL_BASE);
                             if (*end) {
                                 printf("%s is not a valid state_seed value. It required an unsigned"
                                 " long.\n", true_value);
                                 goto option_failed1;
                             }
-                        } else if (strcmp(option, "seq_seed")) {
+                        } else if (strcmp(option, "seq_seed") == 0) {
                             seq_seed = strtoul(true_value, &end, DECIMAL_BASE);
                             if (*end) {
                                 printf("%s is not a valid seq_seed value. It required an unsigned"
