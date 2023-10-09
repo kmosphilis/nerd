@@ -211,16 +211,16 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
     fig.supxlabel("Iteration")
 
     biggest_index = np.argmax(total_kbs)
-    x = np.arange(1, total_kbs[biggest_index] + 1)
+    x = np.arange(0, total_kbs[biggest_index] + 1)
 
     for i, (ratio, name) in enumerate(
         zip([training_ratios, testing_ratios], ["Training", "Testing"])
     ):
         if len(ratio) == 1:
-            axes[i].plot(x, ratio[0][:, 0], label="Correct", color="b")
-            axes[i].plot(x, ratio[0][:, 1], label="Abstain", color="g")
-            axes[i].plot(x, ratio[0][:, 2], label="Incorrect", color="r")
-            axes[i].plot(x, ratio[0][:, 3], label="Accuracy", color="m")
+            axes[i].plot(x, np.append(0, ratio[0][:, 0]), label="Correct", color="b")
+            axes[i].plot(x, np.append(1, ratio[0][:, 1]), label="Abstain", color="g")
+            axes[i].plot(x, np.append(0, ratio[0][:, 2]), label="Incorrect", color="r")
+            axes[i].plot(x, np.append(0, ratio[0][:, 3]), label="Accuracy", color="m")
             acc_at_end: float = ratio[0][:, 3][-1]
             axes[i].annotate(
                 text=f"{acc_at_end:.2f}",
@@ -239,27 +239,77 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             mean = np.mean(ratio, axis=0)
             q1 = np.percentile(ratio, 25, axis=0)
             q3 = np.percentile(ratio, 75, axis=0)
-            axes[i].plot(x, median[:, 0], label="Correct median", color="b")
-            axes[i].plot(x, mean[:, 0], label="Correct mean", linestyle=":", color="b")
-            axes[i].fill_between(
-                x, q1[:, 0], q3[:, 0], label="Correct Q1 - Q3", color="b", alpha=0.1
-            )
-            axes[i].plot(x, median[:, 1], label="Abstain median", color="g")
-            axes[i].plot(x, mean[:, 1], label="Abstain mean", linestyle=":", color="g")
-            axes[i].fill_between(
-                x, q1[:, 1], q3[:, 1], label="Abstain Q1 - Q3", color="g", alpha=0.1
-            )
-            axes[i].plot(x, median[:, 2], label="Incorrect median", color="r")
             axes[i].plot(
-                x, mean[:, 2], label="Incorrect mean", linestyle=":", color="r"
+                x, np.append(0, median[:, 0]), label="Correct median", color="b"
+            )
+            axes[i].plot(
+                x,
+                np.append(0, mean[:, 0]),
+                label="Correct mean",
+                linestyle=":",
+                color="b",
             )
             axes[i].fill_between(
-                x, q1[:, 2], q3[:, 2], label="Incorrect Q1 - Q3", color="r", alpha=0.1
+                x,
+                np.append(0, q1[:, 0]),
+                np.append(0, q3[:, 0]),
+                label="Correct Q1 - Q3",
+                color="b",
+                alpha=0.1,
             )
-            axes[i].plot(x, median[:, 3], label="Accuracy median", color="m")
-            axes[i].plot(x, mean[:, 3], label="Accuracy mean", linestyle=":", color="m")
+            axes[i].plot(
+                x, np.append(1, median[:, 1]), label="Abstain median", color="g"
+            )
+            axes[i].plot(
+                x,
+                np.append(1, mean[:, 1]),
+                label="Abstain mean",
+                linestyle=":",
+                color="g",
+            )
             axes[i].fill_between(
-                x, q1[:, 3], q3[:, 3], label="Accuracy Q1 - Q3", color="m", alpha=0.1
+                x,
+                np.append(1, q1[:, 1]),
+                np.append(1, q3[:, 1]),
+                label="Abstain Q1 - Q3",
+                color="g",
+                alpha=0.1,
+            )
+            axes[i].plot(
+                x, np.append(0, median[:, 2]), label="Incorrect median", color="r"
+            )
+            axes[i].plot(
+                x,
+                np.append(0, mean[:, 2]),
+                label="Incorrect mean",
+                linestyle=":",
+                color="r",
+            )
+            axes[i].fill_between(
+                x,
+                np.append(0, q1[:, 2]),
+                np.append(0, q3[:, 2]),
+                label="Incorrect Q1 - Q3",
+                color="r",
+                alpha=0.1,
+            )
+            axes[i].plot(
+                x, np.append(0, median[:, 3]), label="Accuracy median", color="m"
+            )
+            axes[i].plot(
+                x,
+                np.append(0, mean[:, 3]),
+                label="Accuracy mean",
+                linestyle=":",
+                color="m",
+            )
+            axes[i].fill_between(
+                x,
+                np.append(0, q1[:, 3]),
+                np.append(0, q3[:, 3]),
+                label="Accuracy Q1 - Q3",
+                color="m",
+                alpha=0.1,
             )
             median_at_end: float = median[:, 3][-1]
             axes[i].annotate(
@@ -275,13 +325,12 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
             )
 
         axes[i].set_ylabel(f"{name} Performance")
-        axes[i].set_ylim(0, 1)
         axes[i].grid(axis="y", alpha=0.5)
         axes[i].grid(axis="x", color="k", alpha=1)
         axes[i].legend(ncols=4)
 
     if len(active_rules) == 1:
-        axes[2].plot(x, active_rules[0], color="k")
+        axes[2].plot(x, np.append(0, active_rules[0]), color="k")
         axes[2].annotate(
             text=f"{active_rules[0][-1]:.0f}",
             xy=(x[-1], active_rules[0][-1]),
@@ -299,9 +348,11 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         mean = np.mean(active_rules, axis=0)
         q1 = np.percentile(active_rules, 25, axis=0)
         q3 = np.percentile(active_rules, 75, axis=0)
-        axes[2].plot(x, median, label="Median", color="k")
-        axes[2].plot(x, mean, label="Mean", linestyle=":", color="k")
-        axes[2].fill_between(x, q1, q3, label="Q1 - Q3", color="k", alpha=0.1)
+        axes[2].plot(x, np.append(0, median), label="Median", color="k")
+        axes[2].plot(x, np.append(0, mean), label="Mean", linestyle=":", color="k")
+        axes[2].fill_between(
+            x, np.append(0, q1), np.append(0, q3), label="Q1 - Q3", color="k", alpha=0.1
+        )
         axes[2].legend(ncols=3)
         median_at_end: float = median[-1]
         axes[2].annotate(
@@ -323,7 +374,7 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
     iterations = np.unique(iterations_and_instances[0][:, 0])
     instances = np.unique(iterations_and_instances[0][:, 1])
 
-    axes[2].set_xlim(instances.shape[0], np.max(iterations) + instances.shape[0])
+    axes[2].set_xlim(left=0, right=np.max(iterations) + instances.shape[0])
     axes[2].set_xticks(
         np.arange(
             0, (iterations.shape[0] + 1) * instances.shape[0], instances.shape[0]
@@ -331,12 +382,14 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         np.append([0], iterations),
     )
 
+    axes[2].margins(0.05, tight=False)
+
     for axis_index, axis in enumerate(axes):
         axis_twin = axis.twiny()
         axis.set_zorder(axis_twin.get_zorder() + axes.shape[0])
         axis.patch.set_visible(False)
         axis_twin.grid(axis="x", color="k", alpha=0.5)
-        axis_twin.set_xlim(instances.shape[0], np.max(iterations) + instances.shape[0])
+        axis_twin.set_xlim(axis.get_xlim())
         axis_twin.set_xticks(
             np.arange(0, (iterations.shape[0]) * instances.shape[0] + 1, 1),
             np.append([0], iterations_and_instances[0][:, 1])
