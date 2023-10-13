@@ -1,5 +1,6 @@
 import sys
 import re
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -40,7 +41,23 @@ def calculate_correct_abstained_incorrect(
     )
 
 
-def create_plot(path: Path, labels: Path, max_iterations: int | None):
+def calculate_training_testing_actives(
+    path: Path, labels: Path, max_iterations: int | None
+):
+    (
+        _,
+        _,
+        _,
+        training_ratios,
+        testing_ratios,
+        active_rules,
+    ) = __calculate_training_testing_actives(path, labels, max_iterations)
+    return training_ratios, testing_ratios, active_rules
+
+
+def __calculate_training_testing_actives(
+    path: Path, labels: Path, max_iterations: int | None
+):
     directory = []
     if "timestamp" in path.name:
         directory.append(path)
@@ -123,6 +140,21 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
 
         for index, kb in enumerate(kb_result_directories[: total_kbs[i]]):
             file = current_dir / kb.name
+            was_extracted = False
+            if not file.exists():
+                if (
+                    subprocess.run(
+                        f"tar -x -I 'zstd -d' -C {current_dir} -f {current_dir/'kbs.tar.zst'} "
+                        f"{kb.name}",
+                        shell=True,
+                    ).returncode
+                    == 0
+                ):
+                    was_extracted = True
+                else:
+                    print(f"File {file} was not found for active rule extraction.")
+                    exit(4)
+
             with file.open() as f:
                 while "knowledge_base" not in f.readline():
                     True
@@ -135,7 +167,29 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
                         else:
                             break
 
+            if was_extracted:
+                subprocess.run(f"rm {file}", shell=True)
+
     iterations_and_instances = np.array(iterations_and_instances)
+    return (
+        directory,
+        total_kbs,
+        iterations_and_instances,
+        np.array(training_ratios),
+        np.array(testing_ratios),
+        np.array(active_rules),
+    )
+
+
+def create_plot(path: Path, labels: Path, max_iterations: int | None):
+    (
+        directory,
+        total_kbs,
+        iterations_and_instances,
+        training_ratios,
+        testing_ratios,
+        active_rules,
+    ) = __calculate_training_testing_actives(path, labels, max_iterations)
 
     fig, axes = plt.subplots(
         nrows=3, ncols=1, figsize=(16, 9), layout="constrained", sharex="all"
@@ -148,10 +202,11 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         run = ""
         current_value = None
         for line in info:
+            line = line.strip()
             if line.startswith("run="):
                 run = line
             elif line.startswith("t="):
-                current_value = float(line.strip().removeprefix("t="))
+                current_value = float(line.removeprefix("t="))
                 filename += f"t{current_value}, "
                 title += f"Threshold: {current_value}, "
             elif line.startswith("p="):
