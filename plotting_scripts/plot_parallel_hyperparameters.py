@@ -1,23 +1,30 @@
 import sys
+import os
 from pathlib import Path
+import multiprocessing as mp
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from create_results_plot import calculate_training_testing_actives
 
 
-def create_parallel_hyperparameters(directories: list, labels: Path):
-    data = []
-
-    for i, directory in enumerate(directories):
+def calculate_instance_requirements(directory: Path, labels: Path, iteration: int):
+    print(f"current experiment: {directory.name}", flush=True)
+    for trial in Path(directory).iterdir():
+        if not "logs" in trial.name and not (trial / "kbs.tar.zst").exists():
+            return None
+    else:
         (
             training_ratios,
             testing_ratios,
             active_rules,
-        ) = calculate_training_testing_actives(directory, labels, None)
+        ) = calculate_training_testing_actives(
+            directory, labels, max_iterations=iteration, only_final=True
+        )
 
         final_training_score = training_ratios[:, -1][:, 3]
         final_testing_score = testing_ratios[:, -1][:, 3]
@@ -40,140 +47,210 @@ def create_parallel_hyperparameters(directories: list, labels: Path):
                 elif line.startswith("o="):
                     partial_observation = line.removeprefix("o=").lower() == "true"
 
-        data.append(
-            [
-                threshold,
-                promotion,
-                demotion,
-                breadth,
-                rules,
-                partial_observation,
-                np.mean(final_training_score),
-                np.mean(final_testing_score),
-                np.mean(final_active_rules),
-            ]
+    return [
+        threshold,
+        promotion,
+        demotion,
+        breadth,
+        rules,
+        partial_observation,
+        np.mean(final_training_score),
+        np.mean(final_testing_score),
+        np.mean(final_active_rules),
+    ]
+
+
+def create_parallel_hyperparameters(
+    directories: list | None, labels: Path, iteration: int, results: Path | None = None
+):
+    assert directories != results
+    data = None
+    if results is not None:
+        data = pd.read_csv(results.absolute())
+    elif directories is not None:
+        with mp.Pool(mp.cpu_count()) as pool:
+            data = list(
+                pool.starmap(
+                    calculate_instance_requirements,
+                    [(directory, labels, iteration) for directory in directories],
+                )
+            )
+
+        data = pd.DataFrame(
+            list(filter(lambda x: x is not None, data)),
+            columns=[
+                "Threshold",
+                "Promotion",
+                "Demotion",
+                "Max Breadth",
+                "Max Rules",
+                "Partial Observation",
+                "Training",
+                "Testing",
+                "Active Rules",
+            ],
         )
 
-    data = pd.DataFrame(
-        data,
-        columns=[
-            "Threshold",
-            "Promotion",
-            "Demotion",
-            "Max Breadth",
-            "Max Rules",
-            "Partial Observation",
-            "Training",
-            "Testing",
-            "Active Rules",
-        ],
-    )
+    data.sort_values(by=["Testing", "Training"], inplace=True, ascending=False)
 
-    fig = go.Figure(
-        data=go.Parcoords(
-            line=dict(color=data["Testing"], colorscale="Plasma"),
-            dimensions=list(
+    dimension = []
+    active_rules = []
+
+    for index, value in enumerate(
+        list(zip([False, True], ["Full Observation", "Partial Observation"]))
+    ):
+        current_data = data.loc[data["Partial Observation"] == value[0]]
+
+        if index == 0:
+            testing_accuracy = current_data["Testing"]
+            dimension.extend(
                 [
                     dict(
                         range=[
-                            data["Threshold"].min() - 1,
-                            data["Threshold"].max() + 1,
+                            current_data["Threshold"].min() - 1,
+                            current_data["Threshold"].max() + 1,
                         ],
                         label="Threshold",
-                        values=data["Threshold"],
+                        values=current_data["Threshold"],
+                        tickvals=current_data["Threshold"].unique(),
                     ),
                     dict(
                         range=[
-                            data["Promotion"].min() - 1,
-                            data["Promotion"].max() + 1,
+                            current_data["Promotion"].min() - 1,
+                            current_data["Promotion"].max() + 1,
                         ],
                         label="Promotion",
-                        values=data["Promotion"],
-                    ),
-                    dict(
-                        range=[data["Demotion"].min() - 1, data["Demotion"].max() + 1],
-                        label="Demotion",
-                        values=data["Demotion"],
+                        values=current_data["Promotion"],
                     ),
                     dict(
                         range=[
-                            data["Max Breadth"].min() - 1,
-                            data["Max Breadth"].max() + 1,
+                            current_data["Demotion"].min() - 1,
+                            current_data["Demotion"].max() + 1,
+                        ],
+                        label="Demotion",
+                        values=current_data["Demotion"],
+                    ),
+                    dict(
+                        range=[
+                            current_data["Max Breadth"].min(),
+                            current_data["Max Breadth"].max(),
                         ],
                         label="Max Breadth",
-                        values=data["Max Breadth"],
-                        tickvals=np.arange(
-                            data["Max Breadth"].min() - 1, data["Max Breadth"].max() + 2
-                        ),
+                        values=current_data["Max Breadth"],
+                        tickvals=current_data["Max Breadth"].unique(),
                     ),
                     dict(
                         range=[
-                            data["Max Rules"].min() - 1,
-                            data["Max Rules"].max() + 1,
+                            current_data["Max Rules"].min(),
+                            current_data["Max Rules"].max(),
                         ],
                         label="Max Rules",
-                        values=data["Max Rules"],
-                        tickvals=np.arange(
-                            data["Max Rules"].min() - 1, data["Max Rules"].max() + 2
-                        ),
-                    ),
-                    dict(
-                        range=[-1, 2],
-                        label="Partial Observation",
-                        values=data["Partial Observation"],
-                        tickvals=data["Partial Observation"].unique(),
-                        ticktext=["True", "False"],
-                    ),
-                    dict(
-                        range=[
-                            data["Active Rules"].min() - 1,
-                            data["Active Rules"].max() + 1,
-                        ],
-                        label="Active Rules",
-                        values=data["Active Rules"],
-                    ),
-                    dict(
-                        range=[data["Training"].min() - 0.05, 1],
-                        label="Training Accuracy",
-                        values=data["Training"],
-                    ),
-                    dict(
-                        range=[data["Testing"].min() - 0.05, 1],
-                        label="Testing Accuracy",
-                        values=data["Testing"],
+                        values=current_data["Max Rules"],
+                        tickvals=current_data["Max Rules"].unique(),
                     ),
                 ]
-            ),
+            )
+
+        dimension.append(
+            dict(
+                range=[current_data["Training"].min(), 1],
+                label=f"{value[1]} Training Accuracy",
+                values=current_data["Training"],
+            )
+        )
+        dimension.append(
+            dict(
+                range=[current_data["Testing"].min(), 1],
+                label=f"{value[1]} Testing Accuracy",
+                values=current_data["Testing"],
+            )
+        )
+        active_rules.append(
+            dict(
+                range=[
+                    current_data["Active Rules"].min(),
+                    current_data["Active Rules"].max(),
+                ],
+                label=f"{value[1]} Active Rules",
+                values=current_data["Active Rules"],
+            )
+        )
+
+    dimension.extend(active_rules)
+
+    fig = go.Figure(
+        go.Parcoords(
+            labelangle=-15,
+            line=dict(color=testing_accuracy, colorscale="Plasma"),
+            dimensions=dimension,
         )
     )
 
-    fig.show()
+    directory = Path(os.getcwd())
+    directory.mkdir(0o740, True, True)
+    fig.update_layout(
+        autosize=False,
+        height=1200,
+        width=2000,
+    )
+
+    config = {"scrollZoom": True}
+
+    if results is None:
+        data.to_csv(directory / "result.csv", index=False)
+
+    fig.write_html(file=directory / "result.html", config=config)
+    fig.write_image(file=directory / "result.pdf", scale=2)
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("One or more directories, and at the end a labels file are required.")
+    if len(sys.argv) < 3:
+        print(
+            "Provide a labels file, the number of the iteration to plot, and at the "
+            "end provide a .csv file with the results, or one or more directories to"
+            "perform an evaluation."
+        )
         exit(1)
     else:
-        labels = Path(sys.argv[-1])
+        labels = Path(sys.argv[1])
 
         if labels.exists():
             if labels.is_file():
-                directories = []
-                for directory in sys.argv[1:-1]:
-                    current_dir = Path(directory)
-                    if current_dir.exists():
-                        if current_dir.is_dir():
-                            directories.append(current_dir)
-                        else:
-                            print(f"'{directory}' is not a valid directory.")
-                            break
+                iteration = sys.argv[2]
+                if iteration.isdigit() and (iteration := int(iteration)) > 0:
+                    directories = []
+                    results = None
+                    for directory in sys.argv[2:]:
+                        current_dir = Path(directory)
+                        if current_dir.exists():
+                            if current_dir.is_dir():
+                                directories.append(current_dir)
+                            else:
+                                if len(directories) != 0:
+                                    print(f"'{directory}' is not a valid directory.")
+                                else:
+                                    if current_dir.is_file():
+                                        results = current_dir
+                                    else:
+                                        print(f"'{directory}' is not a valid file.")
+                                break
 
+                        else:
+                            print(f"'{directory}' does not exist")
+                            break
                     else:
-                        print(f"'{directory}' is does not exist")
-                        break
-                create_parallel_hyperparameters(directories, labels)
-                exit(0)
+                        create_parallel_hyperparameters(
+                            directories, labels, iteration=iteration
+                        )
+                        exit(0)
+
+                    if results is not None:
+                        create_parallel_hyperparameters(
+                            None, labels, results=results, iteration=iteration
+                        )
+                        exit(0)
+                else:
+                    print(f"'{iteration}' is not a valid number.")
             else:
                 print(f"'{labels.name}' is not a valid file.")
         else:
