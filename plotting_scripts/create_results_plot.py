@@ -42,7 +42,10 @@ def calculate_correct_abstained_incorrect(
 
 
 def calculate_training_testing_actives(
-    path: Path, labels: Path, max_iterations: int | None
+    path: Path,
+    labels: Path,
+    max_iterations: int | None = None,
+    only_final: bool = False,
 ):
     (
         _,
@@ -51,12 +54,17 @@ def calculate_training_testing_actives(
         training_ratios,
         testing_ratios,
         active_rules,
-    ) = __calculate_training_testing_actives(path, labels, max_iterations)
+    ) = __calculate_training_testing_actives(
+        path, labels, max_iterations=max_iterations, only_final=only_final
+    )
     return training_ratios, testing_ratios, active_rules
 
 
 def __calculate_training_testing_actives(
-    path: Path, labels: Path, max_iterations: int | None
+    path: Path,
+    labels: Path,
+    max_iterations: int | None = None,
+    only_final: bool = False,
 ):
     directory = []
     if "timestamp" in path.name:
@@ -105,10 +113,15 @@ def __calculate_training_testing_actives(
         else:
             total_kbs.append(len(kb_result_directories))
 
-        training_ratios.append(np.full((total_kbs[i], 4), np.nan))
-        testing_ratios.append(np.full((total_kbs[i], 4), np.nan))
+        start_from = 0
+        if only_final:
+            start_from = total_kbs[i] - 1
+
+        training_ratios.append(np.full((total_kbs[i] - start_from, 4), np.nan))
+        testing_ratios.append(np.full((total_kbs[i] - start_from, 4), np.nan))
         iterations_and_instances.append([])
-        for index, kb in enumerate(kb_result_directories[: total_kbs[i]]):
+
+        for index, kb in enumerate(kb_result_directories[start_from : total_kbs[i]]):
             training_inferences = kb / "train.txt"
             testing_inferences = kb / "test.txt"
             kb_indices = re.findall(r"\d+", kb.name)
@@ -138,7 +151,9 @@ def __calculate_training_testing_actives(
 
         active_rules.append(np.zeros(total_kbs[i], int))
 
-        for index, kb in enumerate(kb_result_directories[: total_kbs[i]]):
+        active_rules.append(np.zeros(total_kbs[i] - start_from, int))
+
+        for index, kb in enumerate(kb_result_directories[start_from : total_kbs[i]]):
             file = current_dir / kb.name
             was_extracted = False
             if not file.exists():
@@ -181,7 +196,7 @@ def __calculate_training_testing_actives(
     )
 
 
-def create_plot(path: Path, labels: Path, max_iterations: int | None):
+def create_plot(path: Path, labels: Path, max_iterations: int | None = None):
     (
         directory,
         total_kbs,
@@ -189,7 +204,9 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None):
         training_ratios,
         testing_ratios,
         active_rules,
-    ) = __calculate_training_testing_actives(path, labels, max_iterations)
+    ) = __calculate_training_testing_actives(
+        path, labels, max_iterations=max_iterations
+    )
 
     fig, axes = plt.subplots(
         nrows=3, ncols=1, figsize=(16, 9), layout="constrained", sharex="all"
