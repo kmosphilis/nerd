@@ -220,7 +220,7 @@ def main():
                 if iteration.isdigit() and (iteration := int(iteration)) > 0:
                     directories = []
                     results = None
-                    for directory in sys.argv[2:]:
+                    for directory in sys.argv[3:]:
                         current_dir = Path(directory)
                         if current_dir.exists():
                             if current_dir.is_dir():
