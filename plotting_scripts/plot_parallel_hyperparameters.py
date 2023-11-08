@@ -197,10 +197,10 @@ def create_parallel_hyperparameters(
     config = {"scrollZoom": True}
 
     if results is None:
-        data.to_csv(directory / "result.csv", index=False)
+        data.to_csv(directory / f"result-iteration_{iteration}.csv", index=False)
 
-    fig.write_html(file=directory / "result.html", config=config)
-    fig.write_image(file=directory / "result.pdf", scale=2)
+    fig.write_html(file=directory / f"result-iteration_{iteration}.html", config=config)
+    fig.write_image(file=directory / f"result-iteration{iteration}.pdf", scale=2)
 
 
 def main():
