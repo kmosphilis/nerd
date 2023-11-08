@@ -200,7 +200,7 @@ def create_parallel_hyperparameters(
         data.to_csv(directory / f"result-iteration_{iteration}.csv", index=False)
 
     fig.write_html(file=directory / f"result-iteration_{iteration}.html", config=config)
-    fig.write_image(file=directory / f"result-iteration{iteration}.pdf", scale=2)
+    fig.write_image(file=directory / f"result-iteration_{iteration}.pdf", scale=2)
 
 
 def main():
