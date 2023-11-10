@@ -96,13 +96,24 @@ def create_parallel_hyperparameters(
     dimension = []
     active_rules = []
 
+    lowest_point = min(data["Training"].min(), data["Testing"].min())
+    color_accuracy = None
+
     for index, value in enumerate(
         list(zip([False, True], ["Full Observation", "Partial Observation"]))
     ):
         current_data = data.loc[data["Partial Observation"] == value[0]]
 
+        if color_accuracy is None:
+            color_accuracy = current_data["Training"]
+
+        if color_accuracy.std() < current_data["Training"].std():
+            color_accuracy = current_data["Training"]
+
+        if color_accuracy.std() < current_data["Testing"].std():
+            color_accuracy = current_data["Testing"]
+
         if index == 0:
-            testing_accuracy = current_data["Testing"]
             dimension.extend(
                 [
                     dict(
@@ -153,14 +164,14 @@ def create_parallel_hyperparameters(
 
         dimension.append(
             dict(
-                range=[current_data["Training"].min(), 1],
+                range=[lowest_point, 1],
                 label=f"{value[1]} Training Accuracy",
                 values=current_data["Training"],
             )
         )
         dimension.append(
             dict(
-                range=[current_data["Testing"].min(), 1],
+                range=[lowest_point, 1],
                 label=f"{value[1]} Testing Accuracy",
                 values=current_data["Testing"],
             )
@@ -176,12 +187,15 @@ def create_parallel_hyperparameters(
             )
         )
 
-    dimension.extend(active_rules)
-
     fig = go.Figure(
         go.Parcoords(
             labelangle=-15,
-            line=dict(color=testing_accuracy, colorscale="Plasma"),
+            line=dict(
+                color=color_accuracy,
+                colorscale="Rainbow",
+                cmin=color_accuracy.mean(),
+                cmax=color_accuracy.max(),
+            ),
             dimensions=dimension,
         )
     )
