@@ -17,6 +17,6 @@ const KnowledgeBase * const knowledge_base, const Scene * const restrict observa
 Scene ** const inference);
 int prudensjs_inference_batch(const PrudensSettings_ptr settings,
 const KnowledgeBase * const knowledge_base, const size_t observation_size,
-Scene ** restrict observations, Scene *** const inferences);
+Scene ** restrict observations, Scene *** const inferences, char ** const save_inferring_rules);
 
 #endif

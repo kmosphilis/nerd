@@ -19,6 +19,6 @@ int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
 const char * const file_to_evaluate, const Context * const labels, const char delimiter,
 const bool has_header, float * const restrict accuracy, float * const restrict abstain_ratio,
 size_t * const total_observations, Scene *** const restrict observations,
-Scene *** const restrict inferences);
+Scene *** const restrict inferences, char ** const save_inferring_rules);
 
 #endif

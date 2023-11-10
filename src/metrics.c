@@ -263,6 +263,8 @@ next_literal:
  * Requires total_observations to work. If NULL is given, they will not be saved.
  * @param inferences A Scene *** to save the inferences. It should be a reference to a Scene **.
  * Requires total_observations to work. If NULL is given, they will not be saved.
+ * @param save_inferring_rules A char ** (reference to a char *) to save the inferring rules as a
+ * string. If NULL, they won't be saved.
  *
  * @return 0 if the evaluation ended successfully, -1 if it one nerd, settings, file_to_evaluation
  * or labels where NULL, > 0 which will be the index of the first observation that does not have a
@@ -273,7 +275,7 @@ int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
 const char * const file_to_evaluate, const Context * const labels, const char delimiter,
 const bool has_header, float * const restrict accuracy, float * const restrict abstain_ratio,
 size_t * const total_observations, Scene *** const restrict observations,
-Scene *** const restrict inferences) {
+Scene *** const restrict inferences, char ** const save_inferring_rules) {
     if (!(nerd && settings && file_to_evaluate && labels)) {
         return -1;
     }
@@ -326,7 +328,7 @@ Scene *** const restrict inferences) {
     }
 
     prudensjs_inference_batch(settings, nerd->knowledge_base, _total_observations, _observations,
-    &_inferences);
+    &_inferences, save_inferring_rules);
 
     if (accuracy || abstain_ratio) {
         unsigned int positives = 0, negatives = 0, unobserved = 0;

@@ -182,13 +182,15 @@ Scene ** const inference) {
  * @param inferences A Scene *** (reference to a Scene **) to save the inferences for each
  * observation made by Prudens-JS. It has the same size as the observations (observations_size).
  * Deallocate each scene using scene_destructor.
+ * @param save_inferring_rules A char ** (reference to a char *) to save the inferring rules as a
+ * string. If NULL, they won't be saved.
  *
  * @return 1 if settings are NULL, 3 if observations_size is 0, 4 if observations is NULL, 5 if
  * the knowledge_base is NULL, -1 if the file opening failed, and 0 if it no errors occured.
 */
 int prudensjs_inference_batch(const PrudensSettings_ptr settings,
 const KnowledgeBase * const knowledge_base, const size_t observations_size,
-Scene ** restrict observations, Scene *** const inferences) {
+Scene ** restrict observations, Scene *** const inferences, char ** const save_inferring_rules) {
     if (!settings) {
         return 1;
     }
@@ -220,7 +222,19 @@ Scene ** restrict observations, Scene *** const inferences) {
     }
     fclose(file);
 
-    system(settings->prudensjs_call);
+    char *prudens_call = NULL;
+
+    if (!save_inferring_rules) {
+        prudens_call = strdup(settings->prudensjs_call);
+    } else {
+        prudens_call = calloc(strlen(settings->prudensjs_call) + 5, sizeof(char));
+        memcpy(prudens_call, settings->prudensjs_call, strlen(settings->prudensjs_call));
+        memcpy(prudens_call + strlen(settings->prudensjs_call), " s=1", strlen(" s=1"));
+    }
+
+    system(prudens_call);
+
+    free(prudens_call);
 
     file = fopen(settings->temp_file, "rb");
     if (feof(file)) {
@@ -256,6 +270,20 @@ Scene ** restrict observations, Scene *** const inferences) {
                 }
             }
         }
+    }
+
+    memset(buffer, 0, strlen(buffer));
+    buffer_loc = 0;
+    if (save_inferring_rules) {
+        while ((c = fgetc(file)) != EOF) {
+            if (buffer_loc == buffer_size) {
+                buffer_size <<= 1;
+                buffer = (char *) realloc(buffer, buffer_size * sizeof(char));
+                memset(buffer + (buffer_size >> 1), 0, buffer_size >> 1);
+            }
+            buffer[buffer_loc++] = c;
+        }
+        *save_inferring_rules = strdup(buffer);
     }
 
     free(buffer);

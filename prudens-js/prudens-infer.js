@@ -4,10 +4,18 @@ const fs = require('fs');
 
 let filepath = ".temp";
 let constraints = "";
+let save_inferring_rules = false;
+
 
 switch (process.argv.length) {
+    case 5:
+        save_inferring_rules = process.argv[4] == "s=1";
     case 4:
-        constraints = process.argv[3];
+        if (process.argv[3].indexOf("s=") != -1) {
+            save_inferring_rules = process.argv[3] == "s=1";
+        } else {
+            constraints = process.argv[3];
+        }
     case 3:
         filepath = process.argv[2];
         break;
@@ -26,6 +34,8 @@ try {
         kB["constraints"] = new Map();
     }
 
+    const inferring_rules = Array();
+
     for (let i = 1; i < passed_data.length; ++i) {
         const result = prudens.forwardChaining(kB, JSON.parse(passed_data[i])["context"]);
 
@@ -38,6 +48,7 @@ try {
                 inferred.add(`${key}`);
             }
         }
+        inferring_rules.push(`${i + 1}: ${parsers.graphToString(result.graph)}`);
 
         for (const item of result.defeatedRules) {
             if (item["by"]["name"].startsWith('$')) {
@@ -63,6 +74,11 @@ try {
         }
 
     }
+
+    if (save_inferring_rules) {
+        fs.appendFileSync(`${filepath}_1`, `${inferring_rules.join("\n\n")}`);
+    }
+
     try {
         fs.renameSync(`${filepath}_1`, filepath);
     } catch (err) {

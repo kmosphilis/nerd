@@ -278,13 +278,26 @@ failed:
     char *test_results_name = (char *) calloc(strlen(instance_directory) + strlen("test.txt") + 1,
     sizeof(char));
     sprintf(test_results_name, "%stest.txt", instance_directory);
+
+    char *train_results_rules_name = (char *) calloc(strlen(instance_directory) +
+    strlen("train_rules.txt") + 1, sizeof(char));
+    sprintf(train_results_rules_name, "%strain_rules.txt", instance_directory);
+
+    char *test_results_rules_name = (char *) calloc(strlen(instance_directory) +
+    strlen("test_rules.txt") + 1, sizeof(char));
+    sprintf(test_results_rules_name, "%stest_rules.txt", instance_directory);
+
     free(instance_directory);
 
     umask(S_IROTH | S_IWOTH | S_IWGRP);
     FILE *train_results = fopen(train_results_name, "wb"),
-    *test_results = fopen(test_results_name, "wb");
+    *test_results = fopen(test_results_name, "wb"),
+    *train_rules = fopen(train_results_rules_name, "wb"),
+    *test_rules = fopen(test_results_rules_name, "wb");
     free(train_results_name);
     free(test_results_name);
+    free(train_results_rules_name);
+    free(test_results_rules_name);
 
     size_t total_observations;
     Scene **result = NULL;
@@ -292,10 +305,12 @@ failed:
     unsigned int j, k;
     char *paths[2] = {train_path, test_path};
     FILE *files[2] = {train_results, test_results};
+    FILE *rule_files[2] = {train_rules, test_rules};
 
+    char *rules = NULL;
     for (k = 0; k < 2; ++k) {
         if (evaluate_labels(nerd, settings, paths[k], labels, delimiter, has_header, NULL, NULL,
-        &total_observations, NULL, &result) == 0) {
+        &total_observations, NULL, &result, &rules) == 0) {
             for (i = 0; i < total_observations; ++i) {
                 for (j = 0; j < result[i]->size; ++j) {
                     if (j != 0) {
@@ -309,8 +324,12 @@ failed:
                 scene_destructor(&(result[i]));
             }
         }
+        fprintf(rule_files[k], "%s\n", rules);
+
+        safe_free(rules);
         safe_free(result);
         fclose(files[k]);
+        fclose(rule_files[k]);
         if ((paths[k] != dataset_value) && (paths[k] != testing_dataset)) {
             remove(paths[k]);
         }
