@@ -149,8 +149,6 @@ def __calculate_training_testing_actives(
                 correct, correct + incorrect, where=(correct + incorrect) != 0
             )
 
-        active_rules.append(np.zeros(total_kbs[i], int))
-
         active_rules.append(np.zeros(total_kbs[i] - start_from, int))
 
         for index, kb in enumerate(kb_result_directories[start_from : total_kbs[i]]):
