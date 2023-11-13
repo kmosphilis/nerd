@@ -44,7 +44,7 @@ size_t * const restrict total_not_recovered) {
     total_not_recovered_ = 0;
     unsigned int i, k;
     for (j = 0; j < total_observations; ++j) {
-        sensor_get_next_scene(sensor_to_evaluate, &observation, false, NULL);
+        sensor_get_next_scene(sensor_to_evaluate, &observation);
 
         total_hidden_ += observation->size;
         for (i = 0; i < observation->size; ++i) {
@@ -149,7 +149,7 @@ size_t * const restrict total_not_recovered) {
 
     for (i = 0; i < total_observations; ++i) {
         removed_literals = scene_constructor(true);
-        sensor_get_next_scene(sensor_to_evaluate, &observation, false, NULL);
+        sensor_get_next_scene(sensor_to_evaluate, &observation);
         const size_t observation_size = observation->size;
 
         possible_indices = (unsigned int *) malloc(observation_size * sizeof(int));
@@ -279,7 +279,7 @@ Scene *** const restrict inferences, char ** const save_inferring_rules) {
 
     unsigned int i, j;
     for (i = 0; i < _total_observations; ++i) {
-        sensor_get_next_scene(sensor_to_evaluate, &(_observations[i]), false, NULL);
+        sensor_get_next_scene(sensor_to_evaluate, &(_observations[i]));
         for (j = 0; j < labels->size; ++j) {
             if ((label_index = scene_literal_index(_observations[i], labels->literals[j]))
             > -1) {

@@ -434,7 +434,7 @@ int main(int argc, char *argv[]) {
         Scene *observation, *result;
 
         for (i = 0; i < total_observations; ++i) {
-            sensor_get_next_scene(sensor, &observation, false, NULL);
+            sensor_get_next_scene(sensor, &observation);
 
             scene_intersect(observation, labels, &result);
 
@@ -548,7 +548,7 @@ int main(int argc, char *argv[]) {
         for (instance = 0; instance < total_instances; ++instance) {
             printf("Iteration %zu of %zu, Instance %zu of %zu\n", iteration + 1, iterations,
             instance + 1, total_instances);
-            sensor_get_next_scene(training_dataset, &observation, false, NULL);
+            sensor_get_next_scene(training_dataset, &observation);
 
             nerd_train(nerd, observation, settings, labels, &nerd_time_taken, &prudens_time_taken);
             total_nerd_time_taken += nerd_time_taken;

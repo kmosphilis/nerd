@@ -139,14 +139,8 @@ size_t sensor_get_total_observations(const Sensor * const sensor) {
  *
  * @param sensor The Sensor to extract the next Scene. If NULL, nothing will happen.
  * @param output The Scene that will be extracted will be saved here. If NULL, nothing will happen.
- * @param partial_observation If > 0 is given, the output will contain a subset of the initial
- * observation literals with a cardinality, |output| = (1, output.size). If 0 is given, the output
- * will be the initial observation.
- * @param initial_observation If partial_observation is > 0, the initial observation will be saved
- * here. If NULL is given, it will not be saved.
  */
-void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output,
-const bool partial_observation, Scene ** const restrict initial_observation) {
+void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict output) {
     if (sensor && output) {
         if (sensor->environment) {
             int c = fgetc(sensor->environment);
@@ -215,47 +209,6 @@ end_literal_loop:
             }
 
             free(buffer);
-
-            if (partial_observation) {
-                if (initial_observation){
-                    scene_copy(initial_observation, *output);
-                }
-
-                pcg32_random_t *rng = global_rng;
-                if (!rng) {
-                    rng = (pcg32_random_t *) malloc(sizeof(pcg32_random_t));
-                    pcg32_srandom_r(rng, time(NULL), 0U);
-                }
-
-                size_t number_of_literals = (*output)->size -
-                (pcg32_random_r(rng) % (*output)->size);
-
-                if (number_of_literals == (*output)->size) {
-                    goto finish;
-                } else if (number_of_literals == 1) {
-                    scene_remove_literal(*output, pcg32_random_r(rng) % (*output)->size, NULL);
-                    goto finish;
-                }
-
-                unsigned int *random_literals = (unsigned int *) calloc(number_of_literals,
-                sizeof(int));
-                unsigned int i;
-                for (i = 0; i < number_of_literals; ++i) {
-                    random_literals[i] = i;
-                }
-
-                for (i = 0; i < number_of_literals; ++i) {
-                    int index = pcg32_random_r(rng) % number_of_literals--;
-                    scene_remove_literal(*output, random_literals[index], NULL);
-                    random_literals[index] = random_literals[number_of_literals];
-                }
-                free(random_literals);
-
-finish:
-                if (!global_rng) {
-                    free(rng);
-                }
-            }
         }
     }
 }
