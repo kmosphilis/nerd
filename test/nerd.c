@@ -7,10 +7,9 @@
 #include "../src/rule_queue.h"
 #include "helper/knowledge_base.h"
 
-#define DATASET "../data/test.txt"
 #define NUMBER_OF_ACTIVE 4
 #define NUMBER_OF_INACTIVE 3
-#define NUMBER_OF_ERROR_INPUTS 21
+#define NUMBER_OF_ERROR_INPUTS 14
 
 PrudensSettings_ptr settings = NULL;
 
@@ -73,23 +72,15 @@ START_TEST(construct_destruct_test) {
     rule_queue_destructor(&rule_queue2);
 
     Nerd *nerd =
-    nerd_constructor(DATASET, ' ', true, false, 10.0, 5, 3, 100, 50, 0.5, 1.5, true, true, false);
+    nerd_constructor(10.0, 5, 3, 100, 0.5, 1.5, true, true);
     ck_assert_ptr_nonnull(nerd);
     ck_assert_int_eq(nerd->max_rules_per_instance, 5);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
-    ck_assert_int_eq(nerd->epochs, 50);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.5, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.5, 0.000001);
     ck_assert_int_eq(nerd->increasing_demotion, true);
     ck_assert_float_eq(nerd->promotion_weight, 0.5);
-    ck_assert_int_eq(nerd->partial_observation, false);
-    ck_assert_ptr_nonnull(nerd->sensor->environment);
-    ck_assert_int_eq(nerd->sensor->delimiter, ' ');
-    ck_assert_int_eq(nerd->sensor->reuse, true);
-    ck_assert_str_eq(nerd->sensor->filepath, DATASET);
-    ck_assert_ptr_null(nerd->sensor->header);
-    ck_assert_int_eq(nerd->sensor->header_size, 0);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.0, 0.000001);
     ck_assert_knowledge_base_empty(nerd->knowledge_base);
 
@@ -105,36 +96,17 @@ START_TEST(construct_destruct_test) {
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor(DATASET, ' ', false, false, 10.0, 10, 3, 100, 50, 0.5, 1.5, true, false,
-    0);
+    nerd = nerd_constructor(10.0, 10, 3, 100, 0.5, 1.5, true, false);
     ck_assert_ptr_nonnull(nerd);
     ck_assert_int_eq(nerd->max_rules_per_instance, 10);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
-    ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.5, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.5, 0.000001);
     ck_assert_int_eq(nerd->increasing_demotion, false);
     ck_assert_float_eq(nerd->promotion_weight, 0.5);
-    ck_assert_int_eq(nerd->partial_observation, false);
-    ck_assert_ptr_nonnull(nerd->sensor->environment);
-    ck_assert_int_eq(nerd->sensor->delimiter, ' ');
-    ck_assert_int_eq(nerd->sensor->reuse, false);
-    ck_assert_str_eq(nerd->sensor->filepath, DATASET);
-    ck_assert_ptr_null(nerd->sensor->header);
-    ck_assert_int_eq(nerd->sensor->header_size, 0);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.0, 0.000001);
     ck_assert_knowledge_base_empty(nerd->knowledge_base);
-    nerd_destructor(&nerd);
-    ck_assert_ptr_null(nerd);
-
-    nerd = nerd_constructor(NULL, ' ', true, false, 10.0, 5, 3, 100, 50, 0.5, 1.5, true, true, 0);
-    ck_assert_ptr_null(nerd);
-
-    nerd = nerd_constructor("file-that-does-not-exist.txt", ',', true, false, 10.0, 50, 3, 100, 50,
-    0.5, 1.5, true, true, 0);
-    ck_assert_ptr_null(nerd);
-
     nerd_destructor(&nerd);
     ck_assert_ptr_null(nerd);
 
@@ -143,45 +115,29 @@ START_TEST(construct_destruct_test) {
 END_TEST
 
 START_TEST(construct_from_file) {
-    Nerd *nerd = nerd_constructor_from_file("../test/data/nerd_input1.txt", 2, true, true);
+    Nerd *nerd = nerd_constructor_from_file("../test/data/nerd_input1.txt", true);
     ck_assert_ptr_nonnull(nerd);
-    ck_assert_ptr_eq(nerd->max_rules_per_instance, 5);
+    ck_assert_int_eq(nerd->max_rules_per_instance, 5);
     ck_assert_int_eq(nerd->breadth, 2);
     ck_assert_int_eq(nerd->depth, 50);
-    ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.750000, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 2.250000, 0.000001);
     ck_assert_int_eq(nerd->increasing_demotion, true);
     ck_assert_float_eq(nerd->promotion_weight, 0.750000);
-    ck_assert_int_eq(nerd->partial_observation, 1);
-    ck_assert_ptr_nonnull(nerd->sensor->environment);
-    ck_assert_int_eq(nerd->sensor->delimiter, ' ');
-    ck_assert_int_eq(nerd->sensor->reuse, 0);
-    ck_assert_str_eq(nerd->sensor->filepath, "../data/test.txt");
-    ck_assert_ptr_nonnull(nerd->sensor->header);
-    ck_assert_int_ne(nerd->sensor->header_size, 0);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 6.000000, 0.000001);
     ck_assert_knowledge_base_empty(nerd->knowledge_base);
     nerd_destructor(&nerd);
 
-    nerd = nerd_constructor_from_file("../test/data/nerd_input2.txt", 1, true, true);
+    nerd = nerd_constructor_from_file("../test/data/nerd_input2.txt", true);
     ck_assert_ptr_nonnull(nerd);
     RuleQueue *inactives;
     rule_hypergraph_get_inactive_rules(nerd->knowledge_base, &inactives);
     ck_assert_int_eq(nerd->max_rules_per_instance, 1);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
-    ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.500000, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.500000, 0.000001);
     ck_assert_int_eq(nerd->increasing_demotion, 0);
-    ck_assert_int_eq(nerd->partial_observation, 0);
-    ck_assert_ptr_nonnull(nerd->sensor->environment);
-    ck_assert_int_eq(nerd->sensor->delimiter, ',');
-    ck_assert_int_eq(nerd->sensor->reuse, 1);
-    ck_assert_str_eq(nerd->sensor->filepath, "../data/test.txt");
-    ck_assert_ptr_null(nerd->sensor->header);
-    ck_assert_int_eq(nerd->sensor->header_size, 0);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.000000, 0.000001);
     ck_assert_knowledge_base_notempty(nerd->knowledge_base);
     ck_assert_int_eq(nerd->knowledge_base->active->length, NUMBER_OF_ACTIVE);
@@ -207,16 +163,13 @@ START_TEST(construct_from_file) {
     rule_queue_destructor(&inactives);
     nerd_destructor(&nerd);
 
-    nerd = nerd_constructor_from_file("../test/data/nerd_input2.txt", 1, true, false);
+    nerd = nerd_constructor_from_file("../test/data/nerd_input2.txt", true);
     ck_assert_ptr_nonnull(nerd);
     rule_hypergraph_get_inactive_rules(nerd->knowledge_base, &inactives);
     ck_assert_int_eq(nerd->breadth, 3);
     ck_assert_int_eq(nerd->depth, 100);
-    ck_assert_int_eq(nerd->epochs, 1);
     ck_assert_float_eq_tol(nerd->promotion_weight, 0.500000, 0.000001);
     ck_assert_float_eq_tol(nerd->demotion_weight, 1.500000, 0.000001);
-    ck_assert_int_eq(nerd->partial_observation, 0);
-    ck_assert_ptr_null(nerd->sensor);
     ck_assert_float_eq_tol(nerd->knowledge_base->activation_threshold, 10.000000, 0.000001);
     ck_assert_knowledge_base_notempty(nerd->knowledge_base);
     ck_assert_int_eq(nerd->knowledge_base->active->length, NUMBER_OF_ACTIVE);
@@ -239,30 +192,51 @@ START_TEST(construct_from_file) {
     for (i = 0; i < NUMBER_OF_ERROR_INPUTS; ++i) {
         char file[BUFFER_SIZE];
         sprintf(file, "../test/data/nerd_input_error%u.txt", i + 1);
-        nerd = nerd_constructor_from_file(file, 1, true, true);
+        nerd = nerd_constructor_from_file(file, true);
         ck_assert_ptr_null(nerd);
     }
 
-    nerd = nerd_constructor_from_file(NULL, 1, true, true);
+    nerd = nerd_constructor_from_file(NULL, true);
     ck_assert_ptr_null(nerd);
 
-    nerd = nerd_constructor_from_file("../file-that-does-not-exist.txt", 1, true, true);
+    nerd = nerd_constructor_from_file("../file-that-does-not-exist.txt", true);
     ck_assert_ptr_null(nerd);
 }
 END_TEST
 
 START_TEST(to_file_test) {
-    Nerd *nerd = nerd_constructor(DATASET, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true,
-    true, 1);
+    Nerd *nerd = nerd_constructor(15.0, 5, 3, 50, 1.5, 4.5, true, true);
 
     nerd_to_file(nerd, "../bin/nerd_output1.txt");
     ck_assert_int_eq(compare_files("../bin/nerd_output1.txt",
     "../test/data/nerd_expected_output.txt"), 0);
 
-    nerd_start_learning(nerd, settings, NULL, NULL, NULL);
+    Literal *l1 = literal_constructor_from_string("penuin"),
+    *l2 = literal_constructor_from_string("-fly"), *l3 = literal_constructor_from_string("bird");
+    Scene *observation = scene_constructor(true);
+    scene_add_literal(observation, &l1);
+    scene_add_literal(observation, &l2);
+
+    size_t nerd_time_taken = 0, ie_time_taken = 0;
+
+    nerd_train(nerd, observation, settings, NULL, NULL, NULL);
     nerd_to_file(nerd, "../bin/nerd_output2.txt");
+    ck_assert_int_eq(nerd_time_taken, 0);
+    ck_assert_int_eq(ie_time_taken, 0);
     ck_assert_int_eq(compare_files("../bin/nerd_output2.txt",
     "../test/data/nerd_expected_output.txt"), -1);
+
+    scene_add_literal(observation, &l3);
+    char *previous = knowledge_base_to_string(nerd->knowledge_base);
+    nerd_train(nerd, observation, settings, NULL, &nerd_time_taken, &ie_time_taken);
+    char *current = knowledge_base_to_string(nerd->knowledge_base);
+    ck_assert_str_ne(previous, current);
+    free(current);
+    free(previous);
+    ck_assert_int_ge(nerd_time_taken, 0);
+    ck_assert_int_gt(ie_time_taken, 0);
+
+    scene_destructor(&observation);
 
     nerd_to_file(nerd, NULL);
 

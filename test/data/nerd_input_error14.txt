@@ -3,11 +3,8 @@ breadth: 3
 depth: 100
 promotion_weight: 0.500000
 demotion_weight: 1.500000 1
-partial_observation: 0
-sensor: ../data/test.txt 1 0
 knowledge_base:
   activation_threshold: 10.000000
-  rules:
     (penguin) => -fly (21.1234),
     (bird, chicken) => -fly (16.0000),
     (bird) => fly (15.0055),

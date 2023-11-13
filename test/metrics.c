@@ -13,7 +13,7 @@ PrudensSettings_ptr settings = NULL;
 
 START_TEST(all_literals_evaluation_test) {
     Nerd *nerd =
-    nerd_constructor(DATASET1, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true, true, true);
+    nerd_constructor(15.0, 5, 3, 50, 1.5, 4.5, true, true);
     Literal *l1 = literal_constructor("penguin", true), *l2 = literal_constructor("fly", false),
     *l3 = literal_constructor("bird", true);
     Rule *r1 = rule_constructor(1, &l1, &l2, 15.0, false),
@@ -30,8 +30,10 @@ START_TEST(all_literals_evaluation_test) {
     }
     fclose(file);
 
+    Sensor *sensor = sensor_constructor_from_file(DATASET1, ' ', true, false);
+
     size_t total_hidden, total_recovered, total_incorrectly_recovered, total_not_recovered;
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, DATASET1, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_ne(total_hidden, 0);
     ck_assert_int_eq(total_hidden, total_read_attributes);
@@ -41,7 +43,7 @@ START_TEST(all_literals_evaluation_test) {
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, DATASET1, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_eq(total_hidden, total_read_attributes);
     ck_assert_int_gt(total_recovered, 0);
@@ -49,31 +51,33 @@ START_TEST(all_literals_evaluation_test) {
     ck_assert_int_lt(total_not_recovered, total_hidden);
 
     size_t old_hidden = total_hidden, old_recovered = total_recovered;
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, DATASET1, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
     &total_recovered, NULL, NULL), 0);
     ck_assert_int_eq(old_hidden, total_hidden);
     ck_assert_int_eq(old_recovered, total_recovered);
 
-    ck_assert_int_eq(evaluate_all_literals(NULL, settings, DATASET1, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(NULL, settings, sensor, &total_hidden,
     &total_recovered, NULL, NULL), -1);
     ck_assert_int_eq(evaluate_all_literals(nerd, settings, NULL, &total_hidden, &total_recovered,
     NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, "path-does-not-exist", &total_hidden,
-    &total_recovered, NULL, NULL), -2);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, DATASET1, NULL, &total_recovered, NULL,
+    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, NULL, &total_recovered, NULL,
     NULL), -1);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, DATASET1, &total_hidden, NULL, NULL,
+    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden, NULL, NULL,
     NULL), -1);
 
+    sensor_destructor(&sensor);
+    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
+    &total_recovered, NULL, NULL), -1);
+
     nerd_destructor(&nerd);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, DATASET1, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
     &total_recovered, NULL, NULL), -1);
 }
 END_TEST
 
 START_TEST(random_literals_evaluation_test) {
     Nerd *nerd =
-    nerd_constructor(DATASET1, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true, true, true);
+    nerd_constructor(15.0, 5, 3, 50, 1.5, 4.5, true, true);
     Literal *l1 = literal_constructor("class_bird", true),
     *l2 = literal_constructor("flies?_yes", true), *l3 = literal_constructor("class_mammal", true),
     *l4 = literal_constructor("flies?_no", true);
@@ -81,8 +85,10 @@ START_TEST(random_literals_evaluation_test) {
     *r2 = rule_constructor(1, &l3, &l4, 15, false);
     const float ratio = 0.5;
 
+    Sensor *sensor = sensor_constructor_from_file(DATASET2, ',', true, true);
+
     size_t total_hidden, total_recovered, total_incorrectly_recovered, total_not_recovered;
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_ne(total_hidden, 0);
     ck_assert_int_eq(total_recovered, 0);
@@ -91,46 +97,48 @@ START_TEST(random_literals_evaluation_test) {
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_ne(total_hidden, 0);
     ck_assert_int_ge(total_recovered, 0);
     ck_assert_int_ge(total_incorrectly_recovered, 0);
     ck_assert_int_le(total_not_recovered, total_hidden);
 
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, NULL), 0);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
     &total_recovered, NULL, &total_not_recovered), 0);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
     &total_recovered, NULL, NULL), 0);
 
-    ck_assert_int_eq(evaluate_random_literals(NULL, settings, DATASET2, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(NULL, settings, sensor, ratio, &total_hidden,
     &total_recovered, NULL, NULL), -1);
     ck_assert_int_eq(evaluate_random_literals(nerd, settings, NULL, ratio, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, "path-does-not-exit", ratio,
-    &total_hidden, &total_recovered, NULL, NULL), -2);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, 0, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, 0, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, 1.01, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, 1.01, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, -0.01, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, -0.01, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, NULL,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, NULL,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, &total_hidden, NULL,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden, NULL,
     NULL, NULL), -1);
 
+    sensor_destructor(&sensor);
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio,
+    &total_hidden, &total_recovered, NULL, NULL), -1);
+
     nerd_destructor(&nerd);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, DATASET2, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
     &total_recovered, NULL, NULL), -1);
 }
 END_TEST
 
 START_TEST(one_specific_literal_evaluation_test) {
     Nerd *nerd =
-    nerd_constructor(DATASET1, ' ', true, false, 15.0, 5, 3, 50, 1, 1.5, 4.5, true, true, true);
+    nerd_constructor(5.0, 5, 3, 50, 1.5, 4.5, true, true);
     Literal *l1 = literal_constructor("animal_bat", true),
     *l2 = literal_constructor("flies?_yes", true), *l3 = literal_constructor("animal_human", true),
     *l4 = literal_constructor("flies?_no", true);
@@ -139,41 +147,40 @@ START_TEST(one_specific_literal_evaluation_test) {
     Context *literals_to_evaluate = context_constructor(false);
     context_add_literal(literals_to_evaluate, &l2);
 
-    const char delimiter = ',';
-    const bool has_header = true;
+    Sensor *sensor = sensor_constructor_from_file(DATASET2, ',', true, true);
 
     float accuracy, abstain_ratio;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    &abstain_ratio, NULL, NULL, NULL, NULL), 1);
 
     context_add_literal(literals_to_evaluate, &l4);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    &abstain_ratio, NULL, NULL, NULL, NULL), 0);
     ck_assert_float_eq(accuracy, 0);
     ck_assert_float_eq(abstain_ratio, 1);
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    &abstain_ratio, NULL, NULL, NULL, NULL), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
 
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, NULL, NULL, NULL, NULL), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy, NULL,
+    NULL, NULL, NULL, NULL), 0);
     accuracy = 0;
     abstain_ratio = 0;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate,  delimiter,
-    has_header, &accuracy, &abstain_ratio, NULL, NULL, NULL), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    &abstain_ratio, NULL, NULL, NULL, NULL), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, NULL, NULL, NULL, NULL, NULL), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL, NULL,
+    NULL, NULL, NULL), 0);
 
     size_t total_observations;
     Scene **inferences = NULL;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, NULL, NULL, &total_observations, NULL, &inferences), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL,
+    &total_observations, NULL, &inferences, NULL), 0);
     ck_assert_int_ne(total_observations, 0);
     ck_assert_ptr_nonnull(inferences);
     unsigned int i;
@@ -185,24 +192,27 @@ START_TEST(one_specific_literal_evaluation_test) {
 
     const size_t old_observations = total_observations;
     total_observations = 0;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, NULL, NULL, NULL, NULL, &inferences), -2);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL, NULL,
+    NULL, &inferences, NULL), -2);
 
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, NULL, NULL, &total_observations, NULL, NULL), 0);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL,
+    &total_observations, NULL, NULL, NULL), 0);
     ck_assert_int_eq(old_observations, total_observations);
 
-    ck_assert_int_eq(evaluate_labels(NULL, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, &accuracy, NULL, NULL, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, NULL, literals_to_evaluate, delimiter,
-    has_header, &accuracy, NULL, NULL, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, NULL, delimiter, has_header,
-    &accuracy, NULL, NULL, NULL, NULL), -1);
+    ck_assert_int_eq(evaluate_labels(NULL, settings, sensor, literals_to_evaluate, &accuracy, NULL,
+    NULL, NULL, NULL, NULL), -1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, NULL, literals_to_evaluate, &accuracy, NULL,
+    NULL, NULL, NULL, NULL), -1);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, NULL, &accuracy, NULL, NULL, NULL,
+    NULL, NULL), -1);
+
+    sensor_destructor(&sensor);
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    &abstain_ratio, NULL, NULL, NULL, NULL), -1);
 
     nerd_destructor(&nerd);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, DATASET2, literals_to_evaluate, delimiter,
-    has_header, &accuracy, NULL, NULL, NULL, NULL), -1);
-
+    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy, NULL,
+    NULL, NULL, NULL, NULL), -1);
 
     context_destructor(&literals_to_evaluate);
 }

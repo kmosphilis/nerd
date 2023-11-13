@@ -3,9 +3,6 @@ breadth: 3
 depth: 100
 promotion_weight: 0.500000
 demotion_weight: 1.500000 1
-partial_observation: 0
-sensor: ../data/test.txt ',' 1
-knowledge_base:
   activation_threshold: 10.000000
   rules:
     (penguin) => -fly (21.1234),

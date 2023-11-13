@@ -13,7 +13,7 @@
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
- * @param scene The scene to evaluate the learnt KnowledgeBase with.
+ * @param sensor_to_evaluate The Sensor * containing the evaluation samples.
  * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
  * has hidden.
  * @param total_recovered A size_t pointer to save the total number of correctly recovered hidden
@@ -24,24 +24,17 @@
  * not recovered. If NULL, the number will be discarded.
  *
  * @return 0 if the function was executed successfully, -1 if one of the given parameters was NULL,
- * -2 if a non existant path was given to file_to_evaluate, or -3 if an error has occurred.
+ * -2 if a non existant path was given to sensor_to_evaluate, or -3 if an error has occurred.
 */
 int evaluate_all_literals(const Nerd * const nerd, const PrudensSettings_ptr settings,
-const char * const file_to_evaluate, size_t * const restrict total_hidden,
+const Sensor * const sensor_to_evaluate, size_t * const restrict total_hidden,
 size_t * const restrict total_recovered, size_t * const restrict total_incorrectly_recovered,
 size_t * const restrict total_not_recovered) {
-    if (!(nerd && settings && file_to_evaluate && total_hidden && total_recovered)) {
+    if (!(nerd && settings && sensor_to_evaluate && total_hidden && total_recovered)) {
         return -1;
     }
 
-    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
-    nerd->sensor->delimiter, false, nerd->sensor->header != NULL);
-
-    if (!evaluation_sensor) {
-        return -2;
-    }
-
-    const size_t total_observations = sensor_get_total_observations(evaluation_sensor);
+    const size_t total_observations = sensor_get_total_observations(sensor_to_evaluate);
 
     Literal *removed_literal;
     Scene *observation, *inference;
@@ -51,7 +44,7 @@ size_t * const restrict total_not_recovered) {
     total_not_recovered_ = 0;
     unsigned int i, k;
     for (j = 0; j < total_observations; ++j) {
-        sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
+        sensor_get_next_scene(sensor_to_evaluate, &observation, false, NULL);
 
         total_hidden_ += observation->size;
         for (i = 0; i < observation->size; ++i) {
@@ -59,7 +52,7 @@ size_t * const restrict total_not_recovered) {
 
             prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
 
-            if (evaluation_sensor->header) {
+            if (sensor_to_evaluate->header) {
                 expected_header = (char *) malloc((strstr(removed_literal->atom, "_")
                 - removed_literal->atom + 2) * sizeof(char));
             }
@@ -77,7 +70,6 @@ size_t * const restrict total_not_recovered) {
                         }
                         break;
                     default:
-                        sensor_destructor(&evaluation_sensor);
                         scene_destructor(&observation);
                         scene_destructor(&inference);
                         safe_free(expected_header);
@@ -105,8 +97,6 @@ finished:
         *total_not_recovered = total_not_recovered_;
     }
 
-    sensor_destructor(&evaluation_sensor);
-
     return 0;
 }
 
@@ -116,7 +106,7 @@ finished:
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
- * @param file_to_evaluate The filepath containing the evaluation samples.
+ * @param sensor_to_evaluate The Sensor * containing the evaluation samples.
  * @param ratio A float variable which indicates the ratio of the Literals to be hidden.
  * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
  * has hidden.
@@ -129,26 +119,19 @@ finished:
  *
  * @return 0 if the function was executed successfully, -1 if one of the given parameters was NULL
  * or the ratio was not in the range (0, 1), or -2 if a non existant path was given to
- * file_to_evaluate.
+ * sensor_to_evaluate.
 */
 int evaluate_random_literals(const Nerd * const nerd, const PrudensSettings_ptr settings,
-const char * const file_to_evaluate, const float ratio, size_t * const restrict total_hidden,
+const Sensor * const sensor_to_evaluate, const float ratio, size_t * const restrict total_hidden,
 size_t * const restrict total_recovered, size_t * const restrict total_incorrectly_recovered,
 size_t * const restrict total_not_recovered) {
-    if (!(nerd && file_to_evaluate && settings && total_hidden && total_recovered
+    if (!(nerd && sensor_to_evaluate && settings && total_hidden && total_recovered
     && (ratio > 0) && (ratio < 1)
     )) {
         return -1;
     }
 
-    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate,
-    nerd->sensor->delimiter, false, nerd->sensor->header != NULL);
-
-    if (!evaluation_sensor) {
-        return -2;
-    }
-
-    const size_t total_observations = sensor_get_total_observations(evaluation_sensor);
+    const size_t total_observations = sensor_get_total_observations(sensor_to_evaluate);
 
     Literal *removed_literal = NULL;
     Scene *removed_literals = NULL, *observation = NULL, *inference = NULL;
@@ -166,7 +149,7 @@ size_t * const restrict total_not_recovered) {
 
     for (i = 0; i < total_observations; ++i) {
         removed_literals = scene_constructor(true);
-        sensor_get_next_scene(evaluation_sensor, &observation, false, NULL);
+        sensor_get_next_scene(sensor_to_evaluate, &observation, false, NULL);
         const size_t observation_size = observation->size;
 
         possible_indices = (unsigned int *) malloc(observation_size * sizeof(int));
@@ -191,7 +174,7 @@ size_t * const restrict total_not_recovered) {
         for (j = 0; j < removed_literals->size; ++j) {
             removed_literal = removed_literals->literals[j];
             size_t header_size = 0;
-            if (evaluation_sensor->header) {
+            if (sensor_to_evaluate->header) {
                 header_size = strchr(removed_literal->atom, '_') - removed_literal->atom + 2;
                 expected_header = (char *) malloc(header_size * sizeof(char));
                 strncpy(expected_header, removed_literal->atom, header_size - 1);
@@ -205,7 +188,7 @@ size_t * const restrict total_not_recovered) {
                     goto next_literal;
                 } else if (equals_result == 0) {
                     if ((literal_opposed(removed_literal, inference->literals[k]) == 1) ||
-                    (evaluation_sensor->header &&
+                    (sensor_to_evaluate->header &&
                     (strstr(inference->literals[k]->atom, expected_header) && !removed_literal->sign))) {
                         ++total_incorrectly_recovered_;
                         goto next_literal;
@@ -237,8 +220,6 @@ next_literal:
         *total_not_recovered = total_not_recovered_;
     }
 
-    sensor_destructor(&evaluation_sensor);
-
     return 0;
 }
 
@@ -250,7 +231,7 @@ next_literal:
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
  * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
- * @param file_to_evaluate The filepath containing the evaluation samples.
+ * @param sensor_to_evaluate The Sensor * containing the evaluation samples.
  * @param labels The Context containing all the Literals that act a labels.
  * @param accuracy A pointer to a float variable to save the overall accuracy of the KnowledgeBase
  * over the given samples. If NULL is given, it will not be saved.
@@ -272,11 +253,11 @@ next_literal:
  * either observations or inferences were given.
 */
 int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
-const char * const file_to_evaluate, const Context * const labels, const char delimiter,
-const bool has_header, float * const restrict accuracy, float * const restrict abstain_ratio,
+const Sensor * const sensor_to_evaluate, const Context * const labels,
+float * const restrict accuracy, float * const restrict abstain_ratio,
 size_t * const total_observations, Scene *** const restrict observations,
 Scene *** const restrict inferences, char ** const save_inferring_rules) {
-    if (!(nerd && settings && file_to_evaluate && labels)) {
+    if (!(nerd && settings && sensor_to_evaluate && labels)) {
         return -1;
     }
 
@@ -284,14 +265,7 @@ Scene *** const restrict inferences, char ** const save_inferring_rules) {
         return -2;
     }
 
-    Sensor *evaluation_sensor = sensor_constructor_from_file(file_to_evaluate, delimiter, false,
-    has_header);
-
-    if (!evaluation_sensor) {
-        return -2;
-    }
-
-    const size_t _total_observations = sensor_get_total_observations(evaluation_sensor);
+    const size_t _total_observations = sensor_get_total_observations(sensor_to_evaluate);
 
     if (total_observations) {
         *total_observations = _total_observations;
@@ -305,7 +279,7 @@ Scene *** const restrict inferences, char ** const save_inferring_rules) {
 
     unsigned int i, j;
     for (i = 0; i < _total_observations; ++i) {
-        sensor_get_next_scene(evaluation_sensor, &(_observations[i]), false, NULL);
+        sensor_get_next_scene(sensor_to_evaluate, &(_observations[i]), false, NULL);
         for (j = 0; j < labels->size; ++j) {
             if ((label_index = scene_literal_index(_observations[i], labels->literals[j]))
             > -1) {
@@ -322,7 +296,6 @@ Scene *** const restrict inferences, char ** const save_inferring_rules) {
             }
             free(_observations);
             free(evaluation_literal_indices);
-            sensor_destructor(&evaluation_sensor);
             return i + 1;
         }
     }
@@ -384,7 +357,6 @@ Scene *** const restrict inferences, char ** const save_inferring_rules) {
     }
 
     free(evaluation_literal_indices);
-    sensor_destructor(&evaluation_sensor);
 
     return 0;
 }

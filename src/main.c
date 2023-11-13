@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     Context *labels = NULL;
     bool h_set = false, b_set = false;
     bool has_header = false, use_back_chaining = true, partial_observation = true,
-    should_evaluate = false, s1_set = false, s2_set = false, increasing_demotion = false,
+    s1_set = false, s2_set = false, increasing_demotion = false,
     entire = false;
     char opt, delimiter = ' ';
     FILE *dataset = NULL;
@@ -276,18 +276,6 @@ int main(int argc, char *argv[]) {
                             return close_dataset_and_exit(dataset);
                         }
                         break;
-                    // case 'v':
-                    //     current_arg = argv[++i];
-                    //     if (strcmp(current_arg, "true") == 0) {
-                    //         should_evaluate = true;
-                    //     } else if (strcmp(current_arg, "false") == 0) {
-                    //         should_evaluate = false;
-                    //     } else {
-                    //         printf("'-v' has a wrong value '%s'. It must be a boolean value, 'true'"
-                    //         " or 'false'\n", current_arg);
-                    //         return close_dataset_and_exit(dataset);
-                    //     }
-                    //     break;
                     default:
                         printf("Option '-%c' is not available.\n", opt);
                         return close_dataset_and_exit(dataset);
@@ -321,7 +309,7 @@ int main(int argc, char *argv[]) {
 
     Nerd *given_nerd = NULL;
     if (kb) {
-        given_nerd = nerd_constructor_from_file(kb, iterations, use_back_chaining, false);
+        given_nerd = nerd_constructor_from_file(kb, use_back_chaining);
         if (!given_nerd) {
             printf("%s has a bad format.\n", kb);
             return close_dataset_and_exit(dataset);
@@ -527,11 +515,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Nerd *nerd =
-    // if (!nerd) {
-    Nerd *nerd = nerd_constructor(train_path, delimiter, true, has_header, threshold,
-    max_rules_per_instance, breadth, 1, iterations, promotion, demotion, use_back_chaining,
-    increasing_demotion, partial_observation);
+    Sensor *training_dataset = sensor_constructor_from_file(train_path, delimiter, true,
+    has_header);
+
+    Nerd *nerd = nerd_constructor(threshold, max_rules_per_instance, breadth, 1, promotion,
+    demotion, use_back_chaining, increasing_demotion);
+
 
     if (given_nerd) {
         knowledge_base_destructor(&(nerd->knowledge_base));
@@ -539,15 +528,72 @@ int main(int argc, char *argv[]) {
         nerd_destructor(&given_nerd);
     }
 
-    nerd_constructor_from_file("", iterations, false, false);
-
-
     PrudensSettings_ptr settings = NULL;
     prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
     current_arg);
 
-    nerd_start_learning(nerd, settings, test_directory, NULL, labels);
+    size_t total_instances = sensor_get_total_observations(training_dataset);
+    const size_t iterations_str_size = snprintf(NULL, 0, "%zu", iterations);
+    const size_t instances_str_size = snprintf(NULL, 0, "%zu", total_instances);
+    char *nerd_at_instance_filename = NULL;
 
+    Scene *observation = NULL;
+
+    size_t iteration, instance, total_nerd_time_taken = 0, total_prudens_time_taken = 0,
+    current_iteration_nerd_time, current_iteration_prudens_time, nerd_time_taken = 0,
+    prudens_time_taken = 0;
+    for (iteration = 0; iteration < iterations; ++iteration) {
+        current_iteration_nerd_time = 0;
+        current_iteration_prudens_time = 0;
+        for (instance = 0; instance < total_instances; ++instance) {
+            printf("Iteration %zu of %zu, Instance %zu of %zu\n", iteration + 1, iterations,
+            instance + 1, total_instances);
+            sensor_get_next_scene(training_dataset, &observation, false, NULL);
+
+            nerd_train(nerd, observation, settings, labels, &nerd_time_taken, &prudens_time_taken);
+            total_nerd_time_taken += nerd_time_taken;
+            current_iteration_nerd_time += nerd_time_taken;
+            total_prudens_time_taken += prudens_time_taken;
+            current_iteration_prudens_time += prudens_time_taken;
+
+            scene_destructor(&observation);
+            if (test_directory) {
+                size_t current_allocated = 0;
+                unsigned int z;
+
+                nerd_at_instance_filename = (char *) calloc((snprintf(NULL, 0,
+                "%siteration_%zu-instance_%zu.nd", test_directory, iterations, total_instances)
+                + 1), sizeof(char));
+                sprintf(nerd_at_instance_filename, "%siteration_", test_directory);
+                current_allocated = strlen(nerd_at_instance_filename);
+                for (z = 0; z < (iterations_str_size - snprintf(NULL, 0, "%zu", iteration + 1));
+                ++z) {
+                    sprintf(nerd_at_instance_filename + (current_allocated++), "0");
+                }
+                sprintf(nerd_at_instance_filename + current_allocated, "%zu-instance_", iteration + 1);
+                current_allocated = strlen(nerd_at_instance_filename);
+                for (z = 0; z < (instances_str_size - snprintf(NULL, 0, "%zu", instance + 1));
+                ++z) {
+                    sprintf(nerd_at_instance_filename + (current_allocated++), "0");
+                }
+                sprintf(nerd_at_instance_filename + current_allocated, "%zu.nd", instance + 1);
+
+
+                nerd_to_file(nerd, nerd_at_instance_filename);
+                safe_free(nerd_at_instance_filename);
+            }
+        }
+        printf("\nTime nerd took for iteration %zu: %zu ms\n", iteration + 1,
+        current_iteration_nerd_time);
+        printf("Time prudens took for iteration %zu: %zu ms\n\n", iteration + 1,
+        current_iteration_prudens_time);
+    }
+
+    printf("\nTime spend on nerd: %zu ms\n", total_nerd_time_taken);
+    printf("Time spent on prudens: %zu ms\n", total_prudens_time_taken);
+    printf("Total time: %zu ms\n\n", total_nerd_time_taken + total_prudens_time_taken);
+
+    sensor_destructor(&training_dataset);
     nerd_destructor(&nerd);
     prudensjs_settings_destructor(&settings);
 failed:
