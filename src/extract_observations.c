@@ -19,7 +19,7 @@
 #define TESTING_FILE "testing-dataset.txt"
 
 int main(int argc, char *argv[]) {
-    if ((argc < 2) || (argc > 3)) {
+    if ((argc != 2) && (argc != 4)) {
         printf("Nerd info filepath is required, and optionally a testing dataset and if it has"
         "a header (boolean).\n");
     }

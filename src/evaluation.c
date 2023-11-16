@@ -20,7 +20,7 @@
 #define TEST ".test_set"
 
 int main(int argc, char *argv[]) {
-    if ((argc < 4) || (argc > 5)) {
+    if ((argc != 4) && (argc != 6)) {
         printf("Nerd info filepath, nerd file (.nd) and labels file required, and optionally a"
         "testing datset and if it has a header (boolean).\n");
         return EXIT_FAILURE;
