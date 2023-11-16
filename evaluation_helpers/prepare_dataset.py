@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-SEED = [0, 42, 314, 271, 3141592]
+SEEDS = [0, 42, 314, 271, 3141592]
 
 
 def partial_observation(rng: np.random.Generator, data: pd.DataFrame) -> pd.DataFrame:
@@ -16,7 +16,7 @@ def partial_observation(rng: np.random.Generator, data: pd.DataFrame) -> pd.Data
                 rng.integers(0, len(data.values[i]), size=literals_to_hide)
             )
             for j in literals_to_remove[::-1]:
-                data.iloc[i][j] = ""
+                data.iloc[i].iloc[j] = ""
 
     return data
 
@@ -25,7 +25,7 @@ def main(dataset: Path, label: str):
     data = pd.read_csv(dataset)
     assert label in data.columns
 
-    for index, current_seed in enumerate(SEED):
+    for index, current_seed in enumerate(SEEDS):
         rng = np.random.default_rng(seed=np.random.PCG64(current_seed))
 
         train, test = train_test_split(

@@ -1,14 +1,11 @@
-import sys
-import os
-from pathlib import Path
 import multiprocessing as mp
+import os
+import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-
 from create_results_plot import calculate_training_testing_actives
 
 

@@ -1,10 +1,10 @@
-import sys
-import re
 import math
+import re
+import sys
 from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_rule_journey(directory: Path, nerd_file: Path, rules_to_examine: int | range):

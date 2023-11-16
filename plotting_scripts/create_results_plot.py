@@ -1,10 +1,10 @@
-import sys
 import re
 import subprocess
+import sys
 from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def calculate_correct_abstained_incorrect(
