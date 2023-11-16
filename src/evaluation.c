@@ -22,7 +22,7 @@
 int main(int argc, char *argv[]) {
     if ((argc < 4) || (argc > 5)) {
         printf("Nerd info filepath, nerd file (.nd) and labels file required, and optionally a"
-        "testing datset.\n");
+        "testing datset and if it has a header (boolean).\n");
         return EXIT_FAILURE;
     }
 
@@ -31,16 +31,25 @@ int main(int argc, char *argv[]) {
         printf("Info file does not exist. Please provide a valid path.\n");
         return EXIT_FAILURE;
     }
-    char *testing_dataset = NULL;
-    if (argc == 5) {
-        testing_dataset = strdup(argv[4]);
-        FILE *test = fopen(testing_dataset, "r");
+    char *testing_dataset_path = NULL, testing_delimiter = ' ';
+    bool testing_has_header = false;
+    if (argc == 6) {
+        testing_dataset_path = strdup(argv[4]);
+        FILE *test = fopen(testing_dataset_path, "r");
         if (!test) {
-            printf("Testing dataset %s is not valid.\n", testing_dataset);
+            printf("Testing dataset %s is not valid.\n", testing_dataset_path);
             fclose(info_file);
             return EXIT_FAILURE;
         }
         fclose(test);
+
+        if (strstr(testing_dataset_path, ".csv")) {
+            testing_delimiter = ',';
+        }
+
+        if (strcmp(argv[5], "true") == 0) {
+            testing_has_header = true;
+        }
     }
 
     int c;
@@ -50,8 +59,8 @@ int main(int argc, char *argv[]) {
 
     FILE *dataset = NULL;
     size_t state_seed, seq_seed;
-    char delimiter= ' ';
-    bool use_back_chaining = true, has_header = false, entire = false;
+    char training_delimiter= ' ';
+    bool use_back_chaining = true, training_has_header = false, entire = false;
     char *constraints_file = NULL, *dataset_value = NULL;
     float testing_ratio = 0.2;
 
@@ -71,12 +80,12 @@ int main(int argc, char *argv[]) {
                         }
                         dataset_value = strdup(true_value);
                         if (strstr(true_value, ".csv")) {
-                            delimiter = ',';
+                            training_delimiter = ',';
                         }
                         break;
                     case 'h':
                         if (strcmp(true_value, "true") == 0) {
-                            has_header = true;
+                            training_has_header = true;
                         }
                         break;
                     case 'i':
@@ -141,7 +150,7 @@ failed:
                 }
                 free(value_buffer);
                 fclose(info_file);
-                free(testing_dataset);
+                free(testing_dataset_path);
                 free(dataset_value);
                 i = 0;
                 return EXIT_FAILURE;
@@ -163,7 +172,7 @@ failed:
     Nerd *nerd = NULL;
     unsigned int iteration_number, instance_number;
     if (strstr(argv[2], ".nd")) {
-        nerd = nerd_constructor_from_file(argv[2], 0, use_back_chaining, false);
+        nerd = nerd_constructor_from_file(argv[2], use_back_chaining);
         if (!(nerd && (sscanf(strstr(argv[2], "iteration_"), "iteration_%u-instance_%u.nd",
         &iteration_number, &instance_number) == 2))) {
             nerd_destructor(&nerd);
@@ -234,24 +243,26 @@ failed:
     char *train_path = NULL, *test_path = NULL;
     if (entire) {
         train_path = dataset_value;
-        test_path = testing_dataset;
+        test_path = testing_dataset_path;
     } else {
         train_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TRAIN,
         iteration_number) + 1, sizeof(char));
         sprintf(train_path, "%s%s%u", result_directory, TRAIN, iteration_number);
 
-        if (testing_dataset) {
-            test_path = testing_dataset;
+        if (testing_dataset_path) {
+            test_path = testing_dataset_path;
 
-            train_test_split(dataset, has_header, testing_ratio, &seed, train_path, NULL, NULL,
+            train_test_split(dataset, training_has_header, testing_ratio, &seed, train_path, NULL, NULL,
             NULL);
         } else {
             test_path = (char *) calloc(snprintf(NULL, 0, "%s%s%u", result_directory, TEST,
             iteration_number) + 1, sizeof(char));
             sprintf(test_path, "%s%s%u", result_directory, TEST, iteration_number);
 
-            train_test_split(dataset, has_header, testing_ratio, &seed, train_path, test_path, NULL,
+            train_test_split(dataset, training_has_header, testing_ratio, &seed, train_path, test_path, NULL,
             NULL);
+            testing_delimiter = training_delimiter;
+            testing_has_header = training_has_header;
         }
 
         free(dataset_value);
@@ -303,14 +314,18 @@ failed:
     Scene **result = NULL;
     char *str;
     unsigned int j, k;
+    Sensor *training_dataset = sensor_constructor_from_file(train_path, training_delimiter, false,
+    training_has_header),
+    *testing_dataset = sensor_constructor_from_file(test_path, testing_delimiter, false,
+    testing_has_header), *datasets[2] = {training_dataset, testing_dataset};
     char *paths[2] = {train_path, test_path};
     FILE *files[2] = {train_results, test_results};
     FILE *rule_files[2] = {train_rules, test_rules};
 
     char *rules = NULL;
     for (k = 0; k < 2; ++k) {
-        if (evaluate_labels(nerd, settings, paths[k], labels, delimiter, has_header, NULL, NULL,
-        &total_observations, NULL, &result, &rules) == 0) {
+        if (evaluate_labels(nerd, settings, datasets[k], labels, NULL, NULL, &total_observations,
+        NULL, &result, &rules) == 0) {
             for (i = 0; i < total_observations; ++i) {
                 for (j = 0; j < result[i]->size; ++j) {
                     if (j != 0) {
@@ -330,7 +345,8 @@ failed:
         safe_free(result);
         fclose(files[k]);
         fclose(rule_files[k]);
-        if ((paths[k] != dataset_value) && (paths[k] != testing_dataset)) {
+        sensor_destructor(&(datasets[k]));
+        if ((paths[k] != dataset_value) && (paths[k] != testing_dataset_path)) {
             remove(paths[k]);
         }
         free(paths[k]);
