@@ -28,7 +28,7 @@ def main(dataset: Path, label: str):
     for index, current_seed in enumerate(SEEDS):
         rng = np.random.default_rng(seed=np.random.PCG64(current_seed))
 
-        train, test = train_test_split(
+        training, testing = train_test_split(
             data,
             test_size=0.2,
             random_state=current_seed,
@@ -36,23 +36,14 @@ def main(dataset: Path, label: str):
             stratify=data[label].values,
         )
 
-        train.to_csv(dataset.parent / f"training_dataset{index}.csv", index=False)
-        test.to_csv(dataset.parent / f"testing_dataset{index}.csv", index=False)
+        training.to_csv(dataset.parent / f"training_dataset{index}.csv", index=False)
+        testing.to_csv(dataset.parent / f"testing_dataset{index}.csv", index=False)
 
-        partial_data = partial_observation(rng, data)
+        partial_training = partial_observation(rng, training)
 
-        train, test = train_test_split(
-            partial_data,
-            test_size=0.2,
-            random_state=current_seed,
-            shuffle=True,
-            stratify=partial_data[label].values,
-        )
-
-        train.to_csv(
+        partial_training.to_csv(
             dataset.parent / f"partial_training_dataset{index}.csv", index=False
         )
-        test.to_csv(dataset.parent / f"partial_testing_dataset{index}.csv", index=False)
 
 
 if __name__ == "__main__":
