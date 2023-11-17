@@ -2,16 +2,16 @@ import os
 import pickle
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Tuple
 
+import foldrm as frm
 import numpy as np
 import pandas as pd
 import tqdm
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.tree import DecisionTreeClassifier
-
-import foldrm as frm
 from xgboost import XGBClassifier
 
 CREATE_MODE = 0o740
@@ -45,21 +45,30 @@ def main(
     current_dir = Path(os.getcwd())
 
     foldrm_dir = current_dir / "foldrm" / f"seed{seed}"
-    foldrm_dir.mkdir(CREATE_MODE, exist_ok=True)
+    foldrm_dir.mkdir(CREATE_MODE, parents=True, exist_ok=True)
     frm_classifer = frm.Classifier(
         attrs=list(columns) + [label], numeric=[], label=label
     )
+    total_time = 0
 
     print("FOLD-RM")
     for i in tqdm.tqdm(range(1, len(X_train) + 1)):
         combined = np.append(
             X_train[:i], np.reshape(y_train[:i], (y_train[:i].shape[0], 1)), axis=1
-        )
+        ).tolist()
 
-        frm_classifer.fit(combined.tolist())
+        starting_time = int(time.perf_counter_ns() * 1e-6)
+        frm_classifer.fit(combined)
+        ending_time = int(time.perf_counter_ns() * 1e-6)
+
+        total_time += ending_time - starting_time
 
         with (foldrm_dir / f"iteration_{i}.pickle").open("wb") as file:
             pickle.dump(frm_classifer, file)
+    print(
+        f"Online version took: {total_time} ms\nOffline version took: "
+        f"{ending_time - starting_time} ms"
+    )
 
     data_encoder = OrdinalEncoder()
 
@@ -77,26 +86,45 @@ def main(
     X_test = data_encoder.transform(X_test)
 
     decision_tree_dir = current_dir / "decision_tree" / f"seed{seed}"
-    decision_tree_dir.mkdir(CREATE_MODE, exist_ok=True)
+    decision_tree_dir.mkdir(CREATE_MODE, parents=True, exist_ok=True)
     decision_tree = DecisionTreeClassifier(random_state=seed)
+    total_time = 0
 
     print("\nDecision Tree")
     for i in tqdm.tqdm(range(1, len(X_train) + 1)):
+        starting_time = int(time.perf_counter_ns() * 1e-6)
         decision_tree.fit(X_train[:i], y_train[:i])
+        ending_time = int(time.perf_counter_ns() * 1e-6)
+
+        total_time += ending_time - starting_time
 
         with (decision_tree_dir / f"iteration_{i}.pickle").open("wb") as file:
             pickle.dump(decision_tree, file)
+    print(
+        f"Online version took: {total_time} ms\nOffline version took: "
+        f"{ending_time - starting_time} ms"
+    )
 
     xgboost_dir = current_dir / "xgboost" / f"seed{seed}"
-    xgboost_dir.mkdir(CREATE_MODE, exist_ok=True)
+    xgboost_dir.mkdir(CREATE_MODE, parents=True, exist_ok=True)
     xgboost_classifier = XGBClassifier(random_state=seed)
+    total_time = 0
 
     print("\nXGBoost")
     for i in tqdm.tqdm(range(1, len(X_train) + 1)):
+        starting_time = int(time.perf_counter_ns() * 1e-6)
         xgboost_classifier.fit(X_train[:i], y_train[:i])
+        ending_time = int(time.perf_counter_ns() * 1e-6)
+
+        total_time += ending_time - starting_time
 
         file = xgboost_dir / f"iteration_{i}.json"
         xgboost_classifier.save_model(file)
+
+    print(
+        f"Online version took: {total_time} ms\nOffline version took: "
+        f"{ending_time - starting_time} ms"
+    )
 
     for file_type, dir in zip(
         [".pickle", ".pickle", ".json"], [foldrm_dir, decision_tree_dir, xgboost_dir]
