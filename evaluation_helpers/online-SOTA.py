@@ -131,7 +131,7 @@ def main(
     ):
         if (
             subprocess.run(
-                f"tar -c -I 'zstd -5' -f {dir}/models.tar.zst {dir}/*{file_type}",
+                f"cd {dir.absolute()} && tar -c -I 'zstd -5' -f models.tar.zst *{file_type}",
                 shell=True,
             ).returncode
             == 0
