@@ -352,6 +352,7 @@ failed:
         free(paths[k]);
     }
 
+    free(constraints_file);
     prudensjs_settings_destructor(&settings);
     context_destructor(&labels);
     nerd_destructor(&nerd);
