@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
         "-kb <filepath> The path to an .nd file which contains a KB to\n be re-used.\n-entire "
         "<bool> Should it use the given dataset for training only?\n Default value is set to "
         "'false'.\n-ratio <float> The testing dataset ratio. Must be between [0,1]. Default\n value"
-        " is set to 0.2\n\nBy adding an additional number at the end of these parameters, you mark"
+        " is set to 0.2.\n\nBy adding an additional number at the end of these parameters, you mark"
         "\n the number of this run and it will save its given parameters.\n");
         return EXIT_FAILURE;
     }
@@ -428,90 +428,92 @@ int main(int argc, char *argv[]) {
     free(dataset_value);
     fclose(dataset);
 
-    if (labels) {
-        Sensor *sensor = sensor_constructor_from_file(train_path, delimiter, false, has_header);
-        size_t total_observations = sensor_get_total_observations(sensor);
-        Scene *observation, *result;
+    if (!partial_observation) {
+        if (labels) {
+            Sensor *sensor = sensor_constructor_from_file(train_path, delimiter, false, has_header);
+            size_t total_observations = sensor_get_total_observations(sensor);
+            Scene *observation, *result;
 
-        for (i = 0; i < total_observations; ++i) {
-            sensor_get_next_scene(sensor, &observation);
+            for (i = 0; i < total_observations; ++i) {
+                sensor_get_next_scene(sensor, &observation);
 
-            scene_intersect(observation, labels, &result);
+                scene_intersect(observation, labels, &result);
 
-            if (result->size == 0) {
-                char *str = scene_to_string(observation), *labels_str = scene_to_string(labels);
-                printf("labels files does not contain a label for observation\nLabels: %s\nObservation:"
-                " %s\n", labels_str, str);
+                if (result->size == 0) {
+                    char *str = scene_to_string(observation), *labels_str = scene_to_string(labels);
+                    printf("labels files does not contain a label for observation\nLabels: %s\nObservation:"
+                    " %s\n", labels_str, str);
 
-                free(str);
-                free(labels_str);
+                    free(str);
+                    free(labels_str);
+                    scene_destructor(&result);
+                    scene_destructor(&observation);
+                    exit_code = EXIT_FAILURE;
+                    break;
+                }
+
                 scene_destructor(&result);
                 scene_destructor(&observation);
-                exit_code = EXIT_FAILURE;
-                break;
             }
+            sensor_destructor(&sensor);
 
-            scene_destructor(&result);
-            scene_destructor(&observation);
+            if (exit_code) {
+                goto failed;
+            }
         }
-        sensor_destructor(&sensor);
 
-        if (exit_code) {
-            goto failed;
-        }
-    }
+        if (constraints_file) {
+            FILE *constraints = fopen(constraints_file, "r");
+            Literal *l1, *l2;
+            char *first_literal = (char *) calloc(BUFFER_SIZE, sizeof(char)),
+            *second_literal = (char *) calloc(BUFFER_SIZE, sizeof(char));
 
-    if (constraints_file) {
-        FILE *constraints = fopen(constraints_file, "r");
-        Literal *l1, *l2;
-        char *first_literal = (char *) calloc(BUFFER_SIZE, sizeof(char)),
-        *second_literal = (char *) calloc(BUFFER_SIZE, sizeof(char));
+            i = 0;
+            while (fscanf(constraints, "%*s :: %s # %s\n", first_literal, second_literal) == 2) {
+                if (strrchr(second_literal, ';')) {
+                    second_literal[strlen(second_literal) - 1] = '\0';
+                } else {
+                    printf("A simicolon ; is missing at the end of the rule at line %u", i);
+                    exit_code = EXIT_FAILURE;
+                    break;
+                }
 
-        i = 0;
-        while (fscanf(constraints, "%*s :: %s # %s\n", first_literal, second_literal) == 2) {
-            if (strrchr(second_literal, ';')) {
-                second_literal[strlen(second_literal) - 1] = '\0';
-            } else {
-                printf("A simicolon ; is missing at the end of the rule at line %u", i);
-                exit_code = EXIT_FAILURE;
-                break;
-            }
+                ++i;
+                l1 = literal_constructor_from_string(first_literal);
+                l2 = literal_constructor_from_string(second_literal);
 
-            ++i;
-            l1 = literal_constructor_from_string(first_literal);
-            l2 = literal_constructor_from_string(second_literal);
+                int should_fail = -1;
 
-            int should_fail = -1;
+                if (scene_literal_index(labels, l1) < 0) {
+                    should_fail = 0;
+                } else if (scene_literal_index(labels, l2) < 0) {
+                    should_fail = 1;
+                }
+                if (should_fail > -1) {
+                    Literal *chosen_literal = (should_fail == 0) ? l1 : l2;
+                    char *str = literal_to_string(chosen_literal);
+                    printf("Literal: %s in line %u does not exist in the labels. Check again.\n",
+                    str, i);
 
-            if (scene_literal_index(labels, l1) < 0) {
-                should_fail = 0;
-            } else if (scene_literal_index(labels, l2) < 0) {
-                should_fail = 1;
-            }
-            if (should_fail > -1) {
-                Literal *chosen_literal = (should_fail == 0) ? l1 : l2;
-                char *str = literal_to_string(chosen_literal);
-                printf("Literal: %s in line %u does not exist in the labels. Check again.\n",
-                str, i);
+                    free(str);
+                    literal_destructor(&l1);
+                    literal_destructor(&l2);
+                    exit_code = EXIT_FAILURE;
+                    break;
+                }
 
-                free(str);
                 literal_destructor(&l1);
                 literal_destructor(&l2);
-                exit_code = EXIT_FAILURE;
-                break;
+                memset(first_literal, 0, strlen(first_literal));
+                memset(second_literal, 0, strlen(second_literal));
             }
+            free(first_literal);
+            free(second_literal);
+            fclose(constraints);
 
-            literal_destructor(&l1);
-            literal_destructor(&l2);
-            memset(first_literal, 0, strlen(first_literal));
-            memset(second_literal, 0, strlen(second_literal));
-        }
-        free(first_literal);
-        free(second_literal);
-        fclose(constraints);
-
-        if (exit_code) {
-            goto failed;
+            if (exit_code) {
+                goto failed;
+            }
         }
     }
 

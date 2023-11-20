@@ -176,27 +176,29 @@ void sensor_get_next_scene(const Sensor * const sensor, Scene ** const restrict 
                     buffer[i++] = (char) c;
                 } else {
 save_literal:
-                    if (sensor->header) {
-                        size_t header_size = strlen(sensor->header[read_literals]);
-                        if (i + header_size + 1 >= buffer_size) {
-                            buffer_size *= 2;
-                            buffer = (char *) realloc(buffer, buffer_size);
+                    if (strlen(buffer) != 0) {
+                        if (sensor->header) {
+                            size_t header_size = strlen(sensor->header[read_literals]);
+                            if (i + header_size + 1 >= buffer_size) {
+                                buffer_size *= 2;
+                                buffer = (char *) realloc(buffer, buffer_size);
+                            }
+
+                            memcpy((buffer + header_size + 1), buffer, strlen(buffer));
+                            memcpy(buffer, sensor->header[read_literals], header_size);
+                            memcpy(buffer + header_size, "_", 1);
                         }
 
-                        memcpy((buffer + header_size + 1), buffer, strlen(buffer));
-                        memcpy(buffer, sensor->header[read_literals], header_size);
-                        memcpy(buffer + header_size, "_", 1);
-                        ++read_literals;
-                    }
+                        literal = literal_constructor_from_string(buffer);
+                        scene_add_literal(*output, &literal);
+                        memset(buffer, 0, buffer_size);
+                        i = 0;
 
-                    literal = literal_constructor_from_string(buffer);
-                    scene_add_literal(*output, &literal);
-                    memset(buffer, 0, buffer_size);
-                    i = 0;
-
-                    if (end_of_line) {
-                        goto end_literal_loop;
+                        if (end_of_line) {
+                            goto end_literal_loop;
+                        }
                     }
+                    ++read_literals;
                 }
 
                 c = fgetc(sensor->environment);
