@@ -193,11 +193,12 @@ save_literal:
                         scene_add_literal(*output, &literal);
                         memset(buffer, 0, buffer_size);
                         i = 0;
-
-                        if (end_of_line) {
-                            goto end_literal_loop;
-                        }
                     }
+
+                    if (end_of_line) {
+                        goto end_literal_loop;
+                    }
+
                     ++read_literals;
                 }
 
