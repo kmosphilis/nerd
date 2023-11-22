@@ -6,22 +6,16 @@ import time
 from pathlib import Path
 from typing import Tuple
 
-import foldrm as frm
 import numpy as np
 import pandas as pd
 import tqdm
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.tree import DecisionTreeClassifier
+
+import foldrm as frm
 from xgboost import XGBClassifier
 
 CREATE_MODE = 0o740
-
-
-def accuracy_abstaintion_score(y: np.ndarray, y_hat: np.ndarray) -> Tuple[float, float]:
-    assert y.shape == y_hat.shape
-
-    abstained = (y_hat == None).sum()
-    return (y == y_hat).sum() / (y.shape[0] - abstained), abstained / y.shape[0]
 
 
 def main(
