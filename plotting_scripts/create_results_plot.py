@@ -18,6 +18,7 @@ def calculate_correct_abstained_incorrect(
     abstained = 0
     incorrect = 0
     labels = set(labels)
+    missing_labels = 0
 
     with filepath.open() as file:
         content = file.readlines()
@@ -25,6 +26,9 @@ def calculate_correct_abstained_incorrect(
             exit(3)
         for i, current_line in enumerate(content):
             label_to_find = set(observation[i]).intersection(labels)
+            if not label_to_find:
+                missing_labels += 1
+                continue
             label_found = set(current_line.strip().split(" ")).intersection(labels)
 
             if label_to_find == label_found:
@@ -33,6 +37,8 @@ def calculate_correct_abstained_incorrect(
                 abstained += 1
             else:
                 incorrect += 1
+
+    OBSERVATION_LEN -= missing_labels
 
     return (
         correct / OBSERVATION_LEN,
