@@ -151,36 +151,36 @@ START_TEST(one_specific_literal_evaluation_test) {
 
     float accuracy, abstain_ratio;
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
-    &abstain_ratio, NULL, NULL, NULL, NULL), 1);
+    &abstain_ratio, NULL, NULL, NULL, NULL, false), 1);
 
     context_add_literal(literals_to_evaluate, &l4);
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
-    &abstain_ratio, NULL, NULL, NULL, NULL), 0);
+    &abstain_ratio, NULL, NULL, NULL, NULL, false), 0);
     ck_assert_float_eq(accuracy, 0);
     ck_assert_float_eq(abstain_ratio, 1);
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
-    &abstain_ratio, NULL, NULL, NULL, NULL), 0);
+    &abstain_ratio, NULL, NULL, NULL, NULL, false), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
 
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy, NULL,
-    NULL, NULL, NULL, NULL), 0);
+    NULL, NULL, NULL, NULL, false), 0);
     accuracy = 0;
     abstain_ratio = 0;
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
-    &abstain_ratio, NULL, NULL, NULL, NULL), 0);
+    &abstain_ratio, NULL, NULL, NULL, NULL, false), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL, NULL,
-    NULL, NULL, NULL), 0);
+    NULL, NULL, NULL, false), 0);
 
     size_t total_observations;
     Scene **inferences = NULL;
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL,
-    &total_observations, NULL, &inferences, NULL), 0);
+    &total_observations, NULL, &inferences, NULL, false), 0);
     ck_assert_int_ne(total_observations, 0);
     ck_assert_ptr_nonnull(inferences);
     unsigned int i;
@@ -193,26 +193,26 @@ START_TEST(one_specific_literal_evaluation_test) {
     const size_t old_observations = total_observations;
     total_observations = 0;
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL, NULL,
-    NULL, &inferences, NULL), -2);
+    NULL, &inferences, NULL, false), -2);
 
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL,
-    &total_observations, NULL, NULL, NULL), 0);
+    &total_observations, NULL, NULL, NULL, false), 0);
     ck_assert_int_eq(old_observations, total_observations);
 
     ck_assert_int_eq(evaluate_labels(NULL, settings, sensor, literals_to_evaluate, &accuracy, NULL,
-    NULL, NULL, NULL, NULL), -1);
+    NULL, NULL, NULL, NULL, false), -1);
     ck_assert_int_eq(evaluate_labels(nerd, settings, NULL, literals_to_evaluate, &accuracy, NULL,
-    NULL, NULL, NULL, NULL), -1);
+    NULL, NULL, NULL, NULL, false), -1);
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, NULL, &accuracy, NULL, NULL, NULL,
-    NULL, NULL), -1);
+    NULL, NULL, false), -1);
 
     sensor_destructor(&sensor);
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
-    &abstain_ratio, NULL, NULL, NULL, NULL), -1);
+    &abstain_ratio, NULL, NULL, NULL, NULL, false), -1);
 
     nerd_destructor(&nerd);
     ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy, NULL,
-    NULL, NULL, NULL, NULL), -1);
+    NULL, NULL, NULL, NULL, false), -1);
 
     context_destructor(&literals_to_evaluate);
 }

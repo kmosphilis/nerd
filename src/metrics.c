@@ -246,6 +246,8 @@ next_literal:
  * Requires total_observations to work. If NULL is given, they will not be saved.
  * @param save_inferring_rules A char ** (reference to a char *) to save the inferring rules as a
  * string. If NULL, they won't be saved.
+ * @param partial_observation Indicates if the observation is partially observed, and the label
+ * could be missing.
  *
  * @return 0 if the evaluation ended successfully, -1 if it one nerd, settings, file_to_evaluation
  * or labels where NULL, > 0 which will be the index of the first observation that does not have a
@@ -256,7 +258,8 @@ int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
 const Sensor * const sensor_to_evaluate, const Context * const labels,
 float * const restrict accuracy, float * const restrict abstain_ratio,
 size_t * const total_observations, Scene *** const restrict observations,
-Scene *** const restrict inferences, char ** const save_inferring_rules) {
+Scene *** const restrict inferences, char ** const save_inferring_rules,
+bool partial_observation) {
     if (!(nerd && settings && sensor_to_evaluate && labels)) {
         return -1;
     }
@@ -290,13 +293,15 @@ Scene *** const restrict inferences, char ** const save_inferring_rules) {
         }
 
         if (label_index < 0) {
-            unsigned int temp;
-            for (temp = 0; temp <= i; ++temp) {
-                scene_destructor(&(_observations[temp]));
+            if (!partial_observation) {
+                unsigned int temp;
+                for (temp = 0; temp <= i; ++temp) {
+                    scene_destructor(&(_observations[temp]));
+                }
+                free(_observations);
+                free(evaluation_literal_indices);
+                return i + 1;
             }
-            free(_observations);
-            free(evaluation_literal_indices);
-            return i + 1;
         }
     }
 

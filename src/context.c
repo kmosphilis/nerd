@@ -76,6 +76,7 @@ char *context_to_prudensjs(const Context * const context) {
 
             return result;
         }
+            return strdup("{\"type\": \"output\", \"context\": []}");
     }
     return NULL;
 }

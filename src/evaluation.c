@@ -60,7 +60,8 @@ int main(int argc, char *argv[]) {
     FILE *dataset = NULL;
     size_t state_seed, seq_seed;
     char training_delimiter= ' ';
-    bool use_back_chaining = true, training_has_header = false, entire = false;
+    bool use_back_chaining = true, training_has_header = false, entire = false,
+    partial_observation = false;
     char *constraints_file = NULL, *dataset_value = NULL;
     float testing_ratio = 0.2;
 
@@ -133,6 +134,9 @@ int main(int argc, char *argv[]) {
                     case 'r':
                     case 'c':
                     case 'o':
+                        if (strcmp(true_value, "true") == 0) {
+                            partial_observation = true;
+                        }
                         break;
                     default:
 option_failed2:
@@ -325,7 +329,7 @@ failed:
     char *rules = NULL;
     for (k = 0; k < 2; ++k) {
         if (evaluate_labels(nerd, settings, datasets[k], labels, NULL, NULL, &total_observations,
-        NULL, &result, &rules) == 0) {
+        NULL, &result, &rules, partial_observation) == 0) {
             for (i = 0; i < total_observations; ++i) {
                 for (j = 0; j < result[i]->size; ++j) {
                     if (j != 0) {
