@@ -1,5 +1,6 @@
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "nerd_utils.h"
 
@@ -20,7 +21,7 @@ void _safe_free(void **ptr) {
  * deallocate.
 */
 char *trim(const char * const string) {
-    if (strlen(string) == 0) {
+    if (!string || (strlen(string) == 0)) {
         return NULL;
     }
 
@@ -123,7 +124,7 @@ FILE **train, FILE **test) {
         }
     } while (c != EOF);
 
-    size_t test_size = dataset_size * test_ratio;
+    size_t test_size = roundf(dataset_size * test_ratio);
     unsigned int *possible_indices = (unsigned int *) malloc(dataset_size * sizeof(int));
 
     for (i = 0; i < dataset_size; ++i) {
