@@ -129,13 +129,11 @@ const Context * const restrict focused_labels) {
                 }
             }
             if (!head_set) {
-                scene_destructor(&combined);
-                return;
+                goto failed;
             }
 
             if (scene_literal_index(inferred, head) > -1) {
-                scene_destructor(&combined);
-                return;
+                goto failed;
             }
         } else {
             scene_difference(observed, inferred, &uncovered);
@@ -216,6 +214,8 @@ const Context * const restrict focused_labels) {
             free(rng);
         }
 
+failed:
+        literal_destructor(&head);
         scene_destructor(&combined);
         context_destructor(&uncovered);
     }

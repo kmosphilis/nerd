@@ -241,13 +241,11 @@ void scene_union(const Scene * const restrict scene1, const Scene * const restri
 Scene ** const restrict result) {
     if (result) {
         if (scene1) {
-            // scene_copy(result, scene1);
             if (scene2 && (scene2->size != 0)) {
                 _Scene *_scene1 = (_Scene *) scene1;
                 _Scene *_scene2 = (_Scene *) scene2;
-                /*if (_scene1->ownership) {
-                    scene_copy(result, scene1);
-                } else*/ if (_scene2->ownership) {
+
+                if (_scene2->ownership) {
                     _scene_copy(result, scene1);
                 } else {
                     scene_copy(result, scene1);
@@ -265,7 +263,7 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene1->size) {
-                        add_literal(*result, &scene2->literals[i]);
+                        add_literal(*result, &(scene2->literals[i]));
                     }
                 }
             } else {
@@ -311,7 +309,7 @@ Scene ** const restrict result) {
                     }
 
                     if (j == scene2->size) {
-                        add_literal(*result, &scene1->literals[i]);
+                        add_literal(*result, &(scene1->literals[i]));
                     }
                 }
             } else {
@@ -352,7 +350,7 @@ Scene ** const restrict result) {
                 for (i = 0; i < scene1->size; ++i) {
                     for (j = 0; j < scene2->size; ++j) {
                         if (literal_equals(scene1->literals[i], scene2->literals[j])) {
-                            add_literal(*result, &scene1->literals[i]);
+                            add_literal(*result, &(scene1->literals[i]));
                             break;
                         }
                     }
