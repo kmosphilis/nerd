@@ -94,7 +94,7 @@ def main(
     X_train = data_encoder.fit_transform(X_train)
     X_test = data_encoder.transform(X_test)
 
-    decision_tree_dir = current_dir / "foldrm"
+    decision_tree_dir = current_dir / "decision_tree"
     decision_tree_dir.mkdir(CREATE_MODE, exist_ok=True)
     decision_tree_trial: Path = None
 
