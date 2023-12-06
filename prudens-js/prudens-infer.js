@@ -5,23 +5,14 @@ const fs = require('fs');
 let filepath = ".temp";
 let constraints = "";
 let save_inferring_rules = false;
-let include_defeated = true;
 
 
 switch (process.argv.length) {
-    case 6:
-        include_defeated = process.argv[5] != "d=0"
     case 5:
-        if (process.argv[4].indexOf("s=") != -1) {
-            save_inferring_rules = process.argv[4] == "s=1";
-        } else {
-            include_defeated = process.argv[4] != "d=0";
-        }
+        save_inferring_rules = process.argv[4] == "s=1";
     case 4:
         if (process.argv[3].indexOf("s=") != -1) {
             save_inferring_rules = process.argv[3] == "s=1";
-        } else if (process.argv[3].indexOf("d=") != -1) {
-            include_defeated = process.argv[3] != "d=0";
         } else {
             constraints = process.argv[3];
         }
@@ -59,21 +50,19 @@ try {
         }
         inferring_rules.push(`${i + 1}: ${parsers.graphToString(result.graph)}`);
 
-        if (include_defeated) {
-            for (const item of result.defeatedRules) {
-                if (item["by"]["name"].startsWith('$')) {
-                    const literal_sign = item["defeated"]["head"]
-                    const literal = parsers.literalToString(item["defeated"]["head"]);
-                    let opposed_literal;
-                    if (literal.startsWith('-')) {
-                        opposed_literal = literal.slice(1);
-                    } else {
-                        opposed_literal = "-" + literal;
-                    }
+        for (const item of result.defeatedRules) {
+            if (item["by"]["name"].startsWith('$')) {
+                const literal_sign = item["defeated"]["head"]
+                const literal = parsers.literalToString(item["defeated"]["head"]);
+                let opposed_literal;
+                if (literal.startsWith('-')) {
+                    opposed_literal = literal.slice(1);
+                } else {
+                    opposed_literal = "-" + literal;
+                }
 
-                    if (!inferred.has(opposed_literal)) {
-                        inferred.add(parsers.literalToString(item["defeated"]["head"]));
-                    }
+                if (!inferred.has(opposed_literal)) {
+                    inferred.add(parsers.literalToString(item["defeated"]["head"]));
                 }
             }
         }

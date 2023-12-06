@@ -227,9 +227,9 @@ Scene ** restrict observations, Scene *** const inferences, char ** const save_i
     if (!save_inferring_rules) {
         prudens_call = strdup(settings->prudensjs_call);
     } else {
-        prudens_call = calloc(strlen(settings->prudensjs_call) + 9, sizeof(char));
+        prudens_call = calloc(strlen(settings->prudensjs_call) + 5, sizeof(char));
         memcpy(prudens_call, settings->prudensjs_call, strlen(settings->prudensjs_call));
-        memcpy(prudens_call + strlen(settings->prudensjs_call), " s=1 d=0", strlen(" s=1 d=0"));
+        memcpy(prudens_call + strlen(settings->prudensjs_call), " s=1", strlen(" s=1"));
     }
 
     system(prudens_call);
