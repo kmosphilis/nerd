@@ -574,9 +574,6 @@ int main(int argc, char *argv[]) {
     printf("Total time: %zu ms\n\n", total_nerd_time_taken + total_prudens_time_taken);
 
     for (i = 0; i < training_dataset->header_size; ++i) {
-        char *str = scene_to_string(incompatibilities[i]);
-        printf("for header: %s -> %s\n", training_dataset->header[i], str);
-        free(str);
         scene_destructor(&(incompatibilities[i]));
     }
     free(incompatibilities);
