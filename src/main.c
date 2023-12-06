@@ -460,60 +460,6 @@ int main(int argc, char *argv[]) {
             if (exit_code) {
                 goto failed;
             }
-
-            if (constraints_file) {
-                FILE *constraints = fopen(constraints_file, "r");
-                Literal *l1, *l2;
-                char *first_literal = (char *) calloc(BUFFER_SIZE, sizeof(char)),
-                *second_literal = (char *) calloc(BUFFER_SIZE, sizeof(char));
-
-                i = 0;
-                while (fscanf(constraints, "%*s :: %s # %s\n", first_literal, second_literal) == 2) {
-                    if (strrchr(second_literal, ';')) {
-                        second_literal[strlen(second_literal) - 1] = '\0';
-                    } else {
-                        printf("A simicolon ; is missing at the end of the rule at line %u", i);
-                        exit_code = EXIT_FAILURE;
-                        break;
-                    }
-
-                    ++i;
-                    l1 = literal_constructor_from_string(first_literal);
-                    l2 = literal_constructor_from_string(second_literal);
-
-                    int should_fail = -1;
-
-                    if (scene_literal_index(labels, l1) < 0) {
-                        should_fail = 0;
-                    } else if (scene_literal_index(labels, l2) < 0) {
-                        should_fail = 1;
-                    }
-                    if (should_fail > -1) {
-                        Literal *chosen_literal = (should_fail == 0) ? l1 : l2;
-                        char *str = literal_to_string(chosen_literal);
-                        printf("Literal: %s in line %u does not exist in the labels. Check again.\n",
-                        str, i);
-
-                        free(str);
-                        literal_destructor(&l1);
-                        literal_destructor(&l2);
-                        exit_code = EXIT_FAILURE;
-                        break;
-                    }
-
-                    literal_destructor(&l1);
-                    literal_destructor(&l2);
-                    memset(first_literal, 0, strlen(first_literal));
-                    memset(second_literal, 0, strlen(second_literal));
-                }
-                free(first_literal);
-                free(second_literal);
-                fclose(constraints);
-
-                if (exit_code) {
-                    goto failed;
-                }
-            }
         }
     }
 
