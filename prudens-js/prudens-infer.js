@@ -50,23 +50,6 @@ try {
         }
         inferring_rules.push(`${i + 1}: ${parsers.graphToString(result.graph)}`);
 
-        for (const item of result.defeatedRules) {
-            if (item["by"]["name"].startsWith('$')) {
-                const literal_sign = item["defeated"]["head"]
-                const literal = parsers.literalToString(item["defeated"]["head"]);
-                let opposed_literal;
-                if (literal.startsWith('-')) {
-                    opposed_literal = literal.slice(1);
-                } else {
-                    opposed_literal = "-" + literal;
-                }
-
-                if (!inferred.has(opposed_literal)) {
-                    inferred.add(parsers.literalToString(item["defeated"]["head"]));
-                }
-            }
-        }
-
         try {
             fs.appendFileSync(`${filepath}_1`, `${Array.from(inferred.values()).join(" ")}\n`);
         } catch (err) {
