@@ -57,6 +57,7 @@ void rule_hypergraph_get_inactive_rules(const struct KnowledgeBase * const knowl
 RuleQueue ** const inactive_rules);
 void rule_hypergraph_update_rules(struct KnowledgeBase * const knowledge_base,
 const Scene * const observations, const Scene * const inferences, const float promotion_rate,
-const float demotion_rate, const bool increasing_demotion, const Scene * const labels);
+const float demotion_rate, const bool increasing_demotion, char **header,
+const size_t header_size, Scene **incompatibilities);
 
 #endif

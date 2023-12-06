@@ -106,17 +106,13 @@ const unsigned int max_body_size, const unsigned int max_number_of_rules,
 const Context * const restrict focused_labels) {
     if (knowledge_base && observed) {
         Context *uncovered = NULL;
-        Scene *combined = NULL, *opposed = NULL, *temp_scene;
+        Scene *combined = NULL;
         Literal *head = NULL, *temp = NULL;
         Body *body = NULL;
         Rule *new_rule = NULL;
         bool head_set = false;
 
-        scene_union(observed, inferred, &temp_scene);
-        scene_opposed_literals(observed, inferred, &opposed, focused_labels);
-        scene_difference(temp_scene, opposed, &combined);
-        scene_destructor(&temp_scene);
-        scene_destructor(&opposed);
+        scene_union(observed, inferred, &combined);
 
         unsigned int i;
         if (focused_labels) {

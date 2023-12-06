@@ -541,6 +541,37 @@ int main(int argc, char *argv[]) {
 
     Scene *observation = NULL;
 
+    Scene **incompatibilities = NULL;
+    if (has_header) {
+        incompatibilities = (Scene **) malloc(training_dataset->header_size * sizeof(Scene *));
+
+        for (i = 0; i < training_dataset->header_size; ++i) {
+            incompatibilities[i] = scene_constructor(true);
+        }
+
+        unsigned int j, k;
+        char *literal;
+        Literal *copy;
+        for (i = 0; i < total_instances; ++i) {
+            sensor_get_next_scene(training_dataset, &observation);
+
+            for (j = 0; j < observation->size; ++j) {
+                literal = literal_to_string(observation->literals[j]);
+                for (k = 0; k < training_dataset->header_size; ++k) {
+                    if (strstr(literal, training_dataset->header[k])) {
+                        literal_copy(&copy, observation->literals[j]);
+                        scene_add_literal(incompatibilities[k], &copy);
+                        literal_destructor(&copy);
+                        break;
+                    }
+                }
+                safe_free(literal);
+            }
+
+            scene_destructor(&observation);
+        }
+    }
+
     size_t iteration, instance, total_nerd_time_taken = 0, total_prudens_time_taken = 0,
     current_iteration_nerd_time, current_iteration_prudens_time, nerd_time_taken = 0,
     prudens_time_taken = 0;
@@ -552,7 +583,8 @@ int main(int argc, char *argv[]) {
             instance + 1, total_instances);
             sensor_get_next_scene(training_dataset, &observation);
 
-            nerd_train(nerd, observation, settings, labels, &nerd_time_taken, &prudens_time_taken);
+            nerd_train(nerd, observation, settings, labels, &nerd_time_taken, &prudens_time_taken,
+            training_dataset->header, training_dataset->header_size, incompatibilities);
             total_nerd_time_taken += nerd_time_taken;
             current_iteration_nerd_time += nerd_time_taken;
             total_prudens_time_taken += prudens_time_taken;
@@ -595,6 +627,13 @@ int main(int argc, char *argv[]) {
     printf("Time spent on prudens: %zu ms\n", total_prudens_time_taken);
     printf("Total time: %zu ms\n\n", total_nerd_time_taken + total_prudens_time_taken);
 
+    for (i = 0; i < training_dataset->header_size; ++i) {
+        char *str = scene_to_string(incompatibilities[i]);
+        printf("for header: %s -> %s\n", training_dataset->header[i], str);
+        free(str);
+        scene_destructor(&(incompatibilities[i]));
+    }
+    free(incompatibilities);
     sensor_destructor(&training_dataset);
     nerd_destructor(&nerd);
     prudensjs_settings_destructor(&settings);
