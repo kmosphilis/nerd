@@ -21,7 +21,8 @@ Nerd *nerd_constructor_from_file(const char * const filepath, const bool use_bac
 void nerd_destructor(Nerd ** const nerd);
 void nerd_train(Nerd * const nerd, const Scene * const restrict observation,
 const PrudensSettings_ptr settings, const Context * const restrict labels,
-size_t * const nerd_time_taken, size_t * const ie_time_taken);
+size_t * const nerd_time_taken, size_t * const ie_time_taken,  char **header,
+const size_t header_size, Scene **incompatibilities);
 void nerd_to_string(const Nerd * const nerd);
 void nerd_to_file(const Nerd * const nerd, const char * const filepath);
 

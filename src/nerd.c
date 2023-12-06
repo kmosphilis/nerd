@@ -193,10 +193,16 @@ void nerd_destructor(Nerd ** const nerd) {
  * does not include the time taken by the inference engine (Prudens JS).
  * @param ie_time_taken (Optional) A size_t * to save the time Prudens JS took to finish the
  * application of the learnt KnowledgeBase.
+ * @param header (Optional) A char ** containing the header of a file to compare attributes. The
+ * rest two optional parameters should be given together.
+ * @param header_size (Optional) The size_t of the header.
+ * @param incompatibilities (Optional) A Scene ** containing the incompatible literals corresponding
+ * to each header. It should have the same size, even if no incompatible literals are given.
  */
 void nerd_train(Nerd * const nerd, const Scene * const restrict observation,
 const PrudensSettings_ptr settings, const Context * const restrict labels,
-size_t * const nerd_time_taken, size_t * const ie_time_taken) {
+size_t * const nerd_time_taken, size_t * const ie_time_taken, char **header,
+const size_t header_size, Scene **incompatibilities) {
     if (!(nerd && observation && settings)) {
         return;
     }
@@ -214,7 +220,8 @@ size_t * const nerd_time_taken, size_t * const ie_time_taken) {
     knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred,
     nerd->breadth, nerd->max_rules_per_instance, labels);
     rule_hypergraph_update_rules(nerd->knowledge_base, observation, inferred,
-    nerd->promotion_weight, nerd->demotion_weight, nerd->increasing_demotion, labels);
+    nerd->promotion_weight, nerd->demotion_weight, nerd->increasing_demotion, header, header_size,
+    incompatibilities);
 
     scene_destructor(&inferred);
 
