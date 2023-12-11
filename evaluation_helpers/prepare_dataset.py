@@ -21,40 +21,56 @@ def partial_observation(rng: np.random.Generator, data: pd.DataFrame) -> pd.Data
     return data
 
 
-def main(dataset: Path, label: str):
+def main(dataset: Path, label: str, create_partial: bool):
     data = pd.read_csv(dataset)
     assert label in data.columns
 
     for index, current_seed in enumerate(SEEDS):
         rng = np.random.default_rng(seed=np.random.PCG64(current_seed))
 
-        training, testing = train_test_split(
-            data,
-            test_size=0.2,
-            random_state=current_seed,
-            shuffle=True,
-            stratify=data[label].values,
-        )
+        try:
+            training, testing = train_test_split(
+                data,
+                test_size=0.2,
+                random_state=current_seed,
+                shuffle=True,
+                stratify=data[label].values,
+            )
+        except ValueError:
+            training, testing = train_test_split(
+                data,
+                test_size=0.2,
+                random_state=current_seed,
+                shuffle=True,
+            )
 
         training.to_csv(dataset.parent / f"training_dataset{index}.csv", index=False)
         testing.to_csv(dataset.parent / f"testing_dataset{index}.csv", index=False)
 
-        partial_training = partial_observation(rng, training)
+        if create_partial:
+            partial_training = partial_observation(rng, training)
 
-        partial_training.to_csv(
-            dataset.parent / f"partial_training_dataset{index}.csv", index=False
-        )
+            partial_training.to_csv(
+                dataset.parent / f"partial_training_dataset{index}.csv", index=False
+            )
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("The dataset to be converted and its label name are required.")
+    if len(sys.argv) != 3 and len(sys.argv) != 4:
+        print(
+            "The dataset to be converted, its label name are required and optionally"
+            "if partial training dataset should be created."
+        )
         exit(1)
 
     dataset = Path(sys.argv[1])
     if dataset.exists():
         if dataset.is_file():
-            main(dataset, sys.argv[2])
+            main(
+                dataset,
+                sys.argv[2],
+                False if len(sys.argv) != 4 else sys.argv[3] == "true",
+            )
             exit(0)
         else:
             print(f"'{dataset.name}' is not a file.")
