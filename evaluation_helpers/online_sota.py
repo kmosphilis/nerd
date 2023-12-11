@@ -4,7 +4,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Tuple
 
 import foldrm as frm
 import numpy as np
@@ -82,17 +81,22 @@ def main(
     data_encoder = OrdinalEncoder()
 
     label_encoding = {}
-    for i in range(y_train.shape[0]):
-        if not str(y_train[i]).isdigit() and not y_train[i] in label_encoding.keys():
-            current_label = y_train[i]
+    label_to_endode = np.append(y_train, y_test)
+    for i in range(len(label_to_endode)):
+        if (
+            not str(label_to_endode[i]).isdigit()
+            and not label_to_endode[i] in label_encoding.keys()
+        ):
+            current_label = label_to_endode[i]
             label_encoding[current_label] = len(label_encoding)
             y_train[y_train == current_label] = label_encoding[current_label]
             y_test[y_test == current_label] = label_encoding[current_label]
 
     y_train = y_train.astype(int)
     y_test = y_test.astype(int)
-    X_train = data_encoder.fit_transform(X_train)
-    X_test = data_encoder.transform(X_test)
+    data_encoder.fit(np.concatenate((X_train, X_test), axis=0).astype(str))
+    X_train = data_encoder.transform(X_train.astype(str))
+    X_test = data_encoder.transform(X_test.astype(str))
 
     decision_tree_dir = current_dir / "decision_tree"
     decision_tree_dir.mkdir(CREATE_MODE, exist_ok=True)
