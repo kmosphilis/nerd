@@ -292,12 +292,12 @@ def calculate_train_test_mean_acc(
 
 
 def main(
+    algorithm: str,
     experiment_path: Path,
     dataset_location: Path | None,
     label: str,
     points_to_draw: int = 50,
 ):
-    algorithm = experiment_path.name
     points_drawn: list[Point] = []
     queue = PriorityQueue()
     results = dict()
@@ -446,19 +446,21 @@ def main(
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print(
-            "Provide the directory of the experiments, the dataset directory, and the "
-            "label of the dataset."
+            "Provide the algorithms, the directory of the experiments, the dataset "
+            "directory, and the label of the dataset."
         )
         exit(1)
 
-    experiment_path = Path(sys.argv[1])
+    algorithm = sys.argv[1]
+    experiment_path = Path(sys.argv[2])
 
-    data_path = Path(sys.argv[2])
-    label = sys.argv[3]
+    data_path = Path(sys.argv[3])
+    label = sys.argv[4]
 
     main(
+        algorithm,
         experiment_path,
         data_path,
         label,
