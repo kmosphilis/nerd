@@ -77,6 +77,12 @@ class Point:
             f"{self.location}, {self.error}, {self.train_results}, {self.test_results}"
         )
 
+    def __str__(self) -> str:
+        return (
+            f"Location: {self.location}, Train results: {self.train_results}, "
+            f"Test results: {self.test_results}"
+        )
+
     def __eq__(self, other):
         if not isinstance(other, Point):
             raise ValueError
@@ -386,10 +392,12 @@ def main(
     queue.put(end)
     queue.put(middle)
 
+    print(f"Chosen: {start}\nChosen: {end}")
+
     point_to_draw: Point = queue.get()
 
     while len(points_drawn) != points_to_draw:
-        print(f"Chosen: {point_to_draw.location}, error: {point_to_draw.error}")
+        print(f"Chosen: {point_to_draw}")
         new_left_point = Point(
             left_parent=point_to_draw.left_parent, right_parent=point_to_draw
         )
