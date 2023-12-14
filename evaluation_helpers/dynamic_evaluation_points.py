@@ -17,7 +17,7 @@ from sklearn.tree import DecisionTreeClassifier
 import foldrm as frm
 from xgboost import XGBClassifier
 
-sys.path.insert(1, "plotting_scripts/")
+sys.path.insert(0, str((Path(__file__).parent.parent / "plotting_scripts/").resolve()))
 from create_results_plot import calculate_correct_abstained_incorrect
 
 
@@ -34,7 +34,7 @@ def correct_abstained_incorrect_score(
     return (
         (y == y_hat).sum() / y.shape[0],
         abstained / y.shape[0],
-        (y != y_hat).sum() / y.shape[0],
+        abs((y != y_hat).sum() - abstained) / y.shape[0],
     )
 
 
@@ -180,12 +180,13 @@ def calculate_train_test_mean_acc(
                 data_encoder = OrdinalEncoder()
 
                 label_encoding = {}
-                for i in range(y_train.shape[0]):
+                label_to_endode = np.append(y_train, y_test)
+                for i in range(len(label_to_endode)):
                     if (
-                        not str(y_train[i]).isdigit()
-                        and not y_train[i] in label_encoding.keys()
+                        not str(label_to_endode[i]).isdigit()
+                        and not label_to_endode[i] in label_encoding.keys()
                     ):
-                        current_label = y_train[i]
+                        current_label = label_to_endode[i]
                         label_encoding[current_label] = len(label_encoding)
                         y_train[y_train == current_label] = label_encoding[
                             current_label
@@ -194,8 +195,9 @@ def calculate_train_test_mean_acc(
 
                 y_train = y_train.astype(int)
                 y_test = y_test.astype(int)
-                X_train = data_encoder.fit_transform(X_train)
-                X_test = data_encoder.transform(X_test)
+                data_encoder.fit(np.concatenate((X_train, X_test), axis=0).astype(str))
+                X_train = data_encoder.transform(X_train.astype(str))
+                X_test = data_encoder.transform(X_test.astype(str))
 
             cor, abst, inc = correct_abstained_incorrect_score(
                 y_train, np.array(model.predict(X_train))
@@ -262,7 +264,7 @@ def calculate_train_test_mean_acc(
                     test.append(l.strip().split(" "))
 
             assert (trial / "results" / instance_to_evaluate / "train.txt").exists()
-            cor, abst, cor = calculate_correct_abstained_incorrect(
+            cor, abst, inc = calculate_correct_abstained_incorrect(
                 train,
                 trial / "results" / instance_to_evaluate / "train.txt",
                 labels,
@@ -271,7 +273,7 @@ def calculate_train_test_mean_acc(
             train_abst.append(abst)
             train_inc.append(inc)
 
-            cor, abst, cor = calculate_correct_abstained_incorrect(
+            cor, abst, inc = calculate_correct_abstained_incorrect(
                 test,
                 trial / "results" / instance_to_evaluate / "test.txt",
                 labels,
@@ -392,12 +394,12 @@ def main(
     queue.put(end)
     queue.put(middle)
 
-    print(f"Chosen: {start}\nChosen: {end}")
+    print(f"Chosen: {start}\nChosen: {end}", flush=True)
 
     point_to_draw: Point = queue.get()
 
     while len(points_drawn) != points_to_draw:
-        print(f"Chosen: {point_to_draw}")
+        print(f"Chosen: {point_to_draw}", flush=True)
         new_left_point = Point(
             left_parent=point_to_draw.left_parent, right_parent=point_to_draw
         )
