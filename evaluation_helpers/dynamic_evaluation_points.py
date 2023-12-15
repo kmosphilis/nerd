@@ -285,7 +285,7 @@ def calculate_train_test_mean_acc(
     return (
         np.mean(train_cor),
         np.mean(train_abst),
-        np.mean(inc),
+        np.mean(train_inc),
     ), (
         np.mean(test_cor),
         np.mean(test_abst),
@@ -422,7 +422,7 @@ def main(
         new_right_point = Point(
             left_parent=point_to_draw, right_parent=point_to_draw.right_parent
         )
-        train_results, _ = calculate_train_test_mean_acc(
+        train_results, test_results = calculate_train_test_mean_acc(
             algorithm,
             trials,
             values[0][new_right_point.location],
@@ -434,7 +434,7 @@ def main(
         )
 
         new_right_point.train_results = train_results
-        new_left_point.test_results = test_results
+        new_right_point.test_results = test_results
 
         if new_right_point not in points_drawn:
             queue.put(new_right_point)
