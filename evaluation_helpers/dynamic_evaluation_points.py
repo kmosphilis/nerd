@@ -39,6 +39,69 @@ def correct_abstained_incorrect_score(
 
 
 @dataclass
+class AprioriRule:
+    body: list[str]
+    head: list[str]
+
+
+@dataclass(init=False)
+class Apriori:
+    rules: list[AprioriRule]
+
+    def __init__(self, rules: list[str]) -> None:
+        self.rules = []
+        for rule in rules:
+            body, head = [
+                item.strip().removesuffix("}").removeprefix("{").split(",")
+                for item in rule.split("->")
+            ]
+
+            self.rules.append(AprioriRule(body, head))
+
+    def predict(self, data: list[list[str]]) -> list[list[str]]:
+        inferred: list[list[str]] = [[] for _ in range(len(data))]
+
+        for instance_index, instance in enumerate(data):
+            combined = instance
+            for rule in self.rules:
+                # print(set(combined), set(rule.body))
+                if set(combined).issuperset(set(rule.body)):
+                    combined.extend(rule.head)
+                    inferred[instance_index].extend(rule.head)
+
+        return inferred
+
+    def score(self, data: list[list[str]], y: list[str]) -> tuple[float, float, float]:
+        predictions = self.predict(data)
+
+        correct = 0
+        incorrect = 0
+        abstained = 0
+        missing = 0
+        possible_labels = list(set(y))
+        try:
+            possible_labels.remove("")
+        except ValueError:
+            pass
+
+        for index, y_hat in enumerate(predictions):
+            if y[index] == "":
+                missing += 1
+            elif y[index] in y_hat:
+                correct += 1
+            elif set(y_hat).intersection(set(possible_labels)):
+                incorrect += 1
+            else:
+                abstained += 1
+
+        cor = correct / (len(y) - missing)
+        abst = abstained / (len(y) - missing)
+        inc = incorrect / (len(y) - missing)
+
+        return cor, abst, inc
+
+
+@dataclass
 class Nerd:
     test_location: Path
     instance: str
@@ -91,11 +154,15 @@ class Point:
     def __lt__(self, other):
         if not isinstance(other, Point):
             raise ValueError
+        if self.error == other.error:
+            return self.location < other.location
         return self.error < other.error
 
     def __gt__(self, other):
         if not isinstance(other, Point):
             raise ValueError
+        if self.error == other.error:
+            return self.location > other.error
         return self.error > other.error
 
     def __le__(self, other):
@@ -123,7 +190,9 @@ def calculate_train_test_mean_acc(
         current_training_data: Path = None
         current_testing_data: Path = None
 
-        model: frm.Classifier | DecisionTreeClassifier | XGBClassifier | Nerd = None
+        model: frm.Classifier | DecisionTreeClassifier | XGBClassifier | Nerd | Apriori = (
+            None
+        )
         if algorithm != "nerd":
             with (trial / "info").open("r") as f:
                 for line in f.readlines():
@@ -163,6 +232,12 @@ def calculate_train_test_mean_acc(
             if algorithm == "xgboost":
                 model = XGBClassifier()
                 model.load_model(trial / instance_to_evaluate)
+            elif algorithm == "apriori":
+                with (trial / instance_to_evaluate).open("r") as f:
+                    rules = []
+                    for line in f.readlines():
+                        rules.append(line.strip())
+                    model = Apriori(rules)
             else:
                 with (trial / instance_to_evaluate).open("rb") as f:
                     model = pickle.load(f)
@@ -176,42 +251,82 @@ def calculate_train_test_mean_acc(
             y_test = test[label].replace(np.nan, "").values
             X_test = test.drop(columns=label).replace(np.nan, "").values
 
-            if algorithm != "foldrm":
-                data_encoder = OrdinalEncoder()
+            if algorithm == "apriori":
+                # model.predict()
+                X_train = X_train.tolist()
+                y_train = y_train.tolist()
+                X_test = X_test.tolist()
+                y_test = y_test.tolist()
+                columns = train.columns.tolist()
 
-                label_encoding = {}
-                label_to_endode = np.append(y_train, y_test)
-                for i in range(len(label_to_endode)):
-                    if (
-                        not str(label_to_endode[i]).isdigit()
-                        and not label_to_endode[i] in label_encoding.keys()
-                    ):
-                        current_label = label_to_endode[i]
-                        label_encoding[current_label] = len(label_encoding)
-                        y_train[y_train == current_label] = label_encoding[
-                            current_label
-                        ]
-                        y_test[y_test == current_label] = label_encoding[current_label]
+                for dataset, labels in zip([X_train, X_test], [y_train, y_test]):
+                    for tr_index, transaction in enumerate(dataset):
+                        indices_to_remove: list[int] = []
+                        for index, literal in enumerate(transaction):
+                            if literal == "":
+                                indices_to_remove.append(index)
+                            else:
+                                dataset[tr_index][index] = f"{columns[index]}_{literal}"
 
-                y_train = y_train.astype(int)
-                y_test = y_test.astype(int)
-                data_encoder.fit(np.concatenate((X_train, X_test), axis=0).astype(str))
-                X_train = data_encoder.transform(X_train.astype(str))
-                X_test = data_encoder.transform(X_test.astype(str))
+                        for index in list(reversed(indices_to_remove)):
+                            del dataset[tr_index][index]
 
-            cor, abst, inc = correct_abstained_incorrect_score(
-                y_train, np.array(model.predict(X_train))
-            )
-            train_cor.append(cor)
-            train_abst.append(abst)
-            train_inc.append(inc)
+                        if labels[tr_index] != "":
+                            labels[tr_index] = f"{label}_{labels[tr_index]}"
 
-            cor, abst, inc = correct_abstained_incorrect_score(
-                y_test, np.array(model.predict(X_test))
-            )
-            test_cor.append(cor)
-            test_abst.append(abst)
-            test_inc.append(inc)
+                cor, abst, inc = model.score(X_train, y_train)
+
+                train_cor.append(cor)
+                train_abst.append(abst)
+                train_inc.append(inc)
+                print(cor, abst, inc)
+
+                cor, abst, inc = model.score(X_test, y_test)
+
+                test_cor.append(cor)
+                test_abst.append(abst)
+                test_inc.append(inc)
+            else:
+                if algorithm != "foldrm":
+                    data_encoder = OrdinalEncoder()
+
+                    label_encoding = {}
+                    label_to_endode = np.append(y_train, y_test)
+                    for i in range(len(label_to_endode)):
+                        if (
+                            not str(label_to_endode[i]).isdigit()
+                            and not label_to_endode[i] in label_encoding.keys()
+                        ):
+                            current_label = label_to_endode[i]
+                            label_encoding[current_label] = len(label_encoding)
+                            y_train[y_train == current_label] = label_encoding[
+                                current_label
+                            ]
+                            y_test[y_test == current_label] = label_encoding[
+                                current_label
+                            ]
+
+                    y_train = y_train.astype(int)
+                    y_test = y_test.astype(int)
+                    data_encoder.fit(
+                        np.concatenate((X_train, X_test), axis=0).astype(str)
+                    )
+                    X_train = data_encoder.transform(X_train.astype(str))
+                    X_test = data_encoder.transform(X_test.astype(str))
+
+                cor, abst, inc = correct_abstained_incorrect_score(
+                    y_train, np.array(model.predict(X_train))
+                )
+                train_cor.append(cor)
+                train_abst.append(abst)
+                train_inc.append(inc)
+
+                cor, abst, inc = correct_abstained_incorrect_score(
+                    y_test, np.array(model.predict(X_test))
+                )
+                test_cor.append(cor)
+                test_abst.append(abst)
+                test_inc.append(inc)
 
         else:
             model = Nerd(trial, instance_to_evaluate)
@@ -304,7 +419,7 @@ def main(
     queue = PriorityQueue()
     results = dict()
 
-    if algorithm == "foldrm" or algorithm == "decision_tree" or algorithm == "xgboost":
+    if algorithm != "nerd":
         trials = list(sorted(experiment_path.glob("trial*")))
         for trial in trials:
             if trial.is_dir():
@@ -394,8 +509,6 @@ def main(
     queue.put(end)
     queue.put(middle)
 
-    print(f"Chosen: {start}\nChosen: {end}", flush=True)
-
     point_to_draw: Point = queue.get()
 
     while len(points_drawn) != points_to_draw:
@@ -403,44 +516,47 @@ def main(
         new_left_point = Point(
             left_parent=point_to_draw.left_parent, right_parent=point_to_draw
         )
-        train_results, test_results = calculate_train_test_mean_acc(
-            algorithm,
-            trials,
-            values[0][new_left_point.location],
-            label,
-            dataset_location,
-        )
-        new_left_point.error = -abs(
-            test_results[0] - linear_values[new_left_point.location]
-        )
-        new_left_point.train_results = train_results
-        new_left_point.test_results = test_results
 
-        if new_left_point not in points_drawn:
+        if new_left_point.location != -1 and new_left_point not in points_drawn:
+            train_results, test_results = calculate_train_test_mean_acc(
+                algorithm,
+                trials,
+                values[0][new_left_point.location],
+                label,
+                dataset_location,
+            )
+            new_left_point.error = -abs(
+                test_results[0] - linear_values[new_left_point.location]
+            )
+            new_left_point.train_results = train_results
+            new_left_point.test_results = test_results
+
             queue.put(new_left_point)
 
         new_right_point = Point(
             left_parent=point_to_draw, right_parent=point_to_draw.right_parent
         )
-        train_results, test_results = calculate_train_test_mean_acc(
-            algorithm,
-            trials,
-            values[0][new_right_point.location],
-            label,
-            dataset_location,
-        )
-        new_right_point.error = -abs(
-            test_results[0] - linear_values[new_right_point.location]
-        )
 
-        new_right_point.train_results = train_results
-        new_right_point.test_results = test_results
+        if new_right_point.location != -1 and new_right_point not in points_drawn:
+            train_results, test_results = calculate_train_test_mean_acc(
+                algorithm,
+                trials,
+                values[0][new_right_point.location],
+                label,
+                dataset_location,
+            )
+            new_right_point.error = -abs(
+                test_results[0] - linear_values[new_right_point.location]
+            )
 
-        if new_right_point not in points_drawn:
+            new_right_point.train_results = train_results
+            new_right_point.test_results = test_results
+
             queue.put(new_right_point)
 
         point_to_draw: Point = queue.get()
-        points_drawn.append(point_to_draw)
+        if point_to_draw not in points_drawn:
+            points_drawn.append(point_to_draw)
 
     with (experiment_path / f"plotting-points_{points_to_draw}.txt").open("w") as f:
         for point in points_drawn:

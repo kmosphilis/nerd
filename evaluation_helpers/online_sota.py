@@ -5,12 +5,14 @@ import sys
 import time
 from pathlib import Path
 
-import foldrm as frm
 import numpy as np
 import pandas as pd
 import tqdm
+from efficient_apriori import apriori
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.tree import DecisionTreeClassifier
+
+import foldrm as frm
 from xgboost import XGBClassifier
 
 CREATE_MODE = 0o740
@@ -35,6 +37,52 @@ def main(
     X_test = testing_data.drop(columns=label).replace(np.nan, "").values
 
     current_dir = Path(os.getcwd())
+
+    apriori_dir = current_dir / "apriori"
+    apriori_dir.mkdir(CREATE_MODE, exist_ok=True)
+    apriori_trial: Path = None
+    folder_created = False
+
+    while not folder_created:
+        try:
+            apriori_trial = (
+                apriori_dir / f"trial={len(list(apriori_dir.glob('trial=*')))}"
+            )
+            apriori_trial.mkdir(CREATE_MODE)
+            folder_created = True
+        except FileExistsError:
+            pass
+
+    with (apriori_trial / "info").open("w") as info:
+        info.write(f"seed={seed}\n")
+        info.write(f"training_dataset={training_dataset_path.resolve()}\n")
+        info.write(f"testing_dataset={testing_dataset_path.resolve()}\n")
+
+    print("Apriori")
+    columns_and_label = columns.tolist()
+    columns_and_label.append(label)
+    for i in tqdm.tqdm(range(1, len(X_train) + 1)):
+        combined = np.append(
+            X_train[:i], np.reshape(y_train[:i], (y_train[:i].shape[0], 1)), axis=1
+        ).tolist()
+
+        for tr_index, transaction in enumerate(combined):
+            indices_to_remove: list[int] = []
+            for index, literal in enumerate(transaction):
+                if literal == "":
+                    indices_to_remove.append(index)
+                else:
+                    combined[tr_index][index] = f"{columns_and_label[index]}_{literal}"
+
+            for index in list(reversed(indices_to_remove)):
+                del combined[tr_index][index]
+
+        combined = [tuple(item) for item in combined]
+        _, rules = apriori(combined, max_length=len(columns_and_label))
+
+        with (apriori_trial / f"iteration_{i}.txt").open("w") as file:
+            rules = [f"{repr(rule)}\n" for rule in rules]
+            file.writelines(rules)
 
     foldrm_dir = current_dir / "foldrm"
     foldrm_dir.mkdir(CREATE_MODE, exist_ok=True)
@@ -177,8 +225,8 @@ def main(
     )
 
     for file_type, dir in zip(
-        [".pickle", ".pickle", ".json"],
-        [foldrm_trial, decision_tree_trial, xgboost_trial],
+        [".txt", ".pickle", ".pickle", ".json"],
+        [apriori_trial, foldrm_trial, decision_tree_trial, xgboost_trial],
     ):
         if (
             subprocess.run(
