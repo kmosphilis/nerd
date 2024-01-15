@@ -64,7 +64,6 @@ class Apriori:
         for instance_index, instance in enumerate(data):
             combined = instance
             for rule in self.rules:
-                # print(set(combined), set(rule.body))
                 if set(combined).issuperset(set(rule.body)):
                     combined.extend(rule.head)
                     inferred[instance_index].extend(rule.head)
@@ -279,7 +278,6 @@ def calculate_train_test_mean_acc(
                 train_cor.append(cor)
                 train_abst.append(abst)
                 train_inc.append(inc)
-                print(cor, abst, inc)
 
                 cor, abst, inc = model.score(X_test, y_test)
 
