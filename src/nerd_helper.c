@@ -12,16 +12,21 @@ typedef struct PrudensSettings {
     char *prudensjs_call;
 } PrudensSettings;
 
-int prudensjs_settings_constructor(PrudensSettings_ptr *settings, const char * const argv0,
-const char * const test_directory, const char * const constraints_file, char *extra_args) {
-    if (!settings) {
-        return -1;
-    }
+PrudensSettings_ptr global_prudens_settings = NULL;
 
+/**
+ * TODO Document this constructor.
+*/
+int prudensjs_settings_constructor(const char * const argv0,
+const char * const test_directory, const char * const constraints_file, char *extra_args) {
     if (!argv0) {
         return -2;
     }
     int error_code = 0;
+
+    if (global_prudens_settings) {
+        prudensjs_settings_destructor();
+    }
 
     const size_t current_directory_size = strstr(argv0, "bin") - argv0;
     char *current_directory = (char *) malloc((current_directory_size + 1) * sizeof(char));
@@ -35,22 +40,22 @@ const char * const test_directory, const char * const constraints_file, char *ex
         total_string_length += strlen(extra_args);
     }
 
-    (*settings) = (PrudensSettings *) malloc(sizeof(PrudensSettings));
-    (*settings)->prudensjs_call = (char *) malloc(total_string_length * sizeof(char));
+    global_prudens_settings = (PrudensSettings *) malloc(sizeof(PrudensSettings));
+    global_prudens_settings->prudensjs_call = (char *) malloc(total_string_length * sizeof(char));
     current_string_length = strlen(_node);
-    memcpy((*settings)->prudensjs_call, _node, current_string_length);
+    memcpy(global_prudens_settings->prudensjs_call, _node, current_string_length);
     string_set_so_far += current_string_length;
 
-    memcpy((*settings)->prudensjs_call + string_set_so_far, " ", 1);
+    memcpy(global_prudens_settings->prudensjs_call + string_set_so_far, " ", 1);
     ++string_set_so_far;
 
     current_string_length = strlen(current_directory);
-    memcpy((*settings)->prudensjs_call + string_set_so_far, current_directory,
+    memcpy(global_prudens_settings->prudensjs_call + string_set_so_far, current_directory,
     current_string_length);
     string_set_so_far += current_string_length;
 
     current_string_length = strlen(_prudensjs_dir);
-    memcpy((*settings)->prudensjs_call + string_set_so_far, _prudensjs_dir, current_string_length);
+    memcpy(global_prudens_settings->prudensjs_call + string_set_so_far, _prudensjs_dir, current_string_length);
     string_set_so_far += current_string_length;
 
     const char *temp_directory = test_directory;
@@ -66,21 +71,21 @@ const char * const test_directory, const char * const constraints_file, char *ex
     }
     total_string_length += current_string_length + 1;
 
-    (*settings)->temp_file = (char *) malloc(current_string_length * sizeof(char));
+    global_prudens_settings->temp_file = (char *) malloc(current_string_length * sizeof(char));
     if (extra_args) {
-        sprintf((*settings)->temp_file, "%s%s%s", temp_directory, _temp, extra_args);
+        sprintf(global_prudens_settings->temp_file, "%s%s%s", temp_directory, _temp, extra_args);
     } else {
-        sprintf((*settings)->temp_file, "%s%s", temp_directory, _temp);
+        sprintf(global_prudens_settings->temp_file, "%s%s", temp_directory, _temp);
     }
 
-    (*settings)->prudensjs_call = (char *) realloc((*settings)->prudensjs_call,
+    global_prudens_settings->prudensjs_call = (char *) realloc(global_prudens_settings->prudensjs_call,
     total_string_length * sizeof(char));
 
-    memcpy((*settings)->prudensjs_call + string_set_so_far, " ", 1);
+    memcpy(global_prudens_settings->prudensjs_call + string_set_so_far, " ", 1);
     ++string_set_so_far;
 
-    current_string_length = strlen((*settings)->temp_file);
-    memcpy((*settings)->prudensjs_call + string_set_so_far, (*settings)->temp_file,
+    current_string_length = strlen(global_prudens_settings->temp_file);
+    memcpy(global_prudens_settings->prudensjs_call + string_set_so_far, global_prudens_settings->temp_file,
     current_string_length);
     string_set_so_far += current_string_length;
 
@@ -93,48 +98,51 @@ const char * const test_directory, const char * const constraints_file, char *ex
             current_string_length = strlen(constraints_file);
             total_string_length += current_string_length + 1;
 
-            (*settings)->prudensjs_call = (char *) realloc((*settings)->prudensjs_call,
+            global_prudens_settings->prudensjs_call = (char *) realloc(global_prudens_settings->prudensjs_call,
             total_string_length * sizeof(char));
 
-            memcpy((*settings)->prudensjs_call + string_set_so_far, " ", 1);
+            memcpy(global_prudens_settings->prudensjs_call + string_set_so_far, " ", 1);
             ++string_set_so_far;
 
-            memcpy((*settings)->prudensjs_call + string_set_so_far, constraints_file,
+            memcpy(global_prudens_settings->prudensjs_call + string_set_so_far, constraints_file,
             current_string_length);
             string_set_so_far += current_string_length;
         }
     }
 
-    memset((*settings)->prudensjs_call + string_set_so_far, '\0', 1);
+    memset(global_prudens_settings->prudensjs_call + string_set_so_far, '\0', 1);
     free(current_directory);
     return error_code;
 }
 
-int prudensjs_settings_destructor(PrudensSettings_ptr *settings) {
-    if (!(settings && *settings)) {
+/**
+ * TODO Document this destructor.
+*/
+int prudensjs_settings_destructor() {
+    if (!global_prudens_settings) {
         return 1;
     }
 
-    safe_free((*settings)->prudensjs_call);
-    safe_free((*settings)->temp_file);
-    safe_free(*settings);
+    safe_free(global_prudens_settings->prudensjs_call);
+    safe_free(global_prudens_settings->temp_file);
+    safe_free(global_prudens_settings);
 
     return 0;
 }
 
 /**
  * @brief Calls Prudens-JS using Node-JS. It creates a file with a converted KnowledgeBase and a
- * Scene/Context, which holds an observation and saves the inference.
+ * Scene/Context, which holds an observation and saves the inference. It uses the
+ * global_prudens_settings.
  *
  * @param knowledge_base The KnowledgeBase to be used in Prudens-JS.
  * @param observation A Scene/Context *, which includes all the observed Literals.
  * @param inference A Scene ** (reference to a Scene *) to save the inferences made by Prudens-JS.
  * Deallocate using scene_destructor.
 */
-void prudensjs_inference(const PrudensSettings_ptr settings,
-const KnowledgeBase * const knowledge_base, const Scene * const restrict observation,
-Scene ** const inference) {
-    if (!settings) {
+void prudensjs_inference(const KnowledgeBase * const knowledge_base,
+const Scene * const restrict observation, Scene ** const inference) {
+    if (!global_prudens_settings) {
         return;
     }
 
@@ -144,15 +152,15 @@ Scene ** const inference) {
         return;
     }
 
-    FILE *file = fopen(settings->temp_file, "wb");
+    FILE *file = fopen(global_prudens_settings->temp_file, "wb");
 
     fprintf(file, "%s\n%s\n", knowledge_base_prudensjs, context_prudensjs);
     free(knowledge_base_prudensjs);
     free(context_prudensjs);
     fclose(file);
-    system(settings->prudensjs_call);
+    system(global_prudens_settings->prudensjs_call);
 
-    file = fopen(settings->temp_file, "rb");
+    file = fopen(global_prudens_settings->temp_file, "rb");
     if (feof(file)) {
         fclose(file);
         return;
@@ -167,13 +175,13 @@ Scene ** const inference) {
     }
 
     fclose(file);
-    remove(settings->temp_file);
+    remove(global_prudens_settings->temp_file);
 }
 
 /**
  * @brief Calls Prudens-JS using Node-JS. It creates a file with a converted KnowledgeBase and a
  * number n of Scene/Context, which holds n observations and saves the inference for each one of
- * them.
+ * them. It uses the global_prudens_settings.
  *
  * @param knowledge_base The KnowledgeBase to be used in Prudens-JS.
  * @param observations_size The number of different observations given.
@@ -188,10 +196,10 @@ Scene ** const inference) {
  * @return 1 if settings are NULL, 3 if observations_size is 0, 4 if observations is NULL, 5 if
  * the knowledge_base is NULL, -1 if the file opening failed, and 0 if it no errors occured.
 */
-int prudensjs_inference_batch(const PrudensSettings_ptr settings,
-const KnowledgeBase * const knowledge_base, const size_t observations_size,
-Scene ** restrict observations, Scene *** const inferences, char ** const save_inferring_rules) {
-    if (!settings) {
+int prudensjs_inference_batch(const KnowledgeBase * const knowledge_base,
+const size_t observations_size, Scene ** restrict observations, Scene *** const inferences,
+char ** const save_inferring_rules) {
+    if (!global_prudens_settings) {
         return 1;
     }
 
@@ -210,7 +218,7 @@ Scene ** restrict observations, Scene *** const inferences, char ** const save_i
         return 5;
     }
 
-    FILE *file = fopen(settings->temp_file, "wb");
+    FILE *file = fopen(global_prudens_settings->temp_file, "wb");
     fprintf(file, "%s\n", str);
     safe_free(str);
 
@@ -225,18 +233,20 @@ Scene ** restrict observations, Scene *** const inferences, char ** const save_i
     char *prudens_call = NULL;
 
     if (!save_inferring_rules) {
-        prudens_call = strdup(settings->prudensjs_call);
+        prudens_call = strdup(global_prudens_settings->prudensjs_call);
     } else {
-        prudens_call = calloc(strlen(settings->prudensjs_call) + 5, sizeof(char));
-        memcpy(prudens_call, settings->prudensjs_call, strlen(settings->prudensjs_call));
-        memcpy(prudens_call + strlen(settings->prudensjs_call), " s=1", strlen(" s=1"));
+        prudens_call = calloc(strlen(global_prudens_settings->prudensjs_call) + 5, sizeof(char));
+        memcpy(prudens_call, global_prudens_settings->prudensjs_call,
+        strlen(global_prudens_settings->prudensjs_call));
+        memcpy(prudens_call + strlen(global_prudens_settings->prudensjs_call),
+        " s=1", strlen(" s=1"));
     }
 
     system(prudens_call);
 
     free(prudens_call);
 
-    file = fopen(settings->temp_file, "rb");
+    file = fopen(global_prudens_settings->temp_file, "rb");
     if (feof(file)) {
         fclose(file);
         return -1;
@@ -288,6 +298,6 @@ Scene ** restrict observations, Scene *** const inferences, char ** const save_i
 
     free(buffer);
     fclose(file);
-    remove(settings->temp_file);
+    remove(global_prudens_settings->temp_file);
     return 0;
 }
