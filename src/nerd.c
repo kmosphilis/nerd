@@ -185,8 +185,9 @@ void nerd_destructor(Nerd ** const nerd) {
  * @brief Initiates the learning.
  *
  * @param nerd The Nerd structure containing all the info for learn new Rules.
+ * @param inference_engine An inference engine function. If NULL, it will not function as intented,
+ * and it * will only create rules.
  * @param observation A Scene * containing the current observation (instance) to learn from.
- * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
  * @param labels (Optional) A Context containing all the Literals that should be considered as
  * labels.
  * @param nerd_time_taken (Optional) A size_t * to save the time NERD took to finish learning. It
@@ -199,11 +200,12 @@ void nerd_destructor(Nerd ** const nerd) {
  * @param incompatibilities (Optional) A Scene ** containing the incompatible literals corresponding
  * to each header. It should have the same size, even if no incompatible literals are given.
  */
-void nerd_train(Nerd * const nerd, const Scene * const restrict observation,
-const PrudensSettings_ptr settings, const Context * const restrict labels,
-size_t * const nerd_time_taken, size_t * const ie_time_taken, char **header,
-const size_t header_size, Scene **incompatibilities) {
-    if (!(nerd && observation && settings)) {
+void nerd_train(Nerd * const nerd, void (*inference_engine)
+(const KnowledgeBase * const knowledge_base, const Scene * const restrict observation,
+Scene **inference), const Scene * const restrict observation,
+const Context * const restrict labels, size_t * const nerd_time_taken, size_t * const ie_time_taken,
+char **header, const size_t header_size, Scene **incompatibilities) {
+    if (!(nerd && observation)) {
         return;
     }
 
@@ -213,7 +215,9 @@ const size_t header_size, Scene **incompatibilities) {
     timespec_get(&start, TIME_UTC);
     timespec_get(&prudens_start_time, TIME_UTC);
 
-    prudensjs_inference(settings, nerd->knowledge_base, observation, &inferred);
+    if (inference_engine) {
+        inference_engine(nerd->knowledge_base, observation, &inferred);
+    }
 
     timespec_get(&prudens_end_time, TIME_UTC);
 

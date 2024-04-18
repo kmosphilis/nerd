@@ -219,7 +219,7 @@ START_TEST(to_file_test) {
 
     size_t nerd_time_taken = 0, ie_time_taken = 0;
 
-    nerd_train(nerd, observation, settings, NULL, NULL, NULL);
+    nerd_train(nerd, prudensjs_inference, observation, NULL, NULL, NULL, NULL, 0, NULL);
     nerd_to_file(nerd, "../bin/nerd_output2.txt");
     ck_assert_int_eq(nerd_time_taken, 0);
     ck_assert_int_eq(ie_time_taken, 0);
@@ -228,7 +228,8 @@ START_TEST(to_file_test) {
 
     scene_add_literal(observation, &l3);
     char *previous = knowledge_base_to_string(nerd->knowledge_base);
-    nerd_train(nerd, observation, settings, NULL, &nerd_time_taken, &ie_time_taken);
+    nerd_train(nerd, prudensjs_inference, observation, NULL, &nerd_time_taken, &ie_time_taken,
+    NULL, 0, NULL);
     char *current = knowledge_base_to_string(nerd->knowledge_base);
     ck_assert_str_ne(previous, current);
     free(current);
@@ -266,7 +267,7 @@ Suite *nerd_suite() {
 }
 
 int main(int argc, char *argv[]) {
-    prudensjs_settings_constructor(&settings, argv[0], NULL, NULL, NULL);
+    prudensjs_settings_constructor(argv[0], NULL, NULL, NULL);
     Suite *suite = nerd_suite();
     SRunner *s_runner;
 
@@ -276,7 +277,7 @@ int main(int argc, char *argv[]) {
     srunner_run_all(s_runner, CK_ENV);
     int number_failed = srunner_ntests_failed(s_runner);
     srunner_free(s_runner);
-    prudensjs_settings_destructor(&settings);
+    prudensjs_settings_destructor();
 
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
