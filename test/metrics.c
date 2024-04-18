@@ -9,7 +9,6 @@
 #define DATASET1 "../test/data/sensor_test1.txt"
 #define DATASET2 "../test/data/sensor_test3.txt"
 
-PrudensSettings_ptr settings = NULL;
 
 START_TEST(all_literals_evaluation_test) {
     Nerd *nerd =
@@ -33,7 +32,7 @@ START_TEST(all_literals_evaluation_test) {
     Sensor *sensor = sensor_constructor_from_file(DATASET1, ' ', true, false);
 
     size_t total_hidden, total_recovered, total_incorrectly_recovered, total_not_recovered;
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, sensor, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_ne(total_hidden, 0);
     ck_assert_int_eq(total_hidden, total_read_attributes);
@@ -43,7 +42,7 @@ START_TEST(all_literals_evaluation_test) {
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, sensor, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_eq(total_hidden, total_read_attributes);
     ck_assert_int_gt(total_recovered, 0);
@@ -51,26 +50,26 @@ START_TEST(all_literals_evaluation_test) {
     ck_assert_int_lt(total_not_recovered, total_hidden);
 
     size_t old_hidden = total_hidden, old_recovered = total_recovered;
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, sensor, &total_hidden,
     &total_recovered, NULL, NULL), 0);
     ck_assert_int_eq(old_hidden, total_hidden);
     ck_assert_int_eq(old_recovered, total_recovered);
 
-    ck_assert_int_eq(evaluate_all_literals(NULL, settings, sensor, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(NULL, prudensjs_inference, sensor, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, NULL, &total_hidden, &total_recovered,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, NULL, &total_hidden, &total_recovered,
     NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, NULL, &total_recovered, NULL,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, sensor, NULL, &total_recovered, NULL,
     NULL), -1);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden, NULL, NULL,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, sensor, &total_hidden, NULL, NULL,
     NULL), -1);
 
     sensor_destructor(&sensor);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, sensor, &total_hidden,
     &total_recovered, NULL, NULL), -1);
 
     nerd_destructor(&nerd);
-    ck_assert_int_eq(evaluate_all_literals(nerd, settings, sensor, &total_hidden,
+    ck_assert_int_eq(evaluate_all_literals(nerd, prudensjs_inference, sensor, &total_hidden,
     &total_recovered, NULL, NULL), -1);
 }
 END_TEST
@@ -88,7 +87,7 @@ START_TEST(random_literals_evaluation_test) {
     Sensor *sensor = sensor_constructor_from_file(DATASET2, ',', true, true);
 
     size_t total_hidden, total_recovered, total_incorrectly_recovered, total_not_recovered;
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_ne(total_hidden, 0);
     ck_assert_int_eq(total_recovered, 0);
@@ -97,41 +96,41 @@ START_TEST(random_literals_evaluation_test) {
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, &total_not_recovered), 0);
     ck_assert_int_ne(total_hidden, 0);
     ck_assert_int_ge(total_recovered, 0);
     ck_assert_int_ge(total_incorrectly_recovered, 0);
     ck_assert_int_le(total_not_recovered, total_hidden);
 
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, &total_hidden,
     &total_recovered, &total_incorrectly_recovered, NULL), 0);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, &total_hidden,
     &total_recovered, NULL, &total_not_recovered), 0);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, &total_hidden,
     &total_recovered, NULL, NULL), 0);
 
-    ck_assert_int_eq(evaluate_random_literals(NULL, settings, sensor, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(NULL, prudensjs_inference, sensor, ratio, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, NULL, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, NULL, ratio, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, 0, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, 0, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, 1.01, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, 1.01, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, -0.01, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, -0.01, &total_hidden,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, NULL,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, NULL,
     &total_recovered, NULL, NULL), -1);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden, NULL,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, &total_hidden, NULL,
     NULL, NULL), -1);
 
     sensor_destructor(&sensor);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio,
     &total_hidden, &total_recovered, NULL, NULL), -1);
 
     nerd_destructor(&nerd);
-    ck_assert_int_eq(evaluate_random_literals(nerd, settings, sensor, ratio, &total_hidden,
+    ck_assert_int_eq(evaluate_random_literals(nerd, prudensjs_inference, sensor, ratio, &total_hidden,
     &total_recovered, NULL, NULL), -1);
 }
 END_TEST
@@ -150,36 +149,36 @@ START_TEST(one_specific_literal_evaluation_test) {
     Sensor *sensor = sensor_constructor_from_file(DATASET2, ',', true, true);
 
     float accuracy, abstain_ratio;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy,
     &abstain_ratio, NULL, NULL, NULL, NULL, false), 1);
 
     context_add_literal(literals_to_evaluate, &l4);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy,
     &abstain_ratio, NULL, NULL, NULL, NULL, false), 0);
     ck_assert_float_eq(accuracy, 0);
     ck_assert_float_eq(abstain_ratio, 1);
 
     knowledge_base_add_rule(nerd->knowledge_base, &r1);
     knowledge_base_add_rule(nerd->knowledge_base, &r2);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy,
     &abstain_ratio, NULL, NULL, NULL, NULL, false), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
 
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy, NULL,
     NULL, NULL, NULL, NULL, false), 0);
     accuracy = 0;
     abstain_ratio = 0;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy,
     &abstain_ratio, NULL, NULL, NULL, NULL, false), 0);
     ck_assert_float_eq(accuracy, 0.5);
     ck_assert_float_eq(abstain_ratio, 0.5);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, NULL, NULL, NULL,
     NULL, NULL, NULL, false), 0);
 
     size_t total_observations;
     Scene **inferences = NULL;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, NULL, NULL,
     &total_observations, NULL, &inferences, NULL, false), 0);
     ck_assert_int_ne(total_observations, 0);
     ck_assert_ptr_nonnull(inferences);
@@ -192,26 +191,26 @@ START_TEST(one_specific_literal_evaluation_test) {
 
     const size_t old_observations = total_observations;
     total_observations = 0;
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, NULL, NULL, NULL,
     NULL, &inferences, NULL, false), -2);
 
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, NULL, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, NULL, NULL,
     &total_observations, NULL, NULL, NULL, false), 0);
     ck_assert_int_eq(old_observations, total_observations);
 
-    ck_assert_int_eq(evaluate_labels(NULL, settings, sensor, literals_to_evaluate, &accuracy, NULL,
+    ck_assert_int_eq(evaluate_labels(NULL, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy, NULL,
     NULL, NULL, NULL, NULL, false), -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, NULL, literals_to_evaluate, &accuracy, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, NULL, literals_to_evaluate, &accuracy, NULL,
     NULL, NULL, NULL, NULL, false), -1);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, NULL, &accuracy, NULL, NULL, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, NULL, &accuracy, NULL, NULL, NULL,
     NULL, NULL, false), -1);
 
     sensor_destructor(&sensor);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy,
     &abstain_ratio, NULL, NULL, NULL, NULL, false), -1);
 
     nerd_destructor(&nerd);
-    ck_assert_int_eq(evaluate_labels(nerd, settings, sensor, literals_to_evaluate, &accuracy, NULL,
+    ck_assert_int_eq(evaluate_labels(nerd, prudensjs_inference_batch, sensor, literals_to_evaluate, &accuracy, NULL,
     NULL, NULL, NULL, NULL, false), -1);
 
     context_destructor(&literals_to_evaluate);
@@ -233,7 +232,7 @@ Suite *metrics_suite() {
 }
 
 int main(int argc, char *argv[]) {
-    prudensjs_settings_constructor(&settings, argv[0], NULL, NULL, NULL);
+    prudensjs_settings_constructor(argv[0], NULL, NULL, NULL);
     Suite *suite = metrics_suite();
     SRunner *s_runner;
 
@@ -243,7 +242,7 @@ int main(int argc, char *argv[]) {
     srunner_run_all(s_runner, CK_ENV);
     int number_failed = srunner_ntests_failed(s_runner);
     srunner_free(s_runner);
-    prudensjs_settings_destructor(&settings);
+    prudensjs_settings_destructor();
 
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

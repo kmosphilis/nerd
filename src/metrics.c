@@ -12,7 +12,9 @@
  * accordingly.
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
- * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
+ * @param inference_engine An inference engine function. First param should be for the
+ * knowledge_base (Knolwedgebase *), second for the observation (Scene *), and the last should be
+ * for the inference to be saved (Scene **).
  * @param sensor_to_evaluate The Sensor * containing the evaluation samples.
  * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
  * has hidden.
@@ -26,11 +28,12 @@
  * @return 0 if the function was executed successfully, -1 if one of the given parameters was NULL,
  * -2 if a non existant path was given to sensor_to_evaluate, or -3 if an error has occurred.
 */
-int evaluate_all_literals(const Nerd * const nerd, const PrudensSettings_ptr settings,
-const Sensor * const sensor_to_evaluate, size_t * const restrict total_hidden,
+int evaluate_all_literals(const Nerd * const nerd, void (*inference_engine)
+(const KnowledgeBase * const knowledge_base, const Scene * const restrict observation,
+Scene **inference), const Sensor * const sensor_to_evaluate, size_t * const restrict total_hidden,
 size_t * const restrict total_recovered, size_t * const restrict total_incorrectly_recovered,
 size_t * const restrict total_not_recovered) {
-    if (!(nerd && settings && sensor_to_evaluate && total_hidden && total_recovered)) {
+    if (!(nerd && sensor_to_evaluate && total_hidden && total_recovered)) {
         return -1;
     }
 
@@ -50,7 +53,7 @@ size_t * const restrict total_not_recovered) {
         for (i = 0; i < observation->size; ++i) {
             scene_remove_literal(observation, 0, &removed_literal);
 
-            prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
+            inference_engine(nerd->knowledge_base, observation, &inference);
 
             if (sensor_to_evaluate->header) {
                 expected_header = (char *) malloc((strstr(removed_literal->atom, "_")
@@ -105,7 +108,9 @@ finished:
  * that will be hidden (removed) by the algorithm.
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
- * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
+ * @param inference_engine An inference engine function. First param should be for the
+ * knowledge_base (Knolwedgebase *), second for the observation (Scene *), and the last should be
+ * for the inference to be saved (Scene **).
  * @param sensor_to_evaluate The Sensor * containing the evaluation samples.
  * @param ratio A float variable which indicates the ratio of the Literals to be hidden.
  * @param total_hidden A size_t pointer to save the total number of the Literals that the algorithm
@@ -121,11 +126,12 @@ finished:
  * or the ratio was not in the range (0, 1), or -2 if a non existant path was given to
  * sensor_to_evaluate.
 */
-int evaluate_random_literals(const Nerd * const nerd, const PrudensSettings_ptr settings,
-const Sensor * const sensor_to_evaluate, const float ratio, size_t * const restrict total_hidden,
-size_t * const restrict total_recovered, size_t * const restrict total_incorrectly_recovered,
-size_t * const restrict total_not_recovered) {
-    if (!(nerd && sensor_to_evaluate && settings && total_hidden && total_recovered
+int evaluate_random_literals(const Nerd * const nerd, void (*inference_engine)
+(const KnowledgeBase * const knowledge_base, const Scene * const restrict observation,
+Scene **inference), const Sensor * const sensor_to_evaluate, const float ratio,
+size_t * const restrict total_hidden, size_t * const restrict total_recovered,
+size_t * const restrict total_incorrectly_recovered, size_t * const restrict total_not_recovered) {
+    if (!(nerd && sensor_to_evaluate && total_hidden && total_recovered
     && (ratio > 0) && (ratio < 1)
     )) {
         return -1;
@@ -167,7 +173,7 @@ size_t * const restrict total_not_recovered) {
         }
         safe_free(possible_indices);
 
-        prudensjs_inference(settings, nerd->knowledge_base, observation, &inference);
+        inference_engine(nerd->knowledge_base, observation, &inference);
 
         total_hidden_ += removed_literals->size;
 
@@ -230,7 +236,10 @@ next_literal:
  * inference engine to find out whether the engine can infer that Literal or not.
  *
  * @param nerd The Nerd struct where the learnt KnowledgeBase to evaluate is.
- * @param settings A PrudensSettings_ptr which has all the necessary options for Prudens JS to run.
+ * @param inference_engine An inference engine function returning int. First param should be for the
+ * knowledge_base (Knolwedgebase *), second for the total observations, third for the observations
+ * (Scene **), third should be for the inferences to be saved (Scene ***), and the last one should
+ * be used to save the inferring rules as a strings separated with a new line '\n' (char **).
  * @param sensor_to_evaluate The Sensor * containing the evaluation samples.
  * @param labels The Context containing all the Literals that act a labels.
  * @param accuracy A pointer to a float variable to save the overall accuracy of the KnowledgeBase
@@ -254,13 +263,15 @@ next_literal:
  * provided label (index calculated from the given file), -2 if total_observation was not given, but
  * either observations or inferences were given.
 */
-int evaluate_labels(const Nerd * const nerd, const PrudensSettings_ptr settings,
+int evaluate_labels(const Nerd * const nerd, int (*inference_engine_batch)
+(const KnowledgeBase * const knowledge_base, const size_t total_observations,
+Scene ** restrict observation, Scene *** const inference, char ** const save_inferring_rules),
 const Sensor * const sensor_to_evaluate, const Context * const labels,
 float * const restrict accuracy, float * const restrict abstain_ratio,
 size_t * const total_observations, Scene *** const restrict observations,
 Scene *** const restrict inferences, char ** const save_inferring_rules,
 bool partial_observation) {
-    if (!(nerd && settings && sensor_to_evaluate && labels)) {
+    if (!(nerd && sensor_to_evaluate && labels)) {
         return -1;
     }
 
@@ -305,8 +316,8 @@ bool partial_observation) {
         }
     }
 
-    prudensjs_inference_batch(settings, nerd->knowledge_base, _total_observations, _observations,
-    &_inferences, save_inferring_rules);
+    inference_engine_batch(nerd->knowledge_base, _total_observations, _observations, &_inferences,
+    save_inferring_rules);
 
     if (accuracy || abstain_ratio) {
         unsigned int positives = 0, negatives = 0, unobserved = 0;
