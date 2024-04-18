@@ -185,8 +185,10 @@ void nerd_destructor(Nerd ** const nerd) {
  * @brief Initiates the learning.
  *
  * @param nerd The Nerd structure containing all the info for learn new Rules.
- * @param inference_engine An inference engine function. If NULL, it will not function as intented,
- * and it * will only create rules.
+ * @param inference_engine An inference engine function. First param should be for the
+ * knowledge_base (Knolwedgebase *), second for the observation (Scene *), and the last should be
+ * for the inference to be saved (Scene **). If NULL, it will not function as intented, and it will
+ * only create rules.
  * @param observation A Scene * containing the current observation (instance) to learn from.
  * @param labels (Optional) A Context containing all the Literals that should be considered as
  * labels.
