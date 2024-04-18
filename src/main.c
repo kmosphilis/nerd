@@ -476,8 +476,7 @@ int main(int argc, char *argv[]) {
         nerd_destructor(&given_nerd);
     }
 
-    PrudensSettings_ptr settings = NULL;
-    prudensjs_settings_constructor(&settings, argv[0], test_directory, constraints_file,
+    prudensjs_settings_constructor(argv[0], test_directory, constraints_file,
     current_arg);
 
     size_t total_instances = sensor_get_total_observations(training_dataset);
@@ -529,7 +528,7 @@ int main(int argc, char *argv[]) {
             instance + 1, total_instances);
             sensor_get_next_scene(training_dataset, &observation);
 
-            nerd_train(nerd, observation, settings, labels, &nerd_time_taken, &prudens_time_taken,
+            nerd_train(nerd, prudensjs_inference, observation, labels, &nerd_time_taken, &prudens_time_taken,
             training_dataset->header, training_dataset->header_size, incompatibilities);
             total_nerd_time_taken += nerd_time_taken;
             current_iteration_nerd_time += nerd_time_taken;
@@ -579,7 +578,7 @@ int main(int argc, char *argv[]) {
     free(incompatibilities);
     sensor_destructor(&training_dataset);
     nerd_destructor(&nerd);
-    prudensjs_settings_destructor(&settings);
+    prudensjs_settings_destructor();
 failed:
     context_destructor(&labels);
     if (!entire) {
