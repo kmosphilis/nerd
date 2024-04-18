@@ -240,8 +240,7 @@ failed:
     pcg32_random_t seed;
     pcg32_srandom_r(&seed, state_seed, seq_seed);
 
-    PrudensSettings_ptr settings;
-    prudensjs_settings_constructor(&settings, argv[0], result_directory, constraints_file,
+    prudensjs_settings_constructor(argv[0], result_directory, constraints_file,
     strstr(argv[2], "iteration"));
 
     char *train_path = NULL, *test_path = NULL;
@@ -328,7 +327,7 @@ failed:
 
     char *rules = NULL;
     for (k = 0; k < 2; ++k) {
-        if (evaluate_labels(nerd, settings, datasets[k], labels, NULL, NULL, &total_observations,
+        if (evaluate_labels(nerd, prudensjs_inference_batch, datasets[k], labels, NULL, NULL, &total_observations,
         NULL, &result, &rules, partial_observation) == 0) {
             for (i = 0; i < total_observations; ++i) {
                 for (j = 0; j < result[i]->size; ++j) {
@@ -357,7 +356,7 @@ failed:
     }
 
     free(constraints_file);
-    prudensjs_settings_destructor(&settings);
+    prudensjs_settings_destructor();
     context_destructor(&labels);
     nerd_destructor(&nerd);
     return EXIT_SUCCESS;
