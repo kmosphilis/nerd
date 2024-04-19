@@ -104,19 +104,23 @@ int knowledge_base_add_rule(KnowledgeBase *const knowledge_base,
  * @param max_body_size The maximum number of Literals to be included in the
  * body of a Rule.
  * @param max_number_of_rules The maximum number of Rules to be created.
- * @param focused_labels (Optional) A Context containing labels that the
- * algorithm should use as the head for every Rule that it will create. If NULL,
- * the head will be a random uncovered Literal.
+ * @param labels A Context containing labels that the algorithm should use as
+ * the head for every Rule that it will create. If NULL, the head will be a
+ * random uncovered Literal.
+ * @param force_head Indicates whether the rules should be focused on the
+ * corresponding label, or not.
  */
-void knowledge_base_create_new_rules(
-    KnowledgeBase *const knowledge_base, const Scene *const restrict observed,
-    const Scene *const restrict inferred, const unsigned int max_body_size,
-    const unsigned int max_number_of_rules,
-    const Context *const restrict focused_labels) {
-  if (knowledge_base && observed) {
+void knowledge_base_create_new_rules(KnowledgeBase *const knowledge_base,
+                                     const Scene *const restrict observed,
+                                     const Scene *const restrict inferred,
+                                     const unsigned int max_body_size,
+                                     const unsigned int max_number_of_rules,
+                                     const Context *const restrict labels,
+                                     const bool force_head) {
+  if (knowledge_base && observed && labels) {
     Context *uncovered = NULL;
     Scene *combined = NULL;
-    Literal *head = NULL, *temp = NULL;
+    Literal *head = NULL, *temp = NULL, *removed_label = NULL;
     Body *body = NULL;
     Rule *new_rule = NULL;
     bool head_set = false;
@@ -124,9 +128,10 @@ void knowledge_base_create_new_rules(
     scene_union(observed, inferred, &combined);
 
     unsigned int i;
-    if (focused_labels) {
-      for (i = 0; i < focused_labels->size; ++i) {
-        int index = scene_literal_index(combined, focused_labels->literals[i]);
+    if (force_head) {
+      int index;
+      for (i = 0; i < labels->size; ++i) {
+        index = scene_literal_index(combined, labels->literals[i]);
         if (index > -1) {
           scene_remove_literal(combined, index, &head);
           head_set = true;
@@ -170,6 +175,16 @@ void knowledge_base_create_new_rules(
           if (head_index >= 0) {
             scene_remove_literal(combined, head_index, NULL);
           }
+
+          int index;
+          for (j = 0; j < labels->size; ++j) {
+            index = scene_literal_index(combined, labels->literals[j]);
+
+            if (index > -1) {
+              scene_remove_literal(combined, index, &removed_label);
+              break;
+            }
+          }
         }
 
         body = context_constructor(true);
@@ -204,6 +219,10 @@ void knowledge_base_create_new_rules(
 
         if (!head_set) {
           scene_add_literal(combined, &head);
+        }
+
+        if (removed_label) {
+          scene_add_literal(combined, &removed_label);
         }
 
         safe_free(random_indices);

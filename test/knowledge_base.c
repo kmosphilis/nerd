@@ -9,6 +9,8 @@
 #include "helper/rule.h"
 #include "helper/rule_queue.h"
 
+#define NUMBER_OF_TOTAL_LEARNING_ITERATIONS 5
+
 START_TEST(construct_destruct_test) {
   KnowledgeBase *knowledge_base = knowledge_base_constructor(5.0, true);
 
@@ -168,54 +170,91 @@ START_TEST(create_new_rules_test) {
   old_size = knowledge_base->active->length + result->length;
   rule_queue_destructor(&result);
 
-  do {
+  for (i = 0; i < NUMBER_OF_TOTAL_LEARNING_ITERATIONS; ++i) {
     knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5,
-                                    NULL);
+                                    labels, true);
     rule_hypergraph_get_inactive_rules(knowledge_base, &result);
     new_size = knowledge_base->active->length + result->length;
     rule_queue_destructor(&result);
-  } while (old_size == new_size);
-  ck_assert_int_ne(old_size, new_size);
+  }
+  ck_assert_int_gt(new_size, old_size);
 
-  old_size = new_size;
-  do {
-    knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5,
-                                    NULL);
-    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
-    new_size = knowledge_base->active->length + result->length;
-    rule_queue_destructor(&result);
-  } while (old_size == new_size);
-  ck_assert_int_ne(old_size, new_size);
-
-  old_size = new_size;
-  knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5, NULL);
-  knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5, NULL);
   rule_hypergraph_get_inactive_rules(knowledge_base, &result);
-  new_size = knowledge_base->active->length + result->length;
-  rule_queue_destructor(&result);
-  ck_assert_int_eq(old_size, new_size);
-
-  knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5, NULL);
-  knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5, NULL);
-  rule_hypergraph_get_inactive_rules(knowledge_base, &result);
-  new_size = knowledge_base->active->length + result->length;
-  rule_queue_destructor(&result);
-  ck_assert_int_ne(old_size, new_size);
-
-  knowledge_base_destructor(&knowledge_base);
-
-  knowledge_base = knowledge_base_constructor(3.0, true);
-
-  do {
-    rule_queue_destructor(&result);
-    knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 20,
-                                    labels);
-    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
-  } while (result->length == 0);
-
   for (i = 0; i < result->length; ++i) {
     ck_assert_literal_eq(result->rules[i]->head, labels->literals[0]);
   }
+  rule_queue_destructor(&result);
+
+  knowledge_base_destructor(&knowledge_base);
+  knowledge_base = knowledge_base_constructor(3.0, false);
+  old_size = 0;
+
+  for (i = 0; i < NUMBER_OF_TOTAL_LEARNING_ITERATIONS; ++i) {
+    knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5,
+                                    labels, false);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    new_size = result->length;
+    rule_queue_destructor(&result);
+  }
+  ck_assert_int_gt(new_size, old_size);
+
+  rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+  unsigned int total_labeled_head = 0, j;
+  for (i = 0; i < result->length; ++i) {
+    total_labeled_head +=
+        literal_equals(result->rules[i]->head, labels->literals[0]);
+
+    for (j = 0; j < result->rules[i]->body->size; ++j) {
+      ck_assert_literal_ne(result->rules[i]->body->literals[j],
+                           labels->literals[0]);
+    }
+  }
+  ck_assert_int_le(total_labeled_head, new_size);
+  rule_queue_destructor(&result);
+
+  knowledge_base_destructor(&knowledge_base);
+  knowledge_base = knowledge_base_constructor(3.0, false);
+
+  knowledge_base_create_new_rules(knowledge_base, observed, inferred, 3, 5,
+                                  NULL, true);
+  rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+  ck_assert_int_eq(knowledge_base->active->length + result->length, 0);
+  rule_queue_destructor(&result);
+
+  for (i = 0; i < NUMBER_OF_TOTAL_LEARNING_ITERATIONS; ++i) {
+    knowledge_base_create_new_rules(knowledge_base, observed, NULL, 3, 5,
+                                    labels, false);
+    rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+    new_size = result->length;
+    rule_queue_destructor(&result);
+  }
+
+  rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+  for (i = 0; i < result->length; ++i) {
+    total_labeled_head +=
+        literal_equals(result->rules[i]->head, labels->literals[0]);
+
+    for (j = 0; j < result->rules[i]->body->size; ++j) {
+      ck_assert_literal_ne(result->rules[i]->body->literals[j],
+                           labels->literals[0]);
+    }
+  }
+  ck_assert_int_le(total_labeled_head, new_size);
+  rule_queue_destructor(&result);
+
+  knowledge_base_destructor(&knowledge_base);
+  knowledge_base = knowledge_base_constructor(3.0, false);
+
+  knowledge_base_create_new_rules(knowledge_base, NULL, inferred, 3, 5, labels,
+                                  true);
+  rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+  ck_assert_int_eq(knowledge_base->active->length + result->length, 0);
+  rule_queue_destructor(&result);
+
+  knowledge_base_create_new_rules(NULL, observed, inferred, 3, 5, labels, true);
+  rule_hypergraph_get_inactive_rules(knowledge_base, &result);
+  ck_assert_int_eq(knowledge_base->active->length + result->length, 0);
+  rule_queue_destructor(&result);
 
   rule_queue_destructor(&result);
   knowledge_base_destructor(&knowledge_base);
