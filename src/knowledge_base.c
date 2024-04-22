@@ -123,7 +123,6 @@ void knowledge_base_create_new_rules(KnowledgeBase *const knowledge_base,
     Literal *head = NULL, *temp = NULL, *removed_label = NULL;
     Body *body = NULL;
     Rule *new_rule = NULL;
-    bool head_set = false;
 
     scene_union(observed, inferred, &combined);
 
@@ -134,11 +133,10 @@ void knowledge_base_create_new_rules(KnowledgeBase *const knowledge_base,
         index = scene_literal_index(combined, labels->literals[i]);
         if (index > -1) {
           scene_remove_literal(combined, index, &head);
-          head_set = true;
           break;
         }
       }
-      if (!head_set) {
+      if (!head) {
         goto failed;
       }
 
@@ -158,35 +156,35 @@ void knowledge_base_create_new_rules(KnowledgeBase *const knowledge_base,
     unsigned int j, body_size,
         rules_to_create = (pcg32_random_r(rng) % max_number_of_rules) + 1;
     int chosen_head_index, head_index, remaining_randoms, random_chosen,
-        chosen_index, *random_indices;
+        chosen_index, label_in_combined_index, *random_indices;
 
     for (i = 0; i < rules_to_create; ++i) {
-      if (combined->size > 1) {
-
-        if (!head_set) {
-          if (uncovered->size == 0) {
-            break;
-          }
-
-          chosen_head_index = pcg32_random_r(rng) % uncovered->size;
-          literal_copy(&head, uncovered->literals[chosen_head_index]);
-
-          head_index = scene_literal_index(combined, head);
-          if (head_index >= 0) {
-            scene_remove_literal(combined, head_index, NULL);
-          }
-
-          int index;
-          for (j = 0; j < labels->size; ++j) {
-            index = scene_literal_index(combined, labels->literals[j]);
-
-            if (index > -1) {
-              scene_remove_literal(combined, index, &removed_label);
-              break;
-            }
-          }
+      if (!force_head) {
+        if (uncovered->size == 0) {
+          break;
         }
 
+        chosen_head_index = pcg32_random_r(rng) % uncovered->size;
+        literal_copy(&head, uncovered->literals[chosen_head_index]);
+
+        head_index = scene_literal_index(combined, head);
+        if (head_index >= 0) {
+          scene_remove_literal(combined, head_index, NULL);
+        }
+
+        for (j = 0; j < labels->size; ++j) {
+          label_in_combined_index =
+              scene_literal_index(combined, labels->literals[j]);
+
+          if (label_in_combined_index > -1) {
+            scene_remove_literal(combined, label_in_combined_index,
+                                 &removed_label);
+            break;
+          }
+        }
+      }
+
+      if (combined->size >= 1) {
         body = context_constructor(true);
         body_size = (pcg32_random_r(rng) % max_body_size) + 1;
         remaining_randoms = combined->size;
@@ -216,22 +214,17 @@ void knowledge_base_create_new_rules(KnowledgeBase *const knowledge_base,
         if (knowledge_base_add_rule(knowledge_base, &new_rule) != 1) {
           rule_destructor(&new_rule);
         }
-
-        if (!head_set) {
-          scene_add_literal(combined, &head);
-        }
-
-        if (removed_label) {
-          scene_add_literal(combined, &removed_label);
-        }
-
         safe_free(random_indices);
         context_destructor(&body);
       }
-    }
 
-    if (head_set) {
-      literal_destructor(&head);
+      if (!force_head) {
+        scene_add_literal(combined, &head);
+      }
+
+      if (removed_label) {
+        scene_add_literal(combined, &removed_label);
+      }
     }
 
     if (!global_rng) {
