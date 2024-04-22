@@ -10,6 +10,7 @@
 #define NUMBER_OF_ACTIVE 4
 #define NUMBER_OF_INACTIVE 3
 #define NUMBER_OF_ERROR_INPUTS 14
+#define NUMBER_OF_TOTAL_LEARNING_ITERATIONS 5
 
 PrudensSettings_ptr settings = NULL;
 
@@ -221,15 +222,21 @@ START_TEST(to_file_test) {
 
   Literal *l1 = literal_constructor_from_string("penuin"),
           *l2 = literal_constructor_from_string("-fly"),
-          *l3 = literal_constructor_from_string("bird");
-  Scene *observation = scene_constructor(true);
+          *l3 = literal_constructor_from_string("bird"), *temp;
+  Scene *observation = scene_constructor(true),
+        *labels = scene_constructor(true);
+  literal_copy(&temp, l2);
   scene_add_literal(observation, &l1);
   scene_add_literal(observation, &l2);
+  scene_add_literal(labels, &temp);
 
   size_t nerd_time_taken = 0, ie_time_taken = 0;
 
-  nerd_train(nerd, prudensjs_inference, observation, NULL, NULL, NULL, NULL, 0,
-             NULL);
+  unsigned int i;
+  for (i = 0; i < NUMBER_OF_TOTAL_LEARNING_ITERATIONS; ++i) {
+    nerd_train(nerd, prudensjs_inference, observation, labels, false, NULL,
+               NULL, NULL, 0, NULL);
+  }
   nerd_to_file(nerd, "../bin/nerd_output2.txt");
   ck_assert_int_eq(nerd_time_taken, 0);
   ck_assert_int_eq(ie_time_taken, 0);
@@ -239,8 +246,10 @@ START_TEST(to_file_test) {
 
   scene_add_literal(observation, &l3);
   char *previous = knowledge_base_to_string(nerd->knowledge_base);
-  nerd_train(nerd, prudensjs_inference, observation, NULL, &nerd_time_taken,
-             &ie_time_taken, NULL, 0, NULL);
+  for (i = 0; i < NUMBER_OF_TOTAL_LEARNING_ITERATIONS; ++i) {
+    nerd_train(nerd, prudensjs_inference, observation, labels, false,
+               &nerd_time_taken, &ie_time_taken, NULL, 0, NULL);
+  }
   char *current = knowledge_base_to_string(nerd->knowledge_base);
   ck_assert_str_ne(previous, current);
   free(current);
@@ -248,6 +257,7 @@ START_TEST(to_file_test) {
   ck_assert_int_ge(nerd_time_taken, 0);
   ck_assert_int_gt(ie_time_taken, 0);
 
+  scene_destructor(&labels);
   scene_destructor(&observation);
 
   nerd_to_file(nerd, NULL);

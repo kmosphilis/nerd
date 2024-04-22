@@ -208,8 +208,11 @@ void nerd_destructor(Nerd **const nerd) {
  * it will not function as intented, and it will only create rules.
  * @param observation A Scene * containing the current observation (instance) to
  * learn from.
- * @param labels (Optional) A Context containing all the Literals that should be
- * considered as labels.
+ * @param labels A Context containing all the Literals that should be considered
+ * as labels. To be used with force_head if true, or as an exclusion from a
+ * rule's body.
+ * @param force_head Indicates whether the rules should be focused on the
+ * corresponding label, or not.
  * @param nerd_time_taken (Optional) A size_t * to save the time NERD took to
  * finish learning. It does not include the time taken by the inference engine
  * (Prudens JS).
@@ -227,11 +230,11 @@ void nerd_train(Nerd *const nerd,
                     const KnowledgeBase *const knowledge_base,
                     const Scene *const restrict observation, Scene **inference),
                 const Scene *const restrict observation,
-                const Context *const restrict labels,
+                const Context *const restrict labels, const bool force_head,
                 size_t *const nerd_time_taken, size_t *const ie_time_taken,
                 char **header, const size_t header_size,
                 Scene **incompatibilities) {
-  if (!(nerd && observation)) {
+  if (!(nerd && observation && labels)) {
     return;
   }
 
@@ -249,7 +252,7 @@ void nerd_train(Nerd *const nerd,
 
   knowledge_base_create_new_rules(nerd->knowledge_base, observation, inferred,
                                   nerd->breadth, nerd->max_rules_per_instance,
-                                  labels);
+                                  labels, force_head);
   rule_hypergraph_update_rules(nerd->knowledge_base, observation, inferred,
                                nerd->promotion_weight, nerd->demotion_weight,
                                nerd->increasing_demotion, header, header_size,

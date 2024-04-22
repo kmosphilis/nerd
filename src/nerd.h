@@ -29,7 +29,7 @@ void nerd_train(Nerd *const nerd,
                     const KnowledgeBase *const knowledge_base,
                     const Scene *const restrict observation, Scene **inference),
                 const Scene *const restrict observation,
-                const Context *const restrict labels,
+                const Context *const restrict labels, const bool force_head,
                 size_t *const nerd_time_taken, size_t *const ie_time_taken,
                 char **header, const size_t header_size,
                 Scene **incompatibilities);
