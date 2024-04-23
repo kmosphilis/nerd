@@ -32,51 +32,39 @@ int close_dataset_and_exit(FILE *dataset) {
 
 int main(int argc, char *argv[]) {
   int exit_code = EXIT_SUCCESS;
-  if (argc < 13) {
+  if (argc < 15) {
     printf(
         "Required parameters:\n-f <filepath> The path of the file,\n-h <bool> "
-        "Does the file "
-        "have a header or not?,\n-t <float> > 0 Threshold value. It must be "
-        "bigger than 0,\n-p "
-        "<float> > 0 Promotion rate. Must be greater than 0,\n-d <float> > 0 "
-        "Demotion rate. Must be"
-        " greater than 0, and\n-b <unsigned int> Maximum number of literals "
-        "per rule. It must be\n "
-        "positive. If more that the maximum number or 0 are given, it will "
-        "use\n the maximum value "
-        "(max - 1).\n\nOptional parameters:\n-i <filepath> The path of a file "
-        "containing "
-        "incompatibility rules in the\n form of prudens-js.\n-e <unsigned "
-        "long> Number of "
-        "iterations that Nerd should train for. It must\n be greater than 0. "
-        "Default value is set "
-        "to 1.\n-r <unsigned int> Number of maximum rules to be learnt\n at "
-        "each instance/"
-        "observation. It must be greater than 0, Default value\n is set to "
-        "5.\n-c <bool> Should it "
-        "use the classic approach or not (use backward chaining\n demotion)? "
-        "Default value is set "
-        "to 'false'\n-di <bool> Should the demotion rate be increasing or "
-        "decreasing for\n deeper "
-        "causing rules? 'true' for increasing, 'false' for decreasing.\n "
-        "Default value is set to "
-        "'false'.\n-o <bool> Should the it be trained using partial "
-        "observations? Default\n value "
-        "is set to 'true'.\n-l <filepath> This option enables the rule "
-        "learning to focus on these\n"
-        " labels found in the given file.\n-s1 <unsigned long>  Seed 1 (state "
-        "seed) for the PRNG. "
-        "\n-s2 <unsigned long>  Seed 2 (sequence seed) for the PRNG.\n It must "
-        "be bigger than 0.\n"
-        "-kb <filepath> The path to an .nd file which contains a KB to\n be "
-        "re-used.\n-entire "
-        "<bool> Should it use the given dataset for training only?\n Default "
-        "value is set to "
-        "'false'.\n-ratio <float> The testing dataset ratio. Must be between "
-        "[0,1]. Default\n value"
-        " is set to 0.2.\n\nBy adding an additional number at the end of these "
-        "parameters, you mark"
-        "\n the number of this run and it will save its given parameters.\n");
+        "Does the file have a header or not?,\n-t <float> > 0 Threshold value. "
+        "It must be bigger than 0,\n-p <float> > 0 Promotion rate. Must be "
+        "greater than 0,\n-d <float> > 0 Demotion rate. Must be greater than "
+        "0,\n-b <unsigned int> Maximum number of literals per rule. It "
+        "must be\n positive. If more that the maximum number or 0 are given, "
+        "it will use\n the maximum value (max - 1), and \n-l <filepath> This "
+        "option enables the rule learning to focus on these\n labels found in "
+        "the given file.\n\nOptional parameters:\n-i <filepath> The path of a "
+        "file containing incompatibility rules in the\n form of "
+        "prudens-js.\n-e <unsigned long> Number of iterations that Nerd should "
+        "train for. It must\n be greater than 0. Default value is set to "
+        "1.\n-r <unsigned int> Number of maximum rules to be learnt\n at each "
+        "instance/observation. It must be greater than 0, Default value\n is "
+        "set to 5.\n-c <bool> Should it use the classic approach or not (use "
+        "backward chaining\n demotion)? Default value is set to 'false'\n-di "
+        "<bool> Should the demotion rate be increasing or decreasing for\n "
+        "deeper causing rules? 'true' for increasing, 'false' for "
+        "decreasing.\n Default value is set to 'false'.\n-o <bool> Should the "
+        "it be trained using partial observations? Default\n value is set to "
+        "'true'.\n-fh <bool> Indicates whether to force the head of each "
+        "created rule to\n infer a label. Default value is false.\n-s1 "
+        "<unsigned long> Seed 1 (state seed) for the PRNG. \n-s2 <unsigned "
+        "long> Seed 2 (sequence seed) for the PRNG.\n It must be bigger than "
+        "0.\n-kb <filepath> The path to an .nd file which contains a KB to\n "
+        "be re-used.\n-entire <bool> Should it use the given dataset for "
+        "training only?\n Default value is set to false'.\n-ratio <float> The "
+        "testing dataset ratio. Must be between [0,1]. Default\n value is set "
+        "to 0.2.\n\nAn additional additional number is required at the end of "
+        "all of these parameters, you mark\n the number of this run and it "
+        "will save its given parameters.\n");
     return EXIT_FAILURE;
   }
 
@@ -84,7 +72,7 @@ int main(int argc, char *argv[]) {
   bool h_set = false, b_set = false;
   bool has_header = false, use_back_chaining = true, partial_observation = true,
        s1_set = false, s2_set = false, increasing_demotion = false,
-       entire = false;
+       entire = false, force_head = false;
   char opt, delimiter = ' ';
   FILE *dataset = NULL;
   float threshold = INFINITY, promotion = INFINITY, demotion = INFINITY,
@@ -107,8 +95,7 @@ int main(int argc, char *argv[]) {
             increasing_demotion = true;
           } else {
             printf("'-di' has a wrong value '%s'. It must be a boolean value, "
-                   "'true' or"
-                   " 'false'\n",
+                   "'true' or 'false'\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -116,8 +103,7 @@ int main(int argc, char *argv[]) {
           s1 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
           if ((*arg_end) || strstr(current_arg, "-")) {
             printf("'-s1' value '%s' is not valid. It must be an unsigned long "
-                   "greater "
-                   "than 0 (> 0).\n",
+                   "greater than 0 (> 0).\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -126,8 +112,7 @@ int main(int argc, char *argv[]) {
           s2 = strtoul(current_arg, &arg_end, DECIMAL_BASE);
           if ((*arg_end) || strstr(current_arg, "-")) {
             printf("'-s2' value '%s' is not valid. It must be an unsigned long "
-                   "greater "
-                   "than 0 (> 0).\n",
+                   "greater than 0 (> 0).\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -150,8 +135,18 @@ int main(int argc, char *argv[]) {
           testing_ratio = strtof(current_arg, &arg_end);
           if ((*arg_end) || (testing_ratio < 0) || (testing_ratio > 1)) {
             printf("'-ratio' value '%s' is not valid. It must be a real number "
-                   "between "
-                   "[0,1]\n",
+                   "between [0,1]\n",
+                   current_arg);
+            return close_dataset_and_exit(dataset);
+          }
+        } else if (strcmp(large_option, "fh") == 0) {
+          if (strcmp(current_arg, "true") == 0) {
+            force_head = true;
+          } else if (strcmp(current_arg, "false") == 0) {
+            force_head = false;
+          } else {
+            printf("'-fh' has an incorrect value '%s'. It must be a boolean "
+                   "value, 'true' or 'false'\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -192,8 +187,7 @@ int main(int argc, char *argv[]) {
             has_header = false;
           } else {
             printf("'-h' has a wrong value '%s'. It must be a boolean value, "
-                   "'true'"
-                   " or 'false'\n",
+                   "'true' or 'false'\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -242,8 +236,7 @@ int main(int argc, char *argv[]) {
             use_back_chaining = true;
           } else {
             printf("'-c' has a wrong value '%s'. It must be a boolean value, "
-                   "'true'"
-                   " or 'false'\n",
+                   "'true' or 'false'\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -276,8 +269,7 @@ int main(int argc, char *argv[]) {
             partial_observation = false;
           } else {
             printf("'-o' has a wrong value '%s'. It must be a boolean value, "
-                   "'true'"
-                   " or 'false'\n",
+                   "'true' or 'false'\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -320,8 +312,7 @@ int main(int argc, char *argv[]) {
           max_rules_per_instance = strtoul(current_arg, &arg_end, DECIMAL_BASE);
           if ((*arg_end) || strstr(current_arg, "-")) {
             printf("'-r' has a wrong value '%s'. It must be an unsigned int "
-                   "greater"
-                   " than 0\n",
+                   "greater than 0\n",
                    current_arg);
             return close_dataset_and_exit(dataset);
           }
@@ -354,6 +345,9 @@ int main(int argc, char *argv[]) {
     return close_dataset_and_exit(dataset);
   } else if (!b_set) {
     printf("'-b' is required.\n");
+    return close_dataset_and_exit(dataset);
+  } else if (!labels) {
+    printf("'-l' is required.\n");
     return close_dataset_and_exit(dataset);
   }
 
@@ -524,6 +518,10 @@ int main(int argc, char *argv[]) {
   Sensor *training_dataset =
       sensor_constructor_from_file(train_path, delimiter, true, has_header);
 
+  if (breadth == 0) {
+    breadth = training_dataset->header_size - 1;
+  }
+
   Nerd *nerd =
       nerd_constructor(threshold, max_rules_per_instance, breadth, 1, promotion,
                        demotion, use_back_chaining, increasing_demotion);
@@ -588,7 +586,7 @@ int main(int argc, char *argv[]) {
              iterations, instance + 1, total_instances);
       sensor_get_next_scene(training_dataset, &observation);
 
-      nerd_train(nerd, prudensjs_inference, observation, labels,
+      nerd_train(nerd, prudensjs_inference, observation, labels, force_head,
                  &nerd_time_taken, &prudens_time_taken,
                  training_dataset->header, training_dataset->header_size,
                  incompatibilities);
