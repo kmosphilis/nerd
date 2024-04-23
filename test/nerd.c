@@ -10,7 +10,7 @@
 #define NUMBER_OF_ACTIVE 4
 #define NUMBER_OF_INACTIVE 3
 #define NUMBER_OF_ERROR_INPUTS 14
-#define NUMBER_OF_TOTAL_LEARNING_ITERATIONS 5
+#define NUMBER_OF_TOTAL_LEARNING_ITERATIONS 10
 
 PrudensSettings_ptr settings = NULL;
 
@@ -212,6 +212,62 @@ START_TEST(construct_from_file) {
 }
 END_TEST
 
+START_TEST(train_test) {
+  Nerd *nerd = nerd_constructor(15.0, 5, 3, 50, 1.5, 4.5, true, true);
+  Literal *l1 = literal_constructor_from_string("penuin"),
+          *l2 = literal_constructor_from_string("-fly"),
+          *l3 = literal_constructor_from_string("bird"), *temp;
+  Scene *observation = scene_constructor(true),
+        *labels = scene_constructor(true);
+  literal_copy(&temp, l2);
+  scene_add_literal(observation, &l1);
+  scene_add_literal(observation, &l2);
+  scene_add_literal(observation, &l3);
+  scene_add_literal(labels, &temp);
+
+  unsigned int i;
+  for (i = 0; i < NUMBER_OF_TOTAL_LEARNING_ITERATIONS; ++i) {
+    nerd_train(nerd, prudensjs_inference, observation, labels, true, NULL, NULL,
+               NULL, 0, NULL);
+  }
+
+  ck_assert_int_ge(nerd->knowledge_base->active->length, 0);
+
+  for (i = 0; i < nerd->knowledge_base->active->length; ++i) {
+    ck_assert_float_gt(nerd->knowledge_base->active->rules[i]->weight, 0);
+  }
+
+  RuleQueue *inactive = NULL;
+  rule_hypergraph_get_inactive_rules(nerd->knowledge_base, &inactive);
+  for (i = 0; i < inactive->length; ++i) {
+    ck_assert_float_gt(inactive->rules[i]->weight, 0);
+  }
+
+  rule_queue_destructor(&inactive);
+  nerd_destructor(&nerd);
+
+  nerd = nerd_constructor(3.0, 5, 3, 50, 1.5, 4.5, true, true);
+
+  for (i = 0; i < NUMBER_OF_TOTAL_LEARNING_ITERATIONS; ++i) {
+    nerd_train(nerd, NULL, observation, labels, true, NULL, NULL, NULL, 0,
+               NULL);
+  }
+
+  ck_assert_int_eq(nerd->knowledge_base->active->length, 0);
+
+  rule_hypergraph_get_inactive_rules(nerd->knowledge_base, &inactive);
+  ck_assert_int_gt(inactive->length, 0);
+  for (i = 0; i < inactive->length; ++i) {
+    ck_assert_float_eq_tol(inactive->rules[i]->weight, 0, 0.000001);
+  }
+
+  rule_queue_destructor(&inactive);
+  nerd_destructor(&nerd);
+  scene_destructor(&observation);
+  scene_destructor(&labels);
+}
+END_TEST
+
 START_TEST(to_file_test) {
   Nerd *nerd = nerd_constructor(15.0, 5, 3, 50, 1.5, 4.5, true, true);
 
@@ -271,14 +327,17 @@ START_TEST(to_file_test) {
 END_TEST
 
 Suite *nerd_suite() {
-  Suite *suite;
-  TCase *create_case, *convert_case;
+  Suite *suite = suite_create("Nerd");
+  TCase *create_case, *convert_case, *train_case;
 
-  suite = suite_create("Nerd");
   create_case = tcase_create("Create");
   tcase_add_test(create_case, construct_destruct_test);
   tcase_add_test(create_case, construct_from_file);
   suite_add_tcase(suite, create_case);
+
+  train_case = tcase_create("Train");
+  tcase_add_test(train_case, train_test);
+  suite_add_tcase(suite, train_case);
 
   convert_case = tcase_create("Convert");
   tcase_add_test(convert_case, to_file_test);
