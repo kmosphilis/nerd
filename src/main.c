@@ -34,7 +34,7 @@ int close_dataset_and_exit(FILE *dataset) {
 typedef struct Arguments {
   char *dataset_path, *labels_path, *incompatibility_path, *nerd_file_path;
   bool has_header, classic, partial_observation, force_entire, force_head,
-      increasing_demotion;
+      increasing_demotion, no_inference;
   float threshold, promotion, demotion, testing_ratio;
   unsigned int breadth, experiment_run, max_rules;
   size_t iterations;
@@ -59,6 +59,8 @@ static struct argp_option options[] = {
      "line of DATASET-PATH is where the headers are."},
     {"incompatibility", 'i', "FILE-PATH", 0,
      "Path of a file containing icompatibility rules."},
+    {"no-inference", 'I', 0, 0,
+     "Forces nerd to not use an inference engine (Prudens-JS)."},
     {"nerd-file", 'n', "NERD-FILEPATH", 0, "The path of an existing .nd file."},
     {"partial-observation", 'p', 0, 0, "The file is partially observed."},
     {"rules", 'r', "MAX-RULES", 0,
@@ -110,6 +112,9 @@ error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case 'i':
     arguments->incompatibility_path = arg;
     check_file_existance(arg, state);
+    break;
+  case 'I':
+    arguments->no_inference = true;
     break;
   case 'n':
     arguments->nerd_file_path = arg;
@@ -194,6 +199,7 @@ int main(int argc, char *argv[]) {
   arguments.iterations = 1;
   arguments.max_rules = 5;
   arguments.nerd_file_path = NULL;
+  arguments.no_inference = false;
   arguments.partial_observation = false;
   arguments.testing_ratio = 0.2;
   arguments.s1 = 0;
@@ -418,7 +424,7 @@ int main(int argc, char *argv[]) {
              arguments.iterations, instance + 1, total_instances);
       sensor_get_next_scene(training_dataset, &observation);
 
-      nerd_train(nerd, prudensjs_inference, observation, labels,
+      nerd_train(nerd, arguments.no_inference ? NULL : prudensjs_inference, observation, labels,
                  arguments.force_head, &nerd_time_taken, &prudens_time_taken,
                  training_dataset->header, training_dataset->header_size,
                  incompatibilities);
