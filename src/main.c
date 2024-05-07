@@ -47,6 +47,8 @@ static char args_doc[] = "DATASET-PATH LABELS-PATH THRESHOLD PROMOTION "
 static struct argp_option options[] = {
     {"classic", 'c', 0, 0,
      "Use classic approach. Default: back-ward chaining."},
+    {"increasing-demotion", 'd', 0, 0, "Enables increasing demotion for"
+    "back-ward chaining."},
     {"iterations", 'e', "ITERATIONS", 0,
      "Total number of iteration to train Nerd of DATASET-PATH."},
     {"entire", 'f', 0, 0,
@@ -95,6 +97,9 @@ error_t parse_opt(int key, char *arg, struct argp_state *state) {
   switch (key) {
   case 'c':
     arguments->classic = true;
+    break;
+  case 'd':
+    arguments->increasing_demotion = true;
     break;
   case 'e':
     arguments->iterations = strtoul(arg, &endptr, DECIMAL_BASE);
