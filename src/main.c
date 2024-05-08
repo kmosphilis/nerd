@@ -51,7 +51,7 @@ static struct argp_option options[] = {
     "back-ward chaining."},
     {"iterations", 'e', "ITERATIONS", 0,
      "Total number of iteration to train Nerd of DATASET-PATH."},
-    {"entire", 'f', 0, 0,
+    {"use-entire", 'f', 0, 0,
      "Forces the program to use the entire dataset to training. Default "
      "behaviour will split it into a training and testing."},
     {"force-head", 'h', 0, 0,
