@@ -9,7 +9,7 @@
 /**
  * 1 enables the testing functions, 0 disables them.
  */
-#define RULE_HYPERGRAPH_TEST_FUNCTIONS 1
+#define RULE_HYPERGRAPH_TEST_FUNCTIONS 0
 
 #include "knowledge_base.h"
 #include "rule.h"
