@@ -14,6 +14,7 @@
 
 #define BUFFER_SIZE 256
 #define DECIMAL_BASE 10
+#define TOTAL_EVALUATIONS 2
 
 #define RESULT_DIR "results/"
 #define TRAIN ".train_set"
@@ -334,13 +335,13 @@ int main(int argc, char *argv[]) {
              train_path, training_delimiter, false, training_has_header),
          *testing_dataset = sensor_constructor_from_file(
              test_path, testing_delimiter, false, testing_has_header),
-         *datasets[2] = {training_dataset, testing_dataset};
-  char *paths[2] = {train_path, test_path};
-  FILE *files[2] = {train_results, test_results};
-  FILE *rule_files[2] = {train_rules, test_rules};
+         *datasets[TOTAL_EVALUATIONS] = {training_dataset, testing_dataset};
+  char *paths[TOTAL_EVALUATIONS] = {train_path, test_path};
+  FILE *files[TOTAL_EVALUATIONS] = {train_results, test_results};
+  FILE *rule_files[TOTAL_EVALUATIONS] = {train_rules, test_rules};
 
   char *rules = NULL;
-  for (k = 0; k < 2; ++k) {
+  for (k = 0; k < TOTAL_EVALUATIONS; ++k) {
     if (evaluate_labels(nerd, prudensjs_inference_batch, datasets[k], labels,
                         NULL, NULL, &total_observations, NULL, &result, &rules,
                         partial_observation) == 0) {
