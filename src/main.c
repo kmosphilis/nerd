@@ -47,8 +47,8 @@ static char args_doc[] = "DATASET-PATH LABELS-PATH THRESHOLD PROMOTION "
 static struct argp_option options[] = {
     {"classic", 'c', 0, 0,
      "Use classic approach. Default: back-ward chaining."},
-    {"increasing-demotion", 'd', 0, 0, "Enables increasing demotion for"
-    "back-ward chaining."},
+    {"increasing-demotion", 'd', 0, 0,
+     "Enables increasing demotion for back-ward chaining."},
     {"iterations", 'e', "ITERATIONS", 0,
      "Total number of iteration to train Nerd of DATASET-PATH."},
     {"use-entire", 'f', 0, 0,
@@ -351,9 +351,11 @@ int main(int argc, char *argv[]) {
     nerd_destructor(&given_nerd);
   }
 
-  prudensjs_settings_constructor(argv[0], test_directory,
-                                 arguments.incompatibility_path,
-                                 arguments.experiment_run);
+  char experiment_run[5];
+  sprintf(experiment_run, "%u", arguments.experiment_run);
+
+  prudensjs_settings_constructor(
+      argv[0], test_directory, arguments.incompatibility_path, experiment_run);
 
   size_t total_instances = sensor_get_total_observations(training_dataset);
   const size_t iterations_str_size =
@@ -429,10 +431,10 @@ int main(int argc, char *argv[]) {
              arguments.iterations, instance + 1, total_instances);
       sensor_get_next_scene(training_dataset, &observation);
 
-      nerd_train(nerd, arguments.no_inference ? NULL : prudensjs_inference, observation, labels,
-                 arguments.force_head, &nerd_time_taken, &prudens_time_taken,
-                 training_dataset->header, training_dataset->header_size,
-                 incompatibilities);
+      nerd_train(nerd, arguments.no_inference ? NULL : prudensjs_inference,
+                 observation, labels, arguments.force_head, &nerd_time_taken,
+                 &prudens_time_taken, training_dataset->header,
+                 training_dataset->header_size, incompatibilities);
       total_nerd_time_taken += nerd_time_taken;
       current_iteration_nerd_time += nerd_time_taken;
       total_prudens_time_taken += prudens_time_taken;
