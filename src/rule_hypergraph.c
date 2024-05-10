@@ -570,11 +570,6 @@ void rule_hypergraph_update_rules(
                   knowledge_base->active,
                   rule_queue_find(knowledge_base->active, current_rule), NULL);
             }
-            if (current_rule->weight <= 0) {
-              vertex_remove_edge(current_vertex, j);
-              --j;
-            }
-
             if (was_active) {
               Vertex *potential_vertex;
               for (k = 0; k < current_vertex->edges[j]->number_of_vertices;
@@ -593,6 +588,11 @@ void rule_hypergraph_update_rules(
                                   (void *)_vertices_to_check->front->data);
                 }
               }
+            }
+
+            if (current_rule->weight <= 0) {
+              vertex_remove_edge(current_vertex, j);
+              --j;
             }
           }
         }
