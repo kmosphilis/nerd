@@ -1728,8 +1728,6 @@ START_TEST(update_rules_test) {
   ck_assert_int_lt(inactive_rules->length, initial_total_inactive_rules);
   rule_queue_destructor(&inactive_rules);
 
-  literal_destructor(&n_fly);
-
   Literal *eagle = literal_constructor("eagle", true);
   Rule *fly_eagle = rule_constructor(1, &fly, &eagle, 2, false);
   knowledge_base_add_rule(knowledge_base, &fly_eagle);
@@ -1766,6 +1764,38 @@ START_TEST(update_rules_test) {
   ck_assert_float_eq_tol(fly_eagle->weight, 1, 0.000001);
 
   scene_destructor(&birds);
+  scene_destructor(&observation);
+  scene_destructor(&inference);
+
+  reset_active_rules_weight(knowledge_base, 5);
+  observation = scene_constructor(false);
+  scene_add_literal(observation, &penguin);
+  scene_add_literal(observation, &antarctica);
+  scene_add_literal(observation, &n_fly);
+  inference = scene_constructor(false);
+  scene_add_literal(inference, &antarctica);
+  scene_add_literal(inference, &wings);
+  scene_add_literal(inference, &bird);
+  scene_add_literal(inference, &fly);
+
+  initial_total_active_rules = knowledge_base->active->length;
+  rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+  initial_total_inactive_rules = inactive_rules->length;
+  rule_queue_destructor(&inactive_rules);
+  rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 10,
+                               false, NULL, 0, NULL);
+  ck_assert_int_lt(knowledge_base->active->length, initial_total_active_rules);
+  rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
+  ck_assert_int_le(inactive_rules->length, initial_total_inactive_rules);
+  rule_queue_destructor(&inactive_rules);
+  ck_assert_float_eq_tol(feathers_bird->weight, 5, 0.000001);
+  ck_assert_float_eq_tol(penguin_wings->weight, 1.666667, 0.000001);
+  ck_assert_float_eq_tol(antarctica_penguin->weight, 5.5, 0.000001);
+  ck_assert_float_eq_tol(penguin_antarctica->weight, 5.5, 0.000001);
+  ck_assert_float_eq_tol(wings_feathers->weight, 5, 0.000001);
+  ck_assert_float_eq_tol(fly_eagle->weight, 1, 0.000001);
+
+  literal_destructor(&n_fly);
   scene_destructor(&observation);
   scene_destructor(&inference);
   knowledge_base_destructor(&knowledge_base);
