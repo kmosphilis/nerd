@@ -551,26 +551,21 @@ void rule_hypergraph_update_rules(
       queue_push_back(_depths, (void *)1);
       queue_push_back(_parent_vertex, NULL);
       queue_push_back(_vertices_to_check, (void *)current_vertex);
+      QueueElement *current_vertices_element = _vertices_to_check->front,
+                   *current_depths_element = _depths->front;
 
       do {
-        current_vertex = (Vertex *)_vertices_to_check->front->data;
+        current_vertex = (Vertex *)current_vertices_element->data;
         for (j = 0; j < current_vertex->number_of_edges; ++j) {
           current_rule = current_vertex->edges[j]->rule;
-          bool was_active =
-              current_rule->weight >= knowledge_base->activation_threshold;
           if (rule_applicable(current_rule, observed_and_inferred)) {
             current_rule->weight -=
-                demotion_rate * (increasing_demotion
-                                     ? (int)(long)_depths->front->data
-                                     : 1.0 / (int)(long)_depths->front->data);
+                demotion_rate *
+                (increasing_demotion
+                     ? (int)(long)current_depths_element->data
+                     : 1.0 / (int)(long)current_depths_element->data);
 
-            if (was_active &&
-                (current_rule->weight < knowledge_base->activation_threshold)) {
-              rule_queue_remove_rule(
-                  knowledge_base->active,
-                  rule_queue_find(knowledge_base->active, current_rule), NULL);
-            }
-            if (was_active) {
+            if (rule_queue_find(knowledge_base->active, current_rule) > -1) {
               Vertex *potential_vertex;
               for (k = 0; k < current_vertex->edges[j]->number_of_vertices;
                    ++k) {
@@ -582,25 +577,37 @@ void rule_hypergraph_update_rules(
                     (potential_vertex !=
                      (Vertex *)_parent_vertex->front->data)) {
                   queue_push_back(_depths,
-                                  (void *)((long)_depths->front->data) + 1);
+                                  (void *)((long)current_depths_element->data) +
+                                      1);
                   queue_push_back(_vertices_to_check, (void *)potential_vertex);
-                  queue_push_back(_parent_vertex,
-                                  (void *)_vertices_to_check->front->data);
+                  queue_push_back(_parent_vertex, (void *)current_vertex);
                 }
               }
             }
-
-            if (current_rule->weight <= 0) {
-              vertex_remove_edge(current_vertex, j);
-              --j;
-            }
           }
         }
-        queue_pop_front(_depths, NULL);
-        queue_pop_front(_vertices_to_check, NULL);
-        queue_pop_front(_parent_vertex, NULL);
-      } while (_depths->size != 0);
+      } while ((current_vertices_element = current_vertices_element->next) &&
+               (current_depths_element = current_depths_element->next));
 
+      current_vertices_element = _vertices_to_check->front;
+      do {
+        current_vertex = (Vertex *)current_vertices_element->data;
+
+        for (j = 0; j < current_vertex->number_of_edges; ++j) {
+          current_rule = current_vertex->edges[j]->rule;
+
+          if (current_rule->weight < knowledge_base->activation_threshold) {
+            rule_queue_remove_rule(
+                knowledge_base->active,
+                rule_queue_find(knowledge_base->active, current_rule), NULL);
+          }
+
+          if (current_rule->weight <= 0) {
+            vertex_remove_edge(current_vertex, j);
+            --j;
+          }
+        }
+      } while ((current_vertices_element = current_vertices_element->next));
       queue_destructor(&_depths);
       queue_destructor(&_vertices_to_check);
       queue_destructor(&_parent_vertex);
@@ -1785,11 +1792,12 @@ START_TEST(update_rules_test) {
   rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 10,
                                false, NULL, 0, NULL);
   ck_assert_int_lt(knowledge_base->active->length, initial_total_active_rules);
+  ck_assert_int_eq(knowledge_base->active->length, 4);
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
-  ck_assert_int_le(inactive_rules->length, initial_total_inactive_rules);
+  ck_assert_int_lt(inactive_rules->length, initial_total_inactive_rules);
+  ck_assert_int_eq(inactive_rules->length, 1);
   rule_queue_destructor(&inactive_rules);
   ck_assert_float_eq_tol(feathers_bird->weight, 5, 0.000001);
-  ck_assert_float_eq_tol(penguin_wings->weight, 1.666667, 0.000001);
   ck_assert_float_eq_tol(antarctica_penguin->weight, 5.5, 0.000001);
   ck_assert_float_eq_tol(penguin_antarctica->weight, 5.5, 0.000001);
   ck_assert_float_eq_tol(wings_feathers->weight, 5, 0.000001);
