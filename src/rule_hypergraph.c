@@ -442,14 +442,12 @@ void rule_hypergraph_update_rules(
     const Scene *const inference, const float promotion_rate,
     const float demotion_rate, const bool increasing_demotion, char **header,
     const size_t header_size, Scene **incompatibilities) {
-  if (!(knowledge_base && observation && inference)) {
+  if (!(knowledge_base && observation && inference))
     return;
-  }
 
   if (!((header && (header_size > 0) && incompatibilities) ||
-        ((!header) && (header_size == 0) && (!incompatibilities)))) {
+        ((!header) && (header_size == 0) && (!incompatibilities))))
     return;
-  }
 
   unsigned int i, j, k;
   Vertex *vertex_to_find, *current_vertex;
@@ -461,7 +459,7 @@ void rule_hypergraph_update_rules(
   scene_difference(observation, inference, &observed_diff_inferred);
   for (i = 0; i < header_size; ++i) {
     for (j = 0; j < observed_diff_inferred->size; ++j) {
-      if (strstr(observed_diff_inferred->literals[j]->atom, header[i])) {
+      if (strstr(observed_diff_inferred->literals[j]->atom, header[i]))
         for (k = 0; k < incompatibilities[i]->size; ++k) {
           Literal *current_literal = incompatibilities[i]->literals[k], *copy;
 
@@ -471,7 +469,6 @@ void rule_hypergraph_update_rules(
             scene_add_literal(opposing_literals, &copy);
           }
         }
-      }
     }
   }
   for (i = 0; i < observed_diff_inferred->size; ++i) {
@@ -504,14 +501,14 @@ void rule_hypergraph_update_rules(
           current_rule->weight += promotion_rate;
 
           if (is_inactive &&
-              (current_rule->weight >= knowledge_base->activation_threshold)) {
+              (current_rule->weight >= knowledge_base->activation_threshold))
             rule_queue_enqueue(knowledge_base->active, &current_rule);
-          }
         }
       }
     }
   }
 
+  prb_table *vertices_to_check = prb_create(compare_literals, NULL, NULL);
   for (i = 0; i < opposing_literals->size; ++i) {
     vertex_to_find = vertex_constructor(opposing_literals->literals[i]);
     current_vertex =
@@ -524,23 +521,10 @@ void rule_hypergraph_update_rules(
           current_rule = current_vertex->edges[j]->rule;
           // Checks if the Rule is applicable given the inferred and observed
           // Literals.
-          bool was_active =
-              current_rule->weight >= knowledge_base->activation_threshold;
-          if (rule_applicable(current_rule, observed_and_inferred)) {
+          if (rule_applicable(current_rule, observed_and_inferred))
             current_rule->weight -= demotion_rate;
-
-            if (was_active &&
-                (current_rule->weight < knowledge_base->activation_threshold)) {
-              rule_queue_remove_rule(
-                  knowledge_base->active,
-                  rule_queue_find(knowledge_base->active, current_rule), NULL);
-            }
-            if (current_rule->weight <= 0) {
-              vertex_remove_edge(current_vertex, j);
-              --j;
-            }
-          }
         }
+        prb_insert(vertices_to_check, current_vertex);
         goto finished;
       }
 
@@ -552,7 +536,8 @@ void rule_hypergraph_update_rules(
       queue_push_back(_parent_vertex, NULL);
       queue_push_back(_vertices_to_check, (void *)current_vertex);
       QueueElement *current_vertices_element = _vertices_to_check->front,
-                   *current_depths_element = _depths->front;
+                   *current_depths_element = _depths->front,
+                   *current_parent_vertex_element = _parent_vertex->front;
 
       do {
         current_vertex = (Vertex *)current_vertices_element->data;
@@ -575,7 +560,7 @@ void rule_hypergraph_update_rules(
                     (scene_literal_index(observation,
                                          potential_vertex->literal) == -1) &&
                     (potential_vertex !=
-                     (Vertex *)_parent_vertex->front->data)) {
+                     (Vertex *)current_parent_vertex_element->data)) {
                   queue_push_back(_depths,
                                   (void *)((long)current_depths_element->data) +
                                       1);
@@ -587,33 +572,41 @@ void rule_hypergraph_update_rules(
           }
         }
       } while ((current_vertices_element = current_vertices_element->next) &&
-               (current_depths_element = current_depths_element->next));
+               (current_depths_element = current_depths_element->next) &&
+               (current_parent_vertex_element =
+                    current_parent_vertex_element->next));
+
+      queue_destructor(&_depths);
+      queue_destructor(&_parent_vertex);
 
       current_vertices_element = _vertices_to_check->front;
       do {
-        current_vertex = (Vertex *)current_vertices_element->data;
-
-        for (j = 0; j < current_vertex->number_of_edges; ++j) {
-          current_rule = current_vertex->edges[j]->rule;
-
-          if (current_rule->weight < knowledge_base->activation_threshold) {
-            rule_queue_remove_rule(
-                knowledge_base->active,
-                rule_queue_find(knowledge_base->active, current_rule), NULL);
-          }
-
-          if (current_rule->weight <= 0) {
-            vertex_remove_edge(current_vertex, j);
-            --j;
-          }
-        }
+        prb_insert(vertices_to_check, current_vertices_element->data);
       } while ((current_vertices_element = current_vertices_element->next));
-      queue_destructor(&_depths);
       queue_destructor(&_vertices_to_check);
-      queue_destructor(&_parent_vertex);
     }
   finished:
   }
+
+  struct prb_traverser vertex_traverser;
+  current_vertex = prb_t_first(&vertex_traverser, vertices_to_check);
+  while (current_vertex) {
+    for (j = 0; j < current_vertex->number_of_edges; ++j) {
+      current_rule = current_vertex->edges[j]->rule;
+
+      if (current_rule->weight < knowledge_base->activation_threshold)
+        rule_queue_remove_rule(
+            knowledge_base->active,
+            rule_queue_find(knowledge_base->active, current_rule), NULL);
+
+      if (current_rule->weight <= 0) {
+        vertex_remove_edge(current_vertex, j);
+        --j;
+      }
+    }
+    current_vertex = prb_t_next(&vertex_traverser);
+  }
+  prb_destroy(vertices_to_check, NULL);
 
   scene_destructor(&observed_and_inferred);
   scene_destructor(&opposing_literals);
@@ -1339,13 +1332,13 @@ START_TEST(update_rules_test) {
           *n_fly = literal_constructor("fly", false),
           *wings = literal_constructor("wings", true),
           *l_array[2] = {bird, wings};
-  Rule *penguin_fly = rule_constructor(1, &penguin, &fly, 0, false),
-       *bird_n_fly = rule_constructor(1, &bird, &n_fly, 0, false),
-       *wings_n_fly = rule_constructor(1, &wings, &n_fly, 0, false),
-       *wings_bird = rule_constructor(1, &wings, &bird, 0, false),
-       *bird_wings_n_fly = rule_constructor(2, l_array, &n_fly, 0, false);
+  Rule *penguin_fly = rule_constructor(1, &penguin, &fly, 1, false),
+       *bird_n_fly = rule_constructor(1, &bird, &n_fly, 1, false),
+       *wings_n_fly = rule_constructor(1, &wings, &n_fly, 1, false),
+       *wings_bird = rule_constructor(1, &wings, &bird, 1, false),
+       *bird_wings_n_fly = rule_constructor(2, l_array, &n_fly, 1, false);
   l_array[1] = penguin;
-  Rule *bird_penguin_fly = rule_constructor(2, l_array, &fly, 0, false);
+  Rule *bird_penguin_fly = rule_constructor(2, l_array, &fly, 0.5, false);
 
   rule_hypergraph_add_rule(knowledge_base->hypergraph, &penguin_fly);
   rule_hypergraph_add_rule(knowledge_base->hypergraph, &bird_n_fly);
@@ -1357,12 +1350,12 @@ START_TEST(update_rules_test) {
   Scene *observation = scene_constructor(false),
         *inference = scene_constructor(false);
 
-  ck_assert_float_eq_tol(penguin_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0, 0.000001);
+  ck_assert_float_eq_tol(penguin_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0.5, 0.000001);
   ck_assert_rule_queue_empty(knowledge_base->active);
 
   RuleQueue *inactive_rules;
@@ -1372,34 +1365,34 @@ START_TEST(update_rules_test) {
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 6);
   rule_queue_destructor(&inactive_rules);
-  ck_assert_float_eq_tol(penguin_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0, 0.000001);
+  ck_assert_float_eq_tol(penguin_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0.5, 0.000001);
   ck_assert_rule_queue_empty(knowledge_base->active);
 
   scene_add_literal(observation, &penguin);
   scene_add_literal(observation, &wings);
-  ck_assert_float_eq_tol(penguin_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0, 0.000001);
+  ck_assert_float_eq_tol(penguin_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0.5, 0.000001);
   ck_assert_rule_queue_empty(knowledge_base->active);
   rule_hypergraph_update_rules(knowledge_base, observation, inference, 1.5, 2,
                                false, NULL, 0, NULL);
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 6);
   rule_queue_destructor(&inactive_rules);
-  ck_assert_float_eq_tol(penguin_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0, 0.000001);
+  ck_assert_float_eq_tol(penguin_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0.5, 0.000001);
   ck_assert_rule_queue_empty(knowledge_base->active);
 
   scene_add_literal(observation, &fly);
@@ -1408,11 +1401,11 @@ START_TEST(update_rules_test) {
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 5);
   rule_queue_destructor(&inactive_rules);
-  ck_assert_float_eq_tol(penguin_fly->weight, 1.5, 0.000001);
-  ck_assert_float_eq_tol(bird_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 0, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0, 0.000001);
+  ck_assert_float_eq_tol(penguin_fly->weight, 2.5, 0.000001);
+  ck_assert_float_eq_tol(bird_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 0.5, 0.000001);
   ck_assert_rule_queue_empty(knowledge_base->active);
 
   scene_add_literal(observation, &bird);
@@ -1422,9 +1415,9 @@ START_TEST(update_rules_test) {
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 2);
   rule_queue_destructor(&inactive_rules);
-  ck_assert_float_eq_tol(penguin_fly->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 1.5, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(penguin_fly->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 2.5, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 2, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 1);
   ck_assert_rule_eq(knowledge_base->active->rules[0], penguin_fly);
@@ -1435,48 +1428,48 @@ START_TEST(update_rules_test) {
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 2);
   rule_queue_destructor(&inactive_rules);
-  ck_assert_float_eq_tol(penguin_fly->weight, 4.5, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 1.5, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(penguin_fly->weight, 5.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 2.5, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 2, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 1);
   ck_assert_rule_eq(knowledge_base->active->rules[0], penguin_fly);
 
-  wings_n_fly = rule_constructor(1, &wings, &n_fly, 0, false);
+  wings_n_fly = rule_constructor(1, &wings, &n_fly, 1, false);
   knowledge_base_add_rule(knowledge_base, &wings_n_fly);
 
   scene_remove_literal(observation, observation->size - 1, NULL);
   scene_add_literal(observation, &n_fly);
-  rule_hypergraph_update_rules(knowledge_base, observation, inference, 1.5, 2,
+  rule_hypergraph_update_rules(knowledge_base, observation, inference, 1.5, 3,
                                false, NULL, 0, NULL);
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 4);
   rule_queue_destructor(&inactive_rules);
   ck_assert_float_eq_tol(penguin_fly->weight, 2.5, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 1.5, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 1.5, 0.000001);
-  ck_assert_float_eq_tol(bird_penguin_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 2.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 2.5, 0.000001);
+  ck_assert_float_eq_tol(bird_penguin_fly->weight, 2, 0.000001);
   ck_assert_rule_queue_empty(knowledge_base->active);
 
-  bird_n_fly = rule_constructor(1, &bird, &n_fly, 0, false);
+  bird_n_fly = rule_constructor(1, &bird, &n_fly, 1, false);
   knowledge_base_add_rule(knowledge_base, &bird_n_fly);
   l_array[0] = bird;
   l_array[1] = wings;
-  bird_wings_n_fly = rule_constructor(2, l_array, &n_fly, 0, false);
+  bird_wings_n_fly = rule_constructor(2, l_array, &n_fly, 1, false);
   knowledge_base_add_rule(knowledge_base, &bird_wings_n_fly);
 
   scene_remove_literal(observation, 1, NULL);
   scene_add_literal(observation, &bird);
-  rule_hypergraph_update_rules(knowledge_base, observation, inference, 2.25, 2,
+  rule_hypergraph_update_rules(knowledge_base, observation, inference, 1.25, 2,
                                false, NULL, 0, NULL);
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 5);
   rule_queue_destructor(&inactive_rules);
   ck_assert_float_eq_tol(penguin_fly->weight, 0.5, 0.000001);
   ck_assert_float_eq_tol(bird_n_fly->weight, 2.25, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 1.5, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 1.5, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 0, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 2.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 2.5, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1, 0.000001);
   ck_assert_rule_queue_empty(knowledge_base->active);
 
   scene_add_literal(observation, &wings);
@@ -1486,9 +1479,9 @@ START_TEST(update_rules_test) {
   ck_assert_int_eq(inactive_rules->length, 1);
   rule_queue_destructor(&inactive_rules);
   ck_assert_float_eq_tol(bird_n_fly->weight, 3.75, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 2.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 3);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_n_fly);
@@ -1502,9 +1495,9 @@ START_TEST(update_rules_test) {
   rule_hypergraph_update_rules(knowledge_base, observation, inference, 1.5, 2,
                                false, NULL, 0, NULL);
   ck_assert_float_eq_tol(bird_n_fly->weight, 3.75, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 2.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 3);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_n_fly);
@@ -1521,9 +1514,9 @@ START_TEST(update_rules_test) {
   ck_assert_int_eq(inactive_rules->length, 1);
   rule_queue_destructor(&inactive_rules);
   ck_assert_float_eq_tol(bird_n_fly->weight, 3.75, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 2.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 3);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_n_fly);
@@ -1541,22 +1534,22 @@ START_TEST(update_rules_test) {
   ck_assert_int_eq(inactive_rules->length, 2);
   rule_queue_destructor(&inactive_rules);
   ck_assert_float_eq_tol(bird_n_fly->weight, 1.75, 0.000001);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.0, 0.000001);
-  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.0, 0.000001);
+  ck_assert_float_eq_tol(bird_wings_n_fly->weight, 2.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 2);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_n_fly);
   ck_assert_rule_eq(knowledge_base->active->rules[1], wings_bird);
 
   scene_add_literal(inference, &wings);
-  rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 2,
+  rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 2.5,
                                false, NULL, 0, NULL);
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   ck_assert_int_eq(inactive_rules->length, 1);
   rule_queue_destructor(&inactive_rules);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 1.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 1);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_bird);
@@ -1569,8 +1562,8 @@ START_TEST(update_rules_test) {
   scene_add_literal(inference, &n_fly);
   rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 2,
                                false, NULL, 0, NULL);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 1.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 1);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_bird);
@@ -1579,8 +1572,8 @@ START_TEST(update_rules_test) {
   scene_add_literal(observation, &wings);
   rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 2,
                                false, NULL, 0, NULL);
-  ck_assert_float_eq_tol(wings_n_fly->weight, 1.0, 0.000001);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.5, 0.000001);
+  ck_assert_float_eq_tol(wings_n_fly->weight, 1.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 1);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_bird);
@@ -1591,7 +1584,7 @@ START_TEST(update_rules_test) {
   scene_add_literal(inference, &wings);
   rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 2,
                                false, NULL, 0, NULL);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 1);
   ck_assert_rule_eq(knowledge_base->active->rules[0], wings_bird);
@@ -1605,7 +1598,7 @@ START_TEST(update_rules_test) {
   scene_add_literal(observation, &fly);
   rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 1,
                                false, NULL, 0, NULL);
-  ck_assert_float_eq_tol(wings_bird->weight, 3.5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4.5, 0.000001);
   ck_assert_float_eq_tol(wings_fly->weight, 2.5, 0.000001);
   ck_assert_rule_queue_notempty(knowledge_base->active);
   ck_assert_int_eq(knowledge_base->active->length, 1);
@@ -1774,6 +1767,8 @@ START_TEST(update_rules_test) {
   scene_destructor(&observation);
   scene_destructor(&inference);
 
+  Rule *bird_wings = rule_constructor(1, &bird, &wings, 5, false);
+  knowledge_base_add_rule(knowledge_base, &bird_wings);
   reset_active_rules_weight(knowledge_base, 5);
   observation = scene_constructor(false);
   scene_add_literal(observation, &penguin);
@@ -1785,6 +1780,22 @@ START_TEST(update_rules_test) {
   scene_add_literal(inference, &bird);
   scene_add_literal(inference, &fly);
 
+  rule_hypergraph_update_rules(knowledge_base, observation, inference, 0.5, 1,
+                               false, NULL, 0, NULL);
+  ck_assert_float_eq_tol(bird_fly->weight, 4, 0.000001);
+  ck_assert_float_eq_tol(penguin_bird->weight, 4, 0.000001);
+  ck_assert_float_eq_tol(feathers_bird->weight, 5, 0.000001);
+  ck_assert_float_eq_tol(wings_bird->weight, 4, 0.000001);
+  ck_assert_float_eq_tol(penguin_wings->weight, 4.333333, 0.000001);
+  ck_assert_float_eq_tol(antarctica_bird_fly->weight, 4, 0.000001);
+  ck_assert_float_eq_tol(antarctica_penguin->weight, 5.5, 0.000001);
+  ck_assert_float_eq_tol(penguin_antarctica->weight, 5.5, 0.000001);
+  ck_assert_float_eq_tol(wings_fly->weight, 0.5, 0.000001);
+  ck_assert_float_eq_tol(wings_feathers->weight, 5, 0.000001);
+  ck_assert_float_eq_tol(fly_eagle->weight, 1, 0.000001);
+  ck_assert_float_eq_tol(bird_wings->weight, 4.333333, 0.000001);
+
+  reset_active_rules_weight(knowledge_base, 5);
   initial_total_active_rules = knowledge_base->active->length;
   rule_hypergraph_get_inactive_rules(knowledge_base, &inactive_rules);
   initial_total_inactive_rules = inactive_rules->length;
