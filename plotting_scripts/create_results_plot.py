@@ -104,7 +104,7 @@ def __calculate_training_testing_actives(
 
         _labels = []
         with labels.open() as y:
-            _labels = y.readline().strip().split(" ")
+            _labels = y.readline().strip().split(",")
 
         kb_result_directories = sorted(results.glob("iteration_*-instance_*"))
 
@@ -468,9 +468,11 @@ def create_plot(path: Path, labels: Path, max_iterations: int | None = None):
         axis_twin.set_xlim(axis.get_xlim())
         axis_twin.set_xticks(
             np.arange(0, (iterations.shape[0]) * instances.shape[0] + 1, 1),
-            np.append([0], iterations_and_instances[0][:, 1])
-            if axis_index == 0
-            else [],
+            (
+                np.append([0], iterations_and_instances[0][:, 1])
+                if axis_index == 0
+                else []
+            ),
         )
         if axis_index == 0:
             axis_twin.set_xlabel("Instance", fontsize=12)
