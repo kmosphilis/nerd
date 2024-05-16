@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
     }
 
     unsigned int j, k;
-    char *literal;
+    char *literal, *header;
     Literal *copy;
     for (i = 0; i < total_instances; ++i) {
       sensor_get_next_scene(training_dataset, &observation);
@@ -383,12 +383,16 @@ int main(int argc, char *argv[]) {
       for (j = 0; j < observation->size; ++j) {
         literal = literal_to_string(observation->literals[j]);
         for (k = 0; k < training_dataset->header_size; ++k) {
-          if (strstr(literal, training_dataset->header[k])) {
+          header = (char *)calloc(strlen(training_dataset->header[k]) + 2,
+                                  sizeof(char));
+          sprintf(header, "%s_", training_dataset->header[k]);
+          if (strstr(literal, header)) {
             literal_copy(&copy, observation->literals[j]);
             scene_add_literal(incompatibilities[k], &copy);
             literal_destructor(&copy);
             break;
           }
+          safe_free(header);
         }
         safe_free(literal);
       }
